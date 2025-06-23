@@ -8,25 +8,55 @@ from .. import rfid
 
 
 class QuantityDialog(QtWidgets.QDialog):
+    """Dialog zum Wählen der Menge über +/- Buttons."""
+
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         self.setWindowTitle("Menge wählen")
         self.quantity = 1
         layout = QtWidgets.QVBoxLayout(self)
-        self.spin = QtWidgets.QSpinBox()
-        self.spin.setRange(1, 10)
-        layout.addWidget(self.spin)
+
+        self.label = QtWidgets.QLabel(str(self.quantity))
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        font = self.label.font()
+        font.setPointSize(20)
+        self.label.setFont(font)
+        layout.addWidget(self.label)
+
+        btn_layout = QtWidgets.QHBoxLayout()
+        self.minus_btn = QtWidgets.QPushButton("-")
+        self.plus_btn = QtWidgets.QPushButton("+")
+        for b in (self.minus_btn, self.plus_btn):
+            b.setFixedSize(80, 80)
+            f = b.font()
+            f.setPointSize(24)
+            b.setFont(f)
+        btn_layout.addWidget(self.minus_btn)
+        btn_layout.addWidget(self.plus_btn)
+        layout.addLayout(btn_layout)
+
+        self.minus_btn.clicked.connect(self.dec)
+        self.plus_btn.clicked.connect(self.inc)
+
         btns = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
         self.btnBox = QtWidgets.QDialogButtonBox(btns)
         self.btnBox.accepted.connect(self.accept)
         self.btnBox.rejected.connect(self.reject)
         layout.addWidget(self.btnBox)
 
+    def inc(self) -> None:
+        if self.quantity < 10:
+            self.quantity += 1
+            self.label.setText(str(self.quantity))
+
+    def dec(self) -> None:
+        if self.quantity > 1:
+            self.quantity -= 1
+            self.label.setText(str(self.quantity))
+
     def accept(self) -> None:
-        self.quantity = self.spin.value()
         super().accept()
-
-
+        
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -51,12 +81,18 @@ class MainWindow(QtWidgets.QMainWindow):
         layout = QtWidgets.QGridLayout(self.start_page)
         conn = database.get_connection()
         drinks = models.get_drinks(conn)
+
+        font = QtGui.QFont()
+        font.setPointSize(14)
         for idx, drink in enumerate(drinks):
             button = QtWidgets.QPushButton()
             button.setText(f"{drink.name}\n{drink.price/100:.2f} €")
+            button.setFont(font)
             if drink.image:
                 button.setIcon(QtGui.QIcon(drink.image))
                 button.setIconSize(QtCore.QSize(100, 100))
+            button.setMinimumSize(200, 120)
+
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
             layout.addWidget(button, r, c)
