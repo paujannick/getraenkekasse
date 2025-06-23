@@ -1,0 +1,164 @@
+from __future__ import annotations
+
+from functools import wraps
+from pathlib import Path
+from typing import Optional
+
+from flask import Flask, redirect, render_template, request, session, url_for
+from flask import jsonify
+
+from .. import database, models
+
+
+def create_app() -> Flask:
+    app = Flask(__name__)
+    app.secret_key = 'change-me'
+
+    def login_required(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if not session.get('user'):
+                return redirect(url_for('login'))
+            return func(*args, **kwargs)
+        return wrapper
+
+    @app.route('/read_uid')
+    @login_required
+    def read_uid():
+        uid = models.rfid_read_for_web()
+        return jsonify({'uid': uid or ''})
+
+    @app.route('/', methods=['GET'])
+    def index():
+        if not session.get('user'):
+            return redirect(url_for('login'))
+        return render_template('index.html')
+
+    @app.route('/refresh', methods=['POST'])
+    @login_required
+    def refresh():
+        database.touch_refresh_flag()
+        return redirect(url_for('index'))
+
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        error: Optional[str] = None
+        if request.method == 'POST':
+            user = request.form.get('username')
+            pw = request.form.get('password')
+            if user == 'admin' and pw == 'admin':
+                session['user'] = user
+                return redirect(url_for('index'))
+            error = 'Falsche Zugangsdaten'
+        return render_template('login.html', error=error)
+
+    @app.route('/logout')
+    def logout():
+        session.pop('user', None)
+        return redirect(url_for('login'))
+
+    @app.route('/drinks')
+    @login_required
+    def drinks():
+        conn = database.get_connection()
+        cur = conn.execute('SELECT * FROM drinks ORDER BY name')
+        items = cur.fetchall()
+        conn.close()
+        return render_template('drinks.html', drinks=items)
+
+    @app.route('/drinks/add', methods=['POST'])
+    @login_required
+    def drink_add():
+        name = request.form.get('name')
+        price_euro = request.form.get('price', type=float)
+        stock = request.form.get('stock', type=int)
+        if name and price_euro is not None:
+            price = int(price_euro * 100)
+            conn = database.get_connection()
+            conn.execute(
+                'INSERT INTO drinks (name, price, stock) VALUES (?, ?, ?)',
+                (name, price, stock or 0))
+            conn.commit()
+            conn.close()
+        return redirect(url_for('drinks'))
+
+    @app.route('/drinks/delete/<int:drink_id>')
+    @login_required
+    def drink_delete(drink_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM drinks WHERE id = ?', (drink_id,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('drinks'))
+
+    @app.route('/users')
+    @login_required
+    def users():
+        conn = database.get_connection()
+        cur = conn.execute('SELECT * FROM users ORDER BY name')
+        items = cur.fetchall()
+        conn.close()
+        return render_template('users.html', users=items)
+
+    @app.route('/users/add', methods=['POST'])
+    @login_required
+    def user_add():
+        name = request.form.get('name')
+        uid = request.form.get('uid')
+        balance = request.form.get('balance', type=int)
+        if name and uid:
+            conn = database.get_connection()
+            conn.execute(
+                'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
+                (name, uid, balance or 0))
+            conn.commit()
+            conn.close()
+        return redirect(url_for('users'))
+
+    @app.route('/users/topup', methods=['POST'])
+    @login_required
+    def users_topup():
+        uid = request.form.get('uid')
+        amount_euro = request.form.get('amount', type=float)
+        if uid and amount_euro is not None:
+            user = models.get_user_by_uid(uid)
+            if user:
+                models.update_balance(user.id, int(amount_euro * 100))
+        return redirect(url_for('users'))
+
+    @app.route('/users/delete/<int:user_id>')
+    @login_required
+    def user_delete(user_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('users'))
+
+    @app.route('/log')
+    @login_required
+    def log():
+        conn = database.get_connection()
+        cur = conn.execute(
+            'SELECT t.timestamp, u.name as user_name, d.name as drink_name, t.quantity '
+            'FROM transactions t '
+            'JOIN users u ON u.id = t.user_id '
+            'JOIN drinks d ON d.id = t.drink_id '
+            'ORDER BY t.timestamp DESC LIMIT 100')
+        items = cur.fetchall()
+        conn.close()
+        return render_template('log.html', items=items)
+
+    return app
+
+
+def main() -> None:
+    database.init_db()
+    app = create_app()
+    template_path = Path(__file__).parent / 'templates'
+    app.template_folder = str(template_path)
+    app.run(host='0.0.0.0', port=8000)
+
+
+if __name__ == '__main__':
+    main()

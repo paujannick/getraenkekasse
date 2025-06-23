@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Admin</title>
+    <style>
+        body { font-family: sans-serif; padding: 1em; }
+        nav a { margin-right: 1em; font-size: 1.2em; }
+        button { font-size: 1.1em; padding: 0.5em 1em; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 0.5em; text-align: left; }
+        input[type=text], input[type=number] { width: 100%; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="{{ url_for('index') }}">Home</a>
+    <a href="{{ url_for('drinks') }}">Getränke</a>
+    <a href="{{ url_for('users') }}">Benutzer</a>
+    <a href="{{ url_for('log') }}">Log</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
+</nav>
+<hr>
+{% block content %}{% endblock %}
+</body>
+</html>
