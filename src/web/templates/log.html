@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Transaktionen</h1>
+<table>
+<tr><th>Zeitpunkt</th><th>Benutzer</th><th>Getränk</th><th>Menge</th></tr>
+{% for r in items %}
+<tr>
+<td>{{ r['timestamp'] }}</td>
+<td>{{ r['user_name'] }}</td>
+<td>{{ r['drink_name'] }}</td>
+<td>{{ r['quantity'] }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}
