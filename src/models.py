@@ -3,7 +3,9 @@ from typing import Optional
 import sqlite3
 
 from .database import get_connection
+
 from . import rfid
+
 
 
 @dataclass
@@ -20,7 +22,9 @@ class Drink:
     name: str
     price: int  # in cents
     image: Optional[str]
+
     stock: int
+
 
 
 def get_user_by_uid(uid: str) -> Optional[User]:
@@ -60,21 +64,27 @@ def add_transaction(user_id: int, drink_id: int, quantity: int) -> None:
     conn.close()
 
 
+
 def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = None) -> list[Drink]:
+
     own = False
     if conn is None:
         conn = get_connection()
         own = True
+
     query = 'SELECT * FROM drinks ORDER BY name'
     if limit is not None:
         query += f' LIMIT {int(limit)}'
     cur = conn.execute(query)
+
     rows = [Drink(**row) for row in cur.fetchall()]
     if own:
         conn.close()
     return rows
 
 
+
 def rfid_read_for_web() -> Optional[str]:
     """Read a UID for the web interface (simulated)."""
     return rfid.read_uid_cli()
+

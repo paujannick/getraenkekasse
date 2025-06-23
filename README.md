@@ -10,10 +10,13 @@ Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeb
 
 - `src/` enthält die Python-Module
 - `src/gui/` umfasst die PyQt-GUI
+
 - `src/web/` bietet ein einfaches Web-Admin-Interface
+
 - `data/` enthält die SQLite-Datenbank und Ressourcen (z.B. Bilder)
 
 ## Erste Schritte
+
 
 1. Abhängigkeiten installieren:
    ```bash
@@ -32,8 +35,10 @@ Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeb
    python -m src.web.admin_server
    ```
    Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
+
    Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
 
 Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
+
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).

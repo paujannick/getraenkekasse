@@ -26,9 +26,11 @@ def read_uid(timeout: int = 10) -> Optional[str]:
         return None
 
 
+
 def read_uid_cli() -> Optional[str]:
     """Simple CLI UID input for the web interface."""
     try:
         return input("RFID UID eingeben: ").strip() or None
     except EOFError:
         return None
+

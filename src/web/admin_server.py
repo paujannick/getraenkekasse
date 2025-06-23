@@ -5,7 +5,9 @@ from pathlib import Path
 from typing import Optional
 
 from flask import Flask, redirect, render_template, request, session, url_for
+
 from flask import jsonify
+
 
 from .. import database, models
 
@@ -22,11 +24,13 @@ def create_app() -> Flask:
             return func(*args, **kwargs)
         return wrapper
 
+
     @app.route('/read_uid')
     @login_required
     def read_uid():
         uid = models.rfid_read_for_web()
         return jsonify({'uid': uid or ''})
+
 
     @app.route('/', methods=['GET'])
     def index():
@@ -34,11 +38,13 @@ def create_app() -> Flask:
             return redirect(url_for('login'))
         return render_template('index.html')
 
+
     @app.route('/refresh', methods=['POST'])
     @login_required
     def refresh():
         database.touch_refresh_flag()
         return redirect(url_for('index'))
+
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -70,6 +76,7 @@ def create_app() -> Flask:
     @login_required
     def drink_add():
         name = request.form.get('name')
+
         price_euro = request.form.get('price', type=float)
         stock = request.form.get('stock', type=int)
         if name and price_euro is not None:
@@ -78,6 +85,7 @@ def create_app() -> Flask:
             conn.execute(
                 'INSERT INTO drinks (name, price, stock) VALUES (?, ?, ?)',
                 (name, price, stock or 0))
+
             conn.commit()
             conn.close()
         return redirect(url_for('drinks'))
@@ -115,6 +123,7 @@ def create_app() -> Flask:
             conn.close()
         return redirect(url_for('users'))
 
+
     @app.route('/users/topup', methods=['POST'])
     @login_required
     def users_topup():
@@ -125,6 +134,7 @@ def create_app() -> Flask:
             if user:
                 models.update_balance(user.id, int(amount_euro * 100))
         return redirect(url_for('users'))
+
 
     @app.route('/users/delete/<int:user_id>')
     @login_required
