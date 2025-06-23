@@ -2,11 +2,12 @@
 {% block content %}
 <h1>Getränke</h1>
 <table>
-<tr><th>Name</th><th>Preis (Cent)</th><th>Aktion</th></tr>
+<tr><th>Name</th><th>Preis</th><th>Lager</th><th>Aktion</th></tr>
 {% for d in drinks %}
 <tr>
 <td>{{ d['name'] }}</td>
-<td>{{ d['price'] }}</td>
+<td>{{ (d['price']/100)|round(2) }} €</td>
+<td>{{ d['stock'] }}</td>
 <td><a href="{{ url_for('drink_delete', drink_id=d['id']) }}">Löschen</a></td>
 </tr>
 {% endfor %}
@@ -14,7 +15,8 @@
 <h2>Neu</h2>
 <form method="post" action="{{ url_for('drink_add') }}">
     <input type="text" name="name" placeholder="Name">
-    <input type="number" name="price" placeholder="Preis in Cent">
+    <input type="number" step="0.01" name="price" placeholder="Preis in Euro">
+    <input type="number" name="stock" placeholder="Lagerbestand">
     <button type="submit">Hinzufügen</button>
 </form>
 {% endblock %}

@@ -11,6 +11,9 @@ Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeb
 - `src/` enthält die Python-Module
 - `src/gui/` umfasst die PyQt-GUI
 
+   Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
+
+Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
 - `src/web/` bietet ein einfaches Web-Admin-Interface
 
 - `data/` enthält die SQLite-Datenbank und Ressourcen (z.B. Bilder)

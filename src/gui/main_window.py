@@ -42,10 +42,33 @@ class QuantityDialog(QtWidgets.QDialog):
 
         btns = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
         self.btnBox = QtWidgets.QDialogButtonBox(btns)
-        self.btnBox.accepted.connect(self.accept)
-        self.btnBox.rejected.connect(self.reject)
-        layout.addWidget(self.btnBox)
+        self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime if database.REFRESH_FLAG.exists() else 0.0
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.check_refresh)
+        self.timer.start(3000)
 
+        drinks = models.get_drinks(conn, limit=10)
+        font.setPointSize(16)
+                button.setIconSize(QtCore.QSize(120, 120))
+            button.setMinimumSize(220, 140)
+        for btn in (self.buy_button, self.cancel_button):
+            f = btn.font()
+            f.setPointSize(16)
+            btn.setFont(f)
+            btn.setMinimumHeight(60)
+
+    def check_refresh(self) -> None:
+        if database.refresh_needed(self.refresh_mtime):
+            self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime
+            self._rebuild_start_page()
+
+    def _rebuild_start_page(self) -> None:
+        for i in reversed(range(self.start_page.layout().count())):
+            item = self.start_page.layout().itemAt(i)
+            widget = item.widget()
+            if widget:
+                widget.setParent(None)
+        self._setup_start_page()
     def inc(self) -> None:
         if self.quantity < 10:
             self.quantity += 1

@@ -2,12 +2,12 @@
 {% block content %}
 <h1>Benutzer</h1>
 <table>
-<tr><th>Name</th><th>UID</th><th>Guthaben (Cent)</th><th>Aktion</th></tr>
+<tr><th>Name</th><th>UID</th><th>Guthaben</th><th>Aktion</th></tr>
 {% for u in users %}
 <tr>
 <td>{{ u['name'] }}</td>
 <td>{{ u['rfid_uid'] }}</td>
-<td>{{ u['balance'] }}</td>
+<td>{{ (u['balance']/100)|round(2) }} €</td>
 <td><a href="{{ url_for('user_delete', user_id=u['id']) }}">Löschen</a></td>
 </tr>
 {% endfor %}
@@ -15,8 +15,25 @@
 <h2>Neu</h2>
 <form method="post" action="{{ url_for('user_add') }}">
     <input type="text" name="name" placeholder="Name">
-    <input type="text" name="uid" placeholder="UID">
-    <input type="number" name="balance" placeholder="Startguthaben">
+    <input type="text" name="uid" id="uid_new" placeholder="UID">
+    <button type="button" onclick="readUid('uid_new')">UID lesen</button>
+    <input type="number" step="0.01" name="balance" placeholder="Startguthaben in Euro">
     <button type="submit">Hinzufügen</button>
 </form>
+
+<h2>Guthaben aufladen</h2>
+<form method="post" action="{{ url_for('users_topup') }}">
+    <input type="text" name="uid" id="uid_topup" placeholder="UID">
+    <button type="button" onclick="readUid('uid_topup')">UID lesen</button>
+    <input type="number" step="0.01" name="amount" placeholder="Betrag in Euro">
+    <button type="submit">Aufladen</button>
+</form>
+
+<script>
+function readUid(targetId) {
+    fetch('{{ url_for('read_uid') }}').then(r => r.json()).then(data => {
+        document.getElementById(targetId).value = data.uid;
+    });
+}
+</script>
 {% endblock %}
