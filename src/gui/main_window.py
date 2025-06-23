@@ -8,7 +8,9 @@ from .. import rfid
 
 
 class QuantityDialog(QtWidgets.QDialog):
+
     """Dialog zum Wählen der Menge über +/--Buttons."""
+
 
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
@@ -57,7 +59,6 @@ class QuantityDialog(QtWidgets.QDialog):
     def accept(self) -> None:
         super().accept()
 
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -82,6 +83,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout = QtWidgets.QGridLayout(self.start_page)
         conn = database.get_connection()
         drinks = models.get_drinks(conn)
+
         font = QtGui.QFont()
         font.setPointSize(14)
         for idx, drink in enumerate(drinks):
@@ -92,6 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 button.setIcon(QtGui.QIcon(drink.image))
                 button.setIconSize(QtCore.QSize(100, 100))
             button.setMinimumSize(200, 120)
+
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
             layout.addWidget(button, r, c)
