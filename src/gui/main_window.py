@@ -59,6 +59,7 @@ class QuantityDialog(QtWidgets.QDialog):
     def accept(self) -> None:
         super().accept()
 
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -69,8 +70,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.central)
         self.stack = QtWidgets.QStackedLayout(self.central)
 
+        self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime if database.REFRESH_FLAG.exists() else 0.0
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.check_refresh)
+        self.timer.start(3000)
+
         self.start_page = QtWidgets.QWidget()
         self._setup_start_page()
+
+
         self.stack.addWidget(self.start_page)
 
         self.info_label = QtWidgets.QLabel()
@@ -82,24 +90,33 @@ class MainWindow(QtWidgets.QMainWindow):
     def _setup_start_page(self) -> None:
         layout = QtWidgets.QGridLayout(self.start_page)
         conn = database.get_connection()
-        drinks = models.get_drinks(conn)
 
+        drinks = models.get_drinks(conn, limit=10)
         font = QtGui.QFont()
-        font.setPointSize(14)
+        font.setPointSize(16)
+
         for idx, drink in enumerate(drinks):
             button = QtWidgets.QPushButton()
             button.setText(f"{drink.name}\n{drink.price/100:.2f} €")
             button.setFont(font)
             if drink.image:
                 button.setIcon(QtGui.QIcon(drink.image))
-                button.setIconSize(QtCore.QSize(100, 100))
-            button.setMinimumSize(200, 120)
+
+                button.setIconSize(QtCore.QSize(120, 120))
+            button.setMinimumSize(220, 140)
 
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
             layout.addWidget(button, r, c)
         self.buy_button = QtWidgets.QPushButton("Kaufen")
         self.cancel_button = QtWidgets.QPushButton("Abbrechen")
+
+        for btn in (self.buy_button, self.cancel_button):
+            f = btn.font()
+            f.setPointSize(16)
+            btn.setFont(f)
+            btn.setMinimumHeight(60)
+
         layout.addWidget(self.buy_button, layout.rowCount(), 0)
         layout.addWidget(self.cancel_button, layout.rowCount() - 1, 1)
         self.buy_button.hide()
@@ -138,3 +155,18 @@ class MainWindow(QtWidgets.QMainWindow):
             f"Neues Guthaben: {new_user.balance/100:.2f} €")
         QtCore.QTimer.singleShot(3000, self.show_start_page)
         self.stack.setCurrentWidget(self.info_label)
+
+
+    def check_refresh(self) -> None:
+        if database.refresh_needed(self.refresh_mtime):
+            self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime
+            self._rebuild_start_page()
+
+    def _rebuild_start_page(self) -> None:
+        for i in reversed(range(self.start_page.layout().count())):
+            item = self.start_page.layout().itemAt(i)
+            widget = item.widget()
+            if widget:
+                widget.setParent(None)
+        self._setup_start_page()
+

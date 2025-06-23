@@ -2,4 +2,9 @@
 {% block content %}
 <h1>Adminbereich</h1>
 <p>Willkommen!</p>
+
+<form method="post" action="{{ url_for('refresh') }}">
+    <button type="submit">GUI aktualisieren</button>
+</form>
+
 {% endblock %}

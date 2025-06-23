@@ -36,5 +36,9 @@ Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeb
    ```
    Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
 
+   Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
+
+Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
+
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).

@@ -4,6 +4,9 @@ from typing import Optional
 
 DB_PATH = Path(__file__).resolve().parent.parent / 'data' / 'getraenkekasse.db'
 
+REFRESH_FLAG = Path(__file__).resolve().parent.parent / 'data' / 'refresh.flag'
+
+
 _SCHEMA = {
     'users': (
         'CREATE TABLE IF NOT EXISTS users ('
@@ -18,7 +21,10 @@ _SCHEMA = {
         'id INTEGER PRIMARY KEY AUTOINCREMENT, '
         'name TEXT NOT NULL, '
         'price INTEGER NOT NULL, '
-        'image TEXT'
+
+        'image TEXT, '
+        'stock INTEGER NOT NULL DEFAULT 0'
+
         ')'
     ),
     'transactions': (
@@ -39,6 +45,21 @@ def get_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+
+def touch_refresh_flag() -> None:
+    """Create or update the refresh flag file."""
+    REFRESH_FLAG.parent.mkdir(exist_ok=True)
+    REFRESH_FLAG.touch()
+
+
+def refresh_needed(last_mtime: float) -> bool:
+    """Return True if the refresh flag has been modified since last_mtime."""
+    if not REFRESH_FLAG.exists():
+        return False
+    return REFRESH_FLAG.stat().st_mtime > last_mtime
+
 
 
 def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
@@ -69,10 +90,12 @@ def add_sample_data(conn: sqlite3.Connection) -> None:
     cur = conn.execute('SELECT COUNT(*) FROM drinks')
     if cur.fetchone()[0] == 0:
         conn.execute(
-            'INSERT INTO drinks (name, price) VALUES (?, ?)',
-            ('Wasser', 150))
+
+            'INSERT INTO drinks (name, price, stock) VALUES (?, ?, ?)',
+            ('Wasser', 150, 20))
         conn.execute(
-            'INSERT INTO drinks (name, price) VALUES (?, ?)',
-            ('Cola', 200))
+            'INSERT INTO drinks (name, price, stock) VALUES (?, ?, ?)',
+            ('Cola', 200, 15))
+
 
     conn.commit()

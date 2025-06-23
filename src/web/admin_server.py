@@ -6,6 +6,9 @@ from typing import Optional
 
 from flask import Flask, redirect, render_template, request, session, url_for
 
+from flask import jsonify
+
+
 from .. import database, models
 
 
@@ -21,11 +24,27 @@ def create_app() -> Flask:
             return func(*args, **kwargs)
         return wrapper
 
+
+    @app.route('/read_uid')
+    @login_required
+    def read_uid():
+        uid = models.rfid_read_for_web()
+        return jsonify({'uid': uid or ''})
+
+
     @app.route('/', methods=['GET'])
     def index():
         if not session.get('user'):
             return redirect(url_for('login'))
         return render_template('index.html')
+
+
+    @app.route('/refresh', methods=['POST'])
+    @login_required
+    def refresh():
+        database.touch_refresh_flag()
+        return redirect(url_for('index'))
+
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -57,10 +76,16 @@ def create_app() -> Flask:
     @login_required
     def drink_add():
         name = request.form.get('name')
-        price = request.form.get('price', type=int)
-        if name and price is not None:
+
+        price_euro = request.form.get('price', type=float)
+        stock = request.form.get('stock', type=int)
+        if name and price_euro is not None:
+            price = int(price_euro * 100)
             conn = database.get_connection()
-            conn.execute('INSERT INTO drinks (name, price) VALUES (?, ?)', (name, price))
+            conn.execute(
+                'INSERT INTO drinks (name, price, stock) VALUES (?, ?, ?)',
+                (name, price, stock or 0))
+
             conn.commit()
             conn.close()
         return redirect(url_for('drinks'))
@@ -97,6 +122,19 @@ def create_app() -> Flask:
             conn.commit()
             conn.close()
         return redirect(url_for('users'))
+
+
+    @app.route('/users/topup', methods=['POST'])
+    @login_required
+    def users_topup():
+        uid = request.form.get('uid')
+        amount_euro = request.form.get('amount', type=float)
+        if uid and amount_euro is not None:
+            user = models.get_user_by_uid(uid)
+            if user:
+                models.update_balance(user.id, int(amount_euro * 100))
+        return redirect(url_for('users'))
+
 
     @app.route('/users/delete/<int:user_id>')
     @login_required
