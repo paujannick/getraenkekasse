@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Benutzer</h1>
+<table>
+<tr><th>Name</th><th>UID</th><th>Guthaben (Cent)</th><th>Aktion</th></tr>
+{% for u in users %}
+<tr>
+<td>{{ u['name'] }}</td>
+<td>{{ u['rfid_uid'] }}</td>
+<td>{{ u['balance'] }}</td>
+<td><a href="{{ url_for('user_delete', user_id=u['id']) }}">Löschen</a></td>
+</tr>
+{% endfor %}
+</table>
+<h2>Neu</h2>
+<form method="post" action="{{ url_for('user_add') }}">
+    <input type="text" name="name" placeholder="Name">
+    <input type="text" name="uid" placeholder="UID">
+    <input type="number" name="balance" placeholder="Startguthaben">
+    <button type="submit">Hinzufügen</button>
+</form>
+{% endblock %}

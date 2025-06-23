@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Getränke</h1>
+<table>
+<tr><th>Name</th><th>Preis (Cent)</th><th>Aktion</th></tr>
+{% for d in drinks %}
+<tr>
+<td>{{ d['name'] }}</td>
+<td>{{ d['price'] }}</td>
+<td><a href="{{ url_for('drink_delete', drink_id=d['id']) }}">Löschen</a></td>
+</tr>
+{% endfor %}
+</table>
+<h2>Neu</h2>
+<form method="post" action="{{ url_for('drink_add') }}">
+    <input type="text" name="name" placeholder="Name">
+    <input type="number" name="price" placeholder="Preis in Cent">
+    <button type="submit">Hinzufügen</button>
+</form>
+{% endblock %}
