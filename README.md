@@ -13,7 +13,6 @@ Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeb
 
 - `src/web/` bietet ein einfaches Web-Admin-Interface
 
-
 - `data/` enthält die SQLite-Datenbank und Ressourcen (z.B. Bilder)
 
 ## Erste Schritte
@@ -37,17 +36,5 @@ Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeb
    ```
    Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
 
-1. Abhängigkeiten installieren (z.B. via `pip install PyQt5`)
-2. Datenbank initialisieren (legt automatisch einige Beispiel-Daten an):
-
-```bash
-python -c "import src.database as d; d.init_db()"
-```
-
-3. Anwendung starten:
-
-```bash
-python -m src.app
-```
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).

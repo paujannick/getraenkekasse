@@ -8,7 +8,9 @@ from .. import rfid
 
 
 class QuantityDialog(QtWidgets.QDialog):
-    """Dialog zum Wählen der Menge über +/- Buttons."""
+
+    """Dialog zum Wählen der Menge über +/--Buttons."""
+
 
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
@@ -56,7 +58,7 @@ class QuantityDialog(QtWidgets.QDialog):
 
     def accept(self) -> None:
         super().accept()
-        
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
