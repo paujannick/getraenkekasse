@@ -10,21 +10,27 @@ Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeb
 
 - `src/` enthält die Python-Module
 - `src/gui/` umfasst die PyQt-GUI
+- `src/web/` bietet ein einfaches Web-Admin-Interface
 - `data/` enthält die SQLite-Datenbank und Ressourcen (z.B. Bilder)
 
 ## Erste Schritte
 
-1. Abhängigkeiten installieren (z.B. via `pip install PyQt5`)
+1. Abhängigkeiten installieren:
+   ```bash
+   pip install -r requirements.txt
+   ```
 2. Datenbank initialisieren (legt automatisch einige Beispiel-Daten an):
-
-```bash
-python -c "import src.database as d; d.init_db()"
-```
-
+   ```bash
+   python -c "import src.database as d; d.init_db()"
+   ```
 3. Anwendung starten:
-
-```bash
-python -m src.app
-```
+   ```bash
+   python -m src.app
+   ```
+4. Web-Admin starten (optional):
+   ```bash
+   python -m src.web.admin_server
+   ```
+   Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).
