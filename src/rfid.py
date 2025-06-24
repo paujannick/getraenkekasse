@@ -1,7 +1,9 @@
 """RFID reader abstraction.
 
+
 Die UID wird ausschließlich per ``nfcpy`` von einem angeschlossenen Leser
 eingelesen. Eine manuelle Eingabe in der GUI findet nicht mehr statt.
+
 """
 
 from typing import Optional
@@ -13,8 +15,10 @@ except Exception:  # pragma: no cover - optional dependency
     nfc = None
 
 
+
 def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     """Read a UID from the NFC reader.
+
 
     When ``show_dialog`` is True, a short message is shown on the screen
     prompting the user to place their card on the reader.
@@ -47,7 +51,9 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
 
     if msg_box:
         msg_box.close()
+
         app.processEvents()
+
 
     if created_app:
         app.quit()
