@@ -133,7 +133,7 @@ class MainWindow(QtWidgets.QMainWindow):
         quantity = dialog.quantity
         self.info_label.setText("Bitte Karte auflegen…")
         self.stack.setCurrentWidget(self.info_label)
-        uid = rfid.read_uid()
+        uid = rfid.read_uid(show_dialog=False)
         if not uid:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
             self.show_start_page()
