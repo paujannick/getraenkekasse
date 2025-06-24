@@ -23,6 +23,14 @@ else
   echo "⚠ Keine virtuelle Umgebung gefunden. Starte mit System-Python."
 fi
 
-# Anwendung starten (Vollbild-Modus)
+# Anwendung starten (Vollbild-Modus) und Webserver parallel
+echo "Starte Webserver..."
+python3 -m src.web.admin_server &
+WEB_PID=$!
+
+# Webserver bei Skriptende beenden
+trap "kill $WEB_PID" EXIT
+
 echo "Starte Anwendung..."
-python3 -m src.app 
+python3 -m src.app
+echo "Beende Webserver..."
