@@ -1,30 +1,37 @@
-"""RFID reader abstraction for testing.
+"""RFID reader abstraction.
 
-In this test version there is no hardware dependency. Instead of reading from an
-actual RFID reader the user is prompted to enter a UID manually. This allows the
-application to run on macOS without additional hardware.
+Versucht zuerst, die UID über ``nfcpy`` von einem angeschlossenen Leser zu
+lesen. Ist kein Gerät vorhanden, kann die UID manuell eingegeben werden, sodass
+die Anwendung auch ohne Hardware funktioniert.
 """
 
 from typing import Optional
 from PyQt5 import QtWidgets
 
+try:  # optional hardware support
+    import nfc
+except Exception:  # pragma: no cover - optional dependency
+    nfc = None
+
 
 def read_uid(timeout: int = 10) -> Optional[str]:
-    """Prompt the user for a UID and return it.
+    """Read a UID from a reader or fall back to manual input."""
+    if nfc:
+        try:
+            with nfc.ContactlessFrontend('usb') as clf:
+                tag = clf.connect(rdwr={'on-connect': lambda tag: False}, timeout=timeout)
+                if tag and hasattr(tag, 'identifier'):
+                    return tag.identifier.hex().upper()
+        except Exception as exc:  # pragma: no cover - hardware errors
+            print(f"RFID hardware error: {exc}")
 
-    In the real system this function would wait for a card on the ACR122U and
-    return its UID. For testing we show a dialog asking for the UID.
-    """
     try:
-        text, ok = QtWidgets.QInputDialog.getText(
-            None, "RFID Test", "RFID UID eingeben:")
+        text, ok = QtWidgets.QInputDialog.getText(None, "RFID", "RFID UID eingeben:")
         if ok and text:
             return text.strip()
-        return None
-    except Exception as exc:
-        print(f"RFID read error: {exc}")
-        return None
-
+    except Exception:
+        pass
+    return None
 
 
 def read_uid_cli() -> Optional[str]:
