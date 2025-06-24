@@ -25,4 +25,4 @@ fi
 
 # Anwendung starten (Vollbild-Modus)
 echo "Starte Anwendung..."
-python3 -m src.app --fullscreen
+python3 -m src.app 
