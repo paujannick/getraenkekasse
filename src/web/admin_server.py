@@ -105,6 +105,7 @@ def create_app() -> Flask:
         conn.execute('DELETE FROM drinks WHERE id = ?', (drink_id,))
         conn.commit()
         conn.close()
+        database.touch_refresh_flag()
         return redirect(url_for('drinks'))
 
     @app.route('/drinks/edit/<int:drink_id>', methods=['GET', 'POST'])

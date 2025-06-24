@@ -3,8 +3,9 @@
 Dies ist eine Beispielimplementierung einer lokalen Getränkekasse für einen DRK-Getränkestand.
 Die Anwendung nutzt Python 3 und PyQt5 und speichert alle Daten lokal in einer SQLite-Datenbank.
 
-Diese Variante dient zu Testzwecken und kann problemlos auf einem Mac ohne angeschlossenen RFID-Reader ausgeführt werden.
-Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeben wird.
+Die Anwendung setzt einen RFID-Leser voraus. Beim Kaufvorgang erscheint auf dem
+Touchdisplay ein Hinweis "Bitte Karte auflegen…" und die UID wird automatisch
+über den Leser erfasst.
 
 ## Struktur
 

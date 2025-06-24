@@ -1,8 +1,9 @@
 """RFID reader abstraction.
 
-Versucht zuerst, die UID über ``nfcpy`` von einem angeschlossenen Leser zu
-lesen. Ist kein Gerät vorhanden, kann die UID manuell eingegeben werden, sodass
-die Anwendung auch ohne Hardware funktioniert.
+
+Die UID wird ausschließlich per ``nfcpy`` von einem angeschlossenen Leser
+eingelesen. Eine manuelle Eingabe in der GUI findet nicht mehr statt.
+
 """
 
 from typing import Optional
@@ -16,7 +17,8 @@ except Exception:  # pragma: no cover - optional dependency
 
 
 def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
-    """Read a UID from a reader or fall back to manual input.
+    """Read a UID from the NFC reader.
+
 
     When ``show_dialog`` is True, a short message is shown on the screen
     prompting the user to place their card on the reader.
@@ -50,13 +52,8 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     if msg_box:
         msg_box.close()
 
-    if not uid:
-        try:
-            text, ok = QtWidgets.QInputDialog.getText(None, "RFID", "RFID UID eingeben:")
-            if ok and text:
-                uid = text.strip()
-        except Exception:
-            pass
+        app.processEvents()
+
 
     if created_app:
         app.quit()
