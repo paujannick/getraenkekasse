@@ -18,27 +18,30 @@ Beim Kaufvorgang erscheint ein Dialog, in dem die UID der Karte manuell eingegeb
 ## Erste Schritte
 
 
-1. Abhängigkeiten installieren:
+1. Installation im virtuellen Umfeld:
    ```bash
-   pip install -r requirements.txt
+   ./install.sh
    ```
+   Das Script legt ein `venv`-Verzeichnis an (bestehendes wird überschrieben) und installiert alle Abhängigkeiten.
 2. Datenbank initialisieren (legt automatisch einige Beispiel-Daten an):
    ```bash
-   python -c "import src.database as d; d.init_db()"
+   ./venv/bin/python -c "import src.database as d; d.init_db()"
    ```
-3. Anwendung starten:
+3. Anwendung starten (z.B. im Vollbild auf dem Raspberry Pi):
    ```bash
-   python -m src.app
+   ./venv/bin/python -m src.app --fullscreen
    ```
 4. Web-Admin starten (optional):
    ```bash
-   python -m src.web.admin_server
+   ./venv/bin/python -m src.web.admin_server
    ```
    Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
 
    Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
 
 Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
+
+Im Web-Admin lassen sich jetzt sowohl Benutzer als auch Getränke bearbeiten. Für Getränke können optional Logos hochgeladen werden, die in der GUI angezeigt werden.
 
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).
