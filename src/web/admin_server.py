@@ -76,18 +76,26 @@ def create_app() -> Flask:
     @login_required
     def drink_add():
         name = request.form.get('name')
-
         price_euro = request.form.get('price', type=float)
         stock = request.form.get('stock', type=int)
+        image_file = request.files.get('image')
+        image_path = None
+        if image_file and image_file.filename:
+            image_dir = Path(__file__).resolve().parent.parent / 'data' / 'images'
+            image_dir.mkdir(parents=True, exist_ok=True)
+            dest = image_dir / image_file.filename
+            image_file.save(dest)
+            image_path = str(dest)
+
         if name and price_euro is not None:
             price = int(price_euro * 100)
             conn = database.get_connection()
             conn.execute(
-                'INSERT INTO drinks (name, price, stock) VALUES (?, ?, ?)',
-                (name, price, stock or 0))
-
+                'INSERT INTO drinks (name, price, stock, image) VALUES (?, ?, ?, ?)',
+                (name, price, stock or 0, image_path))
             conn.commit()
             conn.close()
+            database.touch_refresh_flag()
         return redirect(url_for('drinks'))
 
     @app.route('/drinks/delete/<int:drink_id>')
@@ -97,7 +105,36 @@ def create_app() -> Flask:
         conn.execute('DELETE FROM drinks WHERE id = ?', (drink_id,))
         conn.commit()
         conn.close()
+        database.touch_refresh_flag()
         return redirect(url_for('drinks'))
+
+    @app.route('/drinks/edit/<int:drink_id>', methods=['GET', 'POST'])
+    @login_required
+    def drink_edit(drink_id: int):
+        conn = database.get_connection()
+        if request.method == 'POST':
+            name = request.form.get('name')
+            price_euro = request.form.get('price', type=float)
+            stock = request.form.get('stock', type=int)
+            image_path = request.form.get('current_image') or None
+            image_file = request.files.get('image')
+            if image_file and image_file.filename:
+                image_dir = Path(__file__).resolve().parent.parent / 'data' / 'images'
+                image_dir.mkdir(parents=True, exist_ok=True)
+                dest = image_dir / image_file.filename
+                image_file.save(dest)
+                image_path = str(dest)
+            conn.execute(
+                'UPDATE drinks SET name=?, price=?, stock=?, image=? WHERE id=?',
+                (name, int(price_euro * 100), stock or 0, image_path, drink_id))
+            conn.commit()
+            conn.close()
+            database.touch_refresh_flag()
+            return redirect(url_for('drinks'))
+        cur = conn.execute('SELECT * FROM drinks WHERE id=?', (drink_id,))
+        item = cur.fetchone()
+        conn.close()
+        return render_template('drink_edit.html', drink=item)
 
     @app.route('/users')
     @login_required
@@ -144,6 +181,25 @@ def create_app() -> Flask:
         conn.commit()
         conn.close()
         return redirect(url_for('users'))
+
+    @app.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
+    @login_required
+    def user_edit(user_id: int):
+        conn = database.get_connection()
+        if request.method == 'POST':
+            name = request.form.get('name')
+            uid = request.form.get('uid')
+            balance = request.form.get('balance', type=int)
+            conn.execute(
+                'UPDATE users SET name=?, rfid_uid=?, balance=? WHERE id=?',
+                (name, uid, balance or 0, user_id))
+            conn.commit()
+            conn.close()
+            return redirect(url_for('users'))
+        cur = conn.execute('SELECT * FROM users WHERE id=?', (user_id,))
+        item = cur.fetchone()
+        conn.close()
+        return render_template('user_edit.html', user=item)
 
     @app.route('/log')
     @login_required

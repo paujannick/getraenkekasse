@@ -76,7 +76,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer.start(3000)
 
         self.start_page = QtWidgets.QWidget()
-        self._setup_start_page()
+        self.start_layout = QtWidgets.QGridLayout(self.start_page)
+        self._populate_start_page()
 
 
         self.stack.addWidget(self.start_page)
@@ -87,8 +88,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.show_start_page()
 
-    def _setup_start_page(self) -> None:
-        layout = QtWidgets.QGridLayout(self.start_page)
+    def _populate_start_page(self) -> None:
+        layout = self.start_layout
         conn = database.get_connection()
 
         drinks = models.get_drinks(conn, limit=10)
@@ -132,7 +133,7 @@ class MainWindow(QtWidgets.QMainWindow):
         quantity = dialog.quantity
         self.info_label.setText("Bitte Karte auflegen…")
         self.stack.setCurrentWidget(self.info_label)
-        uid = rfid.read_uid()
+        uid = rfid.read_uid(show_dialog=False)
         if not uid:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
             self.show_start_page()
@@ -163,10 +164,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self._rebuild_start_page()
 
     def _rebuild_start_page(self) -> None:
-        for i in reversed(range(self.start_page.layout().count())):
-            item = self.start_page.layout().itemAt(i)
+        for i in reversed(range(self.start_layout.count())):
+            item = self.start_layout.takeAt(i)
             widget = item.widget()
             if widget:
-                widget.setParent(None)
-        self._setup_start_page()
+                widget.deleteLater()
+        self._populate_start_page()
 

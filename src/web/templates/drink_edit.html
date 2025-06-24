@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Getränk bearbeiten</h1>
+<form method="post" enctype="multipart/form-data">
+    <label>Name:<br><input type="text" name="name" value="{{ drink['name'] }}"></label><br>
+    <label>Preis in Euro:<br><input type="number" step="0.01" name="price" value="{{ (drink['price']/100)|round(2) }}"></label><br>
+    <label>Lagerbestand:<br><input type="number" name="stock" value="{{ drink['stock'] }}"></label><br>
+    <input type="hidden" name="current_image" value="{{ drink['image'] }}">
+    <label>Logo (optional):<br><input type="file" name="image"></label><br>
+    <button type="submit">Speichern</button>
+</form>
+{% endblock %}
