@@ -85,6 +85,6 @@ def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = No
 
 
 def rfid_read_for_web() -> Optional[str]:
-    """Read a UID for the web interface (simulated)."""
-    return rfid.read_uid_cli()
+    """Read a UID for the web interface using the normal reader dialog."""
+    return rfid.read_uid()
 
