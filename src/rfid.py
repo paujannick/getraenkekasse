@@ -64,7 +64,6 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     return uid
 
 
-
 def read_uid_cli() -> Optional[str]:
     """Simple CLI UID input for the web interface."""
     try:
