@@ -14,6 +14,7 @@ except Exception:  # pragma: no cover - optional dependency
     nfc = None
 
 
+
 def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     """Read a UID from a reader or fall back to manual input.
 
