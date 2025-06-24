@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+sudo apt install python3-pyqt5
 
 # create venv and install requirements
 if [ -d venv ]; then
