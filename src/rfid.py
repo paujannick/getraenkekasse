@@ -21,6 +21,7 @@ except Exception:  # pragma: no cover - optional dependency
     nfc = None
     NFC_AVAILABLE = False
 
+
 _clf: 'nfc.ContactlessFrontend | None' = None
 
 
@@ -51,6 +52,7 @@ atexit.register(_close_reader)
 
 
 
+
 def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     """Read a UID from the NFC reader.
 
@@ -73,8 +75,10 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     error_box: dict[str, Optional[str]] = {"error": None}
 
     def worker() -> None:
+
         clf = _open_reader()
         if not clf:
+
             error_box["error"] = "unavailable"
             return
         try:
@@ -84,7 +88,9 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
         except Exception as exc:  # pragma: no cover - hardware errors
             print(f"RFID hardware error: {exc}")
             error_box["error"] = str(exc)
+
             _close_reader()
+
 
     thread = threading.Thread(target=worker, daemon=True)
     thread.start()
