@@ -8,8 +8,9 @@ import sqlite3
 from .. import admin_auth
 
 from flask import Flask, redirect, render_template, request, session, url_for
-
-from flask import jsonify
+from flask import jsonify, make_response
+import csv
+import io
 
 
 from .. import database, models
@@ -33,6 +34,17 @@ def create_app() -> Flask:
     def read_uid():
         uid = models.rfid_read_for_web()
         return jsonify({'uid': uid or ''})
+
+    @app.route('/user_name')
+    @login_required
+    def user_name():
+        uid = request.args.get('uid')
+        name = ''
+        if uid:
+            user = models.get_user_by_uid(uid)
+            if user:
+                name = user.name
+        return jsonify({'name': name})
 
 
     @app.route('/', methods=['GET'])
@@ -200,14 +212,14 @@ def create_app() -> Flask:
     def user_add():
         name = request.form.get('name')
         uid = request.form.get('uid')
-        balance = request.form.get('balance', type=int)
+        balance_euro = request.form.get('balance', type=float)
         error: Optional[str] = None
         if name and uid:
             conn = database.get_connection()
             try:
                 conn.execute(
                     'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
-                    (name, uid, balance or 0))
+                    (name, uid, int(balance_euro * 100) if balance_euro is not None else 0))
                 conn.commit()
             except sqlite3.IntegrityError:
                 error = 'RFID-UID bereits vergeben'
@@ -250,10 +262,10 @@ def create_app() -> Flask:
         if request.method == 'POST':
             name = request.form.get('name')
             uid = request.form.get('uid')
-            balance = request.form.get('balance', type=int)
+            balance_euro = request.form.get('balance', type=float)
             conn.execute(
                 'UPDATE users SET name=?, rfid_uid=?, balance=? WHERE id=?',
-                (name, uid, balance or 0, user_id))
+                (name, uid, int(balance_euro * 100) if balance_euro is not None else 0, user_id))
             conn.commit()
             conn.close()
             return redirect(url_for('users'))
@@ -275,6 +287,54 @@ def create_app() -> Flask:
         items = cur.fetchall()
         conn.close()
         return render_template('log.html', items=items)
+
+    @app.route('/log/clear', methods=['POST'])
+    @login_required
+    def log_clear():
+        conn = database.get_connection()
+        conn.execute('DELETE FROM transactions')
+        conn.commit()
+        conn.close()
+        return redirect(url_for('log'))
+
+    @app.route('/export/transactions')
+    @login_required
+    def export_transactions():
+        conn = database.get_connection()
+        cur = conn.execute(
+            'SELECT t.timestamp, u.name as user_name, d.name as drink_name, t.quantity '
+            'FROM transactions t '
+            'JOIN users u ON u.id = t.user_id '
+            'JOIN drinks d ON d.id = t.drink_id '
+            'ORDER BY t.timestamp DESC')
+        rows = cur.fetchall()
+        conn.close()
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['timestamp', 'user', 'drink', 'quantity'])
+        for r in rows:
+            writer.writerow([r['timestamp'], r['user_name'], r['drink_name'], r['quantity']])
+        resp = make_response(out.getvalue())
+        resp.headers['Content-Type'] = 'text/csv'
+        resp.headers['Content-Disposition'] = 'attachment; filename=transactions.csv'
+        return resp
+
+    @app.route('/export/inventory')
+    @login_required
+    def export_inventory():
+        conn = database.get_connection()
+        cur = conn.execute('SELECT name, price, stock FROM drinks ORDER BY name')
+        rows = cur.fetchall()
+        conn.close()
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['name', 'price_euro', 'stock'])
+        for r in rows:
+            writer.writerow([r['name'], f"{r['price']/100:.2f}", r['stock']])
+        resp = make_response(out.getvalue())
+        resp.headers['Content-Type'] = 'text/csv'
+        resp.headers['Content-Disposition'] = 'attachment; filename=inventory.csv'
+        return resp
 
     return app
 
