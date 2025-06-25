@@ -44,7 +44,10 @@ _SCHEMA = {
 
 def get_connection() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+    except sqlite3.Error as e:  # pragma: no cover - hard to trigger in tests
+        raise RuntimeError(f"Datenbank konnte nicht geöffnet werden: {e}") from e
     conn.row_factory = sqlite3.Row
     return conn
 
