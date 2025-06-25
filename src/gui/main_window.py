@@ -6,7 +6,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from .. import database
 from .. import models
 from .. import rfid
-from .. import led
 
 
 class QuantityDialog(QtWidgets.QDialog):
@@ -151,11 +150,9 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         user = models.get_user_by_uid(uid)
         if not user:
-            led.indicate_error()
             QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
             self.show_start_page()
             return
-        led.indicate_success()
         if not models.update_drink_stock(drink.id, -quantity):
             QtWidgets.QMessageBox.information(self, "Lager", "Nicht genug Bestand")
             self.show_start_page()
