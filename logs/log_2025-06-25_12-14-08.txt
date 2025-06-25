@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/paul/Desktop/getraenkekasse-3/src/app.py", line 4, in <module>
+    from .gui.main_window import MainWindow
+  File "/home/paul/Desktop/getraenkekasse-3/src/gui/main_window.py", line 6, in <module>
+    from .. import models
+  File "/home/paul/Desktop/getraenkekasse-3/src/models.py", line 7, in <module>
+    from . import rfid
+  File "/home/paul/Desktop/getraenkekasse-3/src/rfid.py", line 5, in <module>
+    from mfrc522 import SimpleMFRC522
+ModuleNotFoundError: No module named 'mfrc522'
+Can't open /dev/mem: Permission denied
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/paul/Desktop/getraenkekasse-3/src/web/admin_server.py", line 12, in <module>
+    from .. import database, models
+  File "/home/paul/Desktop/getraenkekasse-3/src/models.py", line 7, in <module>
+    from . import rfid
+  File "/home/paul/Desktop/getraenkekasse-3/src/rfid.py", line 25, in <module>
+    strip.begin()
+  File "/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/rpi_ws281x/rpi_ws281x.py", line 143, in begin
+    raise RuntimeError('ws2811_init failed with code {0} ({1})'.format(resp, str_resp))
+RuntimeError: ws2811_init failed with code -5 (mmap() failed)

@@ -1,0 +1,26 @@
+ * Serving Flask app 'admin_server'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.188.61:8000
+Press CTRL+C to quit
+192.168.188.10 - - [25/Jun/2025 12:04:15] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:04:23] "POST /drinks/add HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:04:23] "GET /drinks HTTP/1.1" 200 -
+Traceback (most recent call last):
+  File "/home/paul/Desktop/getraenkekasse-3/src/gui/main_window.py", line 109, in <lambda>
+    button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/paul/Desktop/getraenkekasse-3/src/gui/main_window.py", line 136, in on_drink_selected
+    uid = rfid.read_uid(show_dialog=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/paul/Desktop/getraenkekasse-3/src/rfid.py", line 43, in read_uid
+    reader = SimpleMFRC522()
+             ^^^^^^^^^^^^^^^
+  File "/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/mfrc522/SimpleMFRC522.py", line 14, in __init__
+    self.READER = MFRC522()
+                  ^^^^^^^^^
+  File "/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/mfrc522/MFRC522.py", line 130, in __init__
+    self.spi.open(bus, device)
+FileNotFoundError: [Errno 2] No such file or directory

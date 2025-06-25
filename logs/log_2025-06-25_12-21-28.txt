@@ -1,0 +1,38 @@
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+ * Serving Flask app 'admin_server'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.188.61:8000
+Press CTRL+C to quit
+/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/mfrc522/MFRC522.py:151: RuntimeWarning: This channel is already in use, continuing anyway.  Use GPIO.setwarnings(False) to disable warnings.
+  GPIO.setup(pin_rst, GPIO.OUT)
+192.168.188.10 - - [25/Jun/2025 12:21:54] "GET /users HTTP/1.1" 200 -
+/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/mfrc522/MFRC522.py:151: RuntimeWarning: This channel is already in use, continuing anyway.  Use GPIO.setwarnings(False) to disable warnings.
+  GPIO.setup(pin_rst, GPIO.OUT)
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:22:09] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:22:17] "POST /users/add HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:22:18] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:22:25] "GET /users/delete/4 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:22:25] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:22:28] "GET /users/delete/3 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:22:28] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:22:29] "GET /users/delete/2 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:22:29] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:22:30] "GET /users/delete/1 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:22:30] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:23:10] "GET /users HTTP/1.1" 200 -
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:23:17] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:23:24] "POST /users/topup HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:23:24] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:23:32] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:23:55] "POST /drinks/add HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:23:55] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:24:33] "GET /drinks/delete/4 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:24:33] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:24:43] "GET /log HTTP/1.1" 200 -

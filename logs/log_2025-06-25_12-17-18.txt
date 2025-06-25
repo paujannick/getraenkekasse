@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/paul/Desktop/getraenkekasse-3/src/app.py", line 4, in <module>
+    from .gui.main_window import MainWindow
+  File "/home/paul/Desktop/getraenkekasse-3/src/gui/main_window.py", line 6, in <module>
+    from .. import models
+  File "/home/paul/Desktop/getraenkekasse-3/src/models.py", line 7, in <module>
+    from . import rfid
+  File "/home/paul/Desktop/getraenkekasse-3/src/rfid.py", line 5, in <module>
+    from mfrc522 import SimpleMFRC522
+ModuleNotFoundError: No module named 'mfrc522'
+ * Serving Flask app 'admin_server'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.188.61:8000
+Press CTRL+C to quit

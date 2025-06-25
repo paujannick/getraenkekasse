@@ -1,0 +1,28 @@
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+ * Serving Flask app 'admin_server'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.188.61:8000
+Press CTRL+C to quit
+Can't open /dev/mem: Permission denied
+Exception in thread Thread-1 (led_waiting_effect):
+Traceback (most recent call last):
+  File "/usr/lib/python3.11/threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "/usr/lib/python3.11/threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/paul/Desktop/getraenkekasse-3/src/rfid.py", line 23, in led_waiting_effect
+    pixels.show()
+  File "/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/adafruit_pixelbuf.py", line 202, in show
+    return self._transmit(self._post_brightness_buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/neopixel.py", line 177, in _transmit
+    neopixel_write(self.pin, buffer)
+  File "/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/neopixel_write.py", line 49, in neopixel_write
+    return _neopixel.neopixel_write(gpio, buf)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/paul/Desktop/getraenkekasse-3/venv/lib/python3.11/site-packages/adafruit_blinka/microcontroller/bcm283x/neopixel.py", line 84, in neopixel_write
+    raise RuntimeError(
+RuntimeError: NeoPixel support requires running with sudo, please try again!

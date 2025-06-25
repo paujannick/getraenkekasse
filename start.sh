@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Start-Skript für DRK Getränkekasse
-# Autor: Pauls persönlicher Masterplan 😄
-
 echo "----------------------------------------"
 echo "Starte Getränkekassen-System..."
 echo "----------------------------------------"
@@ -15,22 +12,44 @@ if [ -z "$DISPLAY" ]; then
   exit 1
 fi
 
-# Virtuelle Umgebung aktivieren (falls vorhanden)
+# Virtuelle Umgebung aktivieren (nur für den PATH, optional)
 if [ -d "venv" ]; then
-  echo "Aktiviere virtuelle Umgebung..."
-  source venv/bin/activate
+  echo "Nutze virtuelle Umgebung (direkter Aufruf)..."
 else
   echo "⚠ Keine virtuelle Umgebung gefunden. Starte mit System-Python."
 fi
 
-# Anwendung starten (Vollbild-Modus) und Webserver parallel
+# Erstelle Logfile mit Zeitstempel
+LOGDIR="logs"
+mkdir -p "$LOGDIR"
+LOGFILE="$LOGDIR/log_$(date +%Y-%m-%d_%H-%M-%S).txt"
+
+echo "Logfile: $LOGFILE"
+echo "----------------------------------------"
+
+# Starte Webserver
 echo "Starte Webserver..."
-python3 -m src.web.admin_server &
+venv/bin/python -m src.web.admin_server 2>&1 | tee -a "$LOGFILE" &
 WEB_PID=$!
 
 # Webserver bei Skriptende beenden
-trap "kill $WEB_PID" EXIT
+trap "echo 'Beende Webserver...'; kill $WEB_PID" EXIT
 
+# Starte Anwendung und schreibe alles ins Log
 echo "Starte Anwendung..."
-python3 -m src.app
-echo "Beende Webserver..."
+venv/bin/python -m src.app 2>&1 | tee -a "$LOGFILE"
+APP_EXITCODE=$?
+
+# Nach Programmende:
+echo "----------------------------------------"
+if [ $APP_EXITCODE -ne 0 ]; then
+  echo "⚠ Anwendung mit Fehlercode $APP_EXITCODE beendet!"
+else
+  echo "✅ Anwendung sauber beendet."
+fi
+
+echo "----------------------------------------"
+echo "Logfile gespeichert unter: $LOGFILE"
+echo
+echo "Drücke [Enter] zum Schließen..."
+read
