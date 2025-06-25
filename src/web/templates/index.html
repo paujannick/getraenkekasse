@@ -7,4 +7,8 @@
     <button type="submit">GUI aktualisieren</button>
 </form>
 
+<form method="post" action="{{ url_for('stop') }}" onsubmit="return confirm('Anwendung wirklich beenden?');">
+    <button type="submit">Beenden</button>
+</form>
+
 {% endblock %}
