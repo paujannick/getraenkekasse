@@ -64,6 +64,36 @@ def add_transaction(user_id: int, drink_id: int, quantity: int) -> None:
     conn.close()
 
 
+def update_drink_stock(drink_id: int, diff: int) -> bool:
+    """Increase or decrease drink stock. Returns False if not enough stock."""
+    conn = get_connection()
+    cur = conn.execute('SELECT stock FROM drinks WHERE id = ?', (drink_id,))
+    row = cur.fetchone()
+    if row is None:
+        conn.close()
+        return False
+    new_stock = row['stock'] + diff
+    if new_stock < 0:
+        conn.close()
+        return False
+    conn.execute('UPDATE drinks SET stock = ? WHERE id = ?', (new_stock, drink_id))
+    conn.commit()
+    from . import database
+    database.touch_refresh_flag()
+    conn.close()
+    return True
+
+
+def get_drink_by_id(drink_id: int) -> Optional[Drink]:
+    conn = get_connection()
+    cur = conn.execute('SELECT * FROM drinks WHERE id = ?', (drink_id,))
+    row = cur.fetchone()
+    conn.close()
+    if row:
+        return Drink(**row)
+    return None
+
+
 
 def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = None) -> list[Drink]:
 
