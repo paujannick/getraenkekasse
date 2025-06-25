@@ -50,6 +50,7 @@ Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betra
 Im Web-Admin lassen sich jetzt sowohl Benutzer als auch Getränke bearbeiten. Für Getränke können optional Logos hochgeladen werden, die in der GUI angezeigt werden.
 
 Beim Kauf wird der Lagerbestand des jeweiligen Getränks automatisch reduziert. Über die Getränkeübersicht im Web-Admin lassen sich Bestände bequem auffüllen.
+
 Das Admin-Passwort lässt sich im Web-Admin über den Punkt "Passwort" ändern.
 
 
