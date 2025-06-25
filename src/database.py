@@ -5,6 +5,8 @@ from typing import Optional
 DB_PATH = Path(__file__).resolve().parent.parent / 'data' / 'getraenkekasse.db'
 
 REFRESH_FLAG = Path(__file__).resolve().parent.parent / 'data' / 'refresh.flag'
+# File that signals the application to terminate
+EXIT_FLAG = Path(__file__).resolve().parent.parent / 'data' / 'exit.flag'
 
 
 _SCHEMA = {
@@ -52,6 +54,25 @@ def touch_refresh_flag() -> None:
     """Create or update the refresh flag file."""
     REFRESH_FLAG.parent.mkdir(exist_ok=True)
     REFRESH_FLAG.touch()
+
+
+def set_exit_flag() -> None:
+    """Create the exit flag file to signal termination."""
+    EXIT_FLAG.parent.mkdir(exist_ok=True)
+    EXIT_FLAG.touch()
+
+
+def exit_flag_set() -> bool:
+    """Return True if an exit has been requested."""
+    return EXIT_FLAG.exists()
+
+
+def clear_exit_flag() -> None:
+    """Remove the exit flag file if it exists."""
+    try:
+        EXIT_FLAG.unlink()
+    except FileNotFoundError:
+        pass
 
 
 def refresh_needed(last_mtime: float) -> bool:

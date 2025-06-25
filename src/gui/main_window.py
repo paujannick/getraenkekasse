@@ -173,6 +173,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def check_refresh(self) -> None:
+        if database.exit_flag_set():
+            database.clear_exit_flag()
+            QtWidgets.QApplication.quit()
+            return
         if database.refresh_needed(self.refresh_mtime):
             self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime
             self._rebuild_start_page()

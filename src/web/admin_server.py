@@ -47,6 +47,15 @@ def create_app() -> Flask:
         database.touch_refresh_flag()
         return redirect(url_for('index'))
 
+    @app.route('/stop', methods=['POST'])
+    @login_required
+    def stop():
+        database.set_exit_flag()
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func:
+            func()
+        return 'Beende Anwendung...'
+
     @app.route('/password', methods=['GET', 'POST'])
     @login_required
     def change_password():
