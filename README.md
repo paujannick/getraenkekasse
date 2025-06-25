@@ -38,6 +38,8 @@ zuverlässiger ohne AUTH-Fehler.
    ./venv/bin/python -m src.web.admin_server
    ```
    Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
+   Das Passwort kann im Web-Admin unter "Passwort" geändert werden. Es wird
+   verschlüsselt in `data/admin_pw.txt` gespeichert.
 
    Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
 
@@ -48,6 +50,9 @@ Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betra
 Im Web-Admin lassen sich jetzt sowohl Benutzer als auch Getränke bearbeiten. Für Getränke können optional Logos hochgeladen werden, die in der GUI angezeigt werden.
 
 Beim Kauf wird der Lagerbestand des jeweiligen Getränks automatisch reduziert. Über die Getränkeübersicht im Web-Admin lassen sich Bestände bequem auffüllen.
+
+Das Admin-Passwort lässt sich im Web-Admin über den Punkt "Passwort" ändern.
+
 
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).
