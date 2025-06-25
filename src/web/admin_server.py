@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import wraps
 from pathlib import Path
 from typing import Optional
+import sqlite3
 
 from .. import admin_auth
 
@@ -187,12 +188,12 @@ def create_app() -> Flask:
 
     @app.route('/users')
     @login_required
-    def users():
+    def users(error: Optional[str] = None):
         conn = database.get_connection()
         cur = conn.execute('SELECT * FROM users ORDER BY name')
         items = cur.fetchall()
         conn.close()
-        return render_template('users.html', users=items)
+        return render_template('users.html', users=items, error=error)
 
     @app.route('/users/add', methods=['POST'])
     @login_required
@@ -200,13 +201,24 @@ def create_app() -> Flask:
         name = request.form.get('name')
         uid = request.form.get('uid')
         balance = request.form.get('balance', type=int)
+        error: Optional[str] = None
         if name and uid:
             conn = database.get_connection()
-            conn.execute(
-                'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
-                (name, uid, balance or 0))
-            conn.commit()
+            try:
+                conn.execute(
+                    'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
+                    (name, uid, balance or 0))
+                conn.commit()
+            except sqlite3.IntegrityError:
+                error = 'RFID-UID bereits vergeben'
+            finally:
+                conn.close()
+        if error:
+            conn = database.get_connection()
+            cur = conn.execute('SELECT * FROM users ORDER BY name')
+            items = cur.fetchall()
             conn.close()
+            return render_template('users.html', users=items, error=error)
         return redirect(url_for('users'))
 
 
