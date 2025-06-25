@@ -2,12 +2,25 @@ from dataclasses import dataclass
 from typing import Optional
 import sqlite3
 
-from .database import get_connection
+from .database import get_connection, get_setting, set_setting
 
 from . import rfid
 
 # Maximum number of transactions to keep in the log
 MAX_TRANSACTIONS = 10000
+
+
+def get_overdraft_limit(conn: Optional[sqlite3.Connection] = None) -> int:
+    """Return allowed negative balance in cents."""
+    val = get_setting('overdraft_limit', conn)
+    try:
+        return int(val or '0')
+    except ValueError:
+        return 0
+
+
+def set_overdraft_limit(limit_cents: int, conn: Optional[sqlite3.Connection] = None) -> None:
+    set_setting('overdraft_limit', str(int(limit_cents)), conn)
 
 
 
@@ -51,7 +64,8 @@ def update_balance(user_id: int, diff: int) -> bool:
             if not row:
                 return False
             new_balance = row['balance'] + diff
-            if new_balance < 0:
+            limit = get_overdraft_limit(conn)
+            if new_balance < -limit:
                 return False
             conn.execute('UPDATE users SET balance = ? WHERE id = ?', (new_balance, user_id))
             conn.commit()
@@ -86,8 +100,6 @@ def update_drink_stock(drink_id: int, diff: int) -> bool:
             if row is None:
                 return False
             new_stock = row['stock'] + diff
-            if new_stock < 0:
-                return False
             conn.execute('UPDATE drinks SET stock = ? WHERE id = ?', (new_stock, drink_id))
             conn.commit()
             from . import database

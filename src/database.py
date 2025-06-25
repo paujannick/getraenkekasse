@@ -39,6 +39,12 @@ _SCHEMA = {
         'FOREIGN KEY(user_id) REFERENCES users(id), '
         'FOREIGN KEY(drink_id) REFERENCES drinks(id)'
         ')'
+    ),
+    'config': (
+        'CREATE TABLE IF NOT EXISTS config ('
+        'key TEXT PRIMARY KEY, '
+        'value TEXT'
+        ')'
     )
 }
 
@@ -95,6 +101,10 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     for stmt in _SCHEMA.values():
         cursor.execute(stmt)
     conn.commit()
+    cursor.execute(
+        "INSERT OR IGNORE INTO config (key, value) VALUES ('overdraft_limit', '0')"
+    )
+    conn.commit()
     add_sample_data(conn)
     if own_conn:
         conn.close()
@@ -123,3 +133,34 @@ def add_sample_data(conn: sqlite3.Connection) -> None:
 
 
     conn.commit()
+
+
+def get_setting(key: str, conn: Optional[sqlite3.Connection] = None) -> str | None:
+    own = False
+    try:
+        if conn is None:
+            conn = get_connection()
+            own = True
+        cur = conn.execute('SELECT value FROM config WHERE key=?', (key,))
+        row = cur.fetchone()
+        return row['value'] if row else None
+    finally:
+        if own and conn is not None:
+            conn.close()
+
+
+def set_setting(key: str, value: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    own = False
+    try:
+        if conn is None:
+            conn = get_connection()
+            own = True
+        conn.execute(
+            'INSERT INTO config (key, value) VALUES (?, ?) '
+            'ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+            (key, value),
+        )
+        conn.commit()
+    finally:
+        if own and conn is not None:
+            conn.close()

@@ -89,6 +89,20 @@ def create_app() -> Flask:
                 info = 'Passwort gespeichert'
         return render_template('change_password.html', error=error, info=info)
 
+    @app.route('/settings', methods=['GET', 'POST'])
+    @login_required
+    def settings():
+        conn = database.get_connection()
+        current_limit = models.get_overdraft_limit(conn)
+        if request.method == 'POST':
+            val = request.form.get('overdraft', type=float)
+            if val is not None:
+                models.set_overdraft_limit(int(val * 100), conn)
+            conn.close()
+            return redirect(url_for('settings'))
+        conn.close()
+        return render_template('settings.html', overdraft_limit=current_limit)
+
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
