@@ -37,7 +37,7 @@ trap "echo 'Beende Webserver...'; kill $WEB_PID" EXIT
 
 # Starte Anwendung und schreibe alles ins Log
 echo "Starte Anwendung..."
-venv/bin/python -m src.app 2>&1 | tee -a "$LOGFILE"
+venv/bin/python -m src.app --fullscreen 2>&1 | tee -a "$LOGFILE"
 APP_EXITCODE=$?
 
 # Nach Programmende:

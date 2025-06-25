@@ -1,0 +1,14 @@
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+ * Serving Flask app 'admin_server'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.188.61:8000
+Press CTRL+C to quit
+qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:42:34] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:42:39] "POST /users/add HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:42:39] "GET /users HTTP/1.1" 200 -
