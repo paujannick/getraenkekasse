@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin</title>
     <style>
         body { margin:0; padding:0; font-family: Arial, sans-serif; background:#f0f0f0; }
@@ -17,6 +18,10 @@
         }
         .error { color:red; }
         .info { color:green; }
+        @media(max-width:600px){
+            nav a { display:block; margin:0.5em 0; }
+            table { font-size:0.9em; }
+        }
     </style>
 </head>
 <body>
@@ -26,6 +31,8 @@
     <a href="{{ url_for('users') }}">Benutzer</a>
     <a href="{{ url_for('log') }}">Log</a>
     <a href="{{ url_for('change_password') }}">Passwort</a>
+    <a href="{{ url_for('export_transactions') }}">CSV Verkäufe</a>
+    <a href="{{ url_for('export_inventory') }}">CSV Bestand</a>
     <a href="{{ url_for('logout') }}">Logout</a>
 </nav>
 <div class="container">

@@ -6,6 +6,9 @@ from .database import get_connection
 
 from . import rfid
 
+# Maximum number of transactions to keep in the log
+MAX_TRANSACTIONS = 10000
+
 
 
 @dataclass
@@ -65,6 +68,10 @@ def add_transaction(user_id: int, drink_id: int, quantity: int) -> None:
             conn.execute(
                 'INSERT INTO transactions (user_id, drink_id, quantity) VALUES (?, ?, ?)',
                 (user_id, drink_id, quantity))
+            conn.execute(
+                'DELETE FROM transactions WHERE id NOT IN ('
+                'SELECT id FROM transactions ORDER BY id DESC LIMIT ?)',
+                (MAX_TRANSACTIONS,))
             conn.commit()
     except sqlite3.Error as e:  # pragma: no cover - DB failure
         print(f"Fehler beim Schreiben der Transaktion: {e}")
