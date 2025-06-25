@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from .. import database
@@ -68,6 +69,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(800, 480)
         self.central = QtWidgets.QWidget()
         self.setCentralWidget(self.central)
+
+        logo_path = Path(__file__).resolve().parent.parent / 'data' / 'background.png'
+        if logo_path.exists():
+            self.central.setStyleSheet(
+                f"background-image: url('{logo_path}');"
+                "background-repeat: no-repeat;"
+                "background-position: center;"
+            )
+
         self.stack = QtWidgets.QStackedLayout(self.central)
 
         self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime if database.REFRESH_FLAG.exists() else 0.0
@@ -141,6 +151,10 @@ class MainWindow(QtWidgets.QMainWindow):
         user = models.get_user_by_uid(uid)
         if not user:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+            self.show_start_page()
+            return
+        if not models.update_drink_stock(drink.id, -quantity):
+            QtWidgets.QMessageBox.information(self, "Lager", "Nicht genug Bestand")
             self.show_start_page()
             return
         total_price = drink.price * quantity

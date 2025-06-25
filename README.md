@@ -5,7 +5,8 @@ Die Anwendung nutzt Python 3 und PyQt5 und speichert alle Daten lokal in einer S
 
 Die Anwendung setzt einen RFID-Leser voraus. Beim Kaufvorgang erscheint auf dem
 Touchdisplay ein Hinweis "Bitte Karte auflegen…" und die UID wird automatisch
-über den Leser erfasst.
+über den Leser erfasst. Die RFID-Funktion wurde überarbeitet und liest die UID
+zuverlässiger ohne AUTH-Fehler.
 
 ## Struktur
 
@@ -40,9 +41,13 @@ Touchdisplay ein Hinweis "Bitte Karte auflegen…" und die UID wird automatisch
 
    Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
 
+   Die GUI zeigt optional ein DRK-Logo im Hintergrund an. Lege dazu eine Bilddatei unter `data/background.png` ab. Ist diese Datei nicht vorhanden, wird kein Hintergrundbild angezeigt.
+
 Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
 
 Im Web-Admin lassen sich jetzt sowohl Benutzer als auch Getränke bearbeiten. Für Getränke können optional Logos hochgeladen werden, die in der GUI angezeigt werden.
+
+Beim Kauf wird der Lagerbestand des jeweiligen Getränks automatisch reduziert. Über die Getränkeübersicht im Web-Admin lassen sich Bestände bequem auffüllen.
 
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).

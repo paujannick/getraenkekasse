@@ -108,6 +108,24 @@ def create_app() -> Flask:
         database.touch_refresh_flag()
         return redirect(url_for('drinks'))
 
+    @app.route('/drinks/restock/<int:drink_id>', methods=['POST'])
+    @login_required
+    def drink_restock(drink_id: int):
+        amount = request.form.get('amount', type=int)
+        if amount and amount > 0:
+            conn = database.get_connection()
+            cur = conn.execute('SELECT stock FROM drinks WHERE id=?', (drink_id,))
+            row = cur.fetchone()
+            if row:
+                new_stock = row['stock'] + amount
+                conn.execute('UPDATE drinks SET stock=? WHERE id=?', (new_stock, drink_id))
+                conn.commit()
+                conn.close()
+                database.touch_refresh_flag()
+            else:
+                conn.close()
+        return redirect(url_for('drinks'))
+
     @app.route('/drinks/edit/<int:drink_id>', methods=['GET', 'POST'])
     @login_required
     def drink_edit(drink_id: int):
