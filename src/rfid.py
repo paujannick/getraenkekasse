@@ -6,6 +6,7 @@ import time
 from PyQt5 import QtWidgets, QtCore
 from mfrc522 import MFRC522
 import RPi.GPIO as GPIO
+from . import led
 
 # Unterdrücke "GPIO already in use"-Warnings
 GPIO.setwarnings(False)
@@ -14,6 +15,7 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     """Liest nur die UID mit MFRC522, zeigt GUI an, keine AUTH ERRORs mehr."""
 
     reader = MFRC522()
+    led.indicate_waiting()
 
     app = QtWidgets.QApplication.instance()
     created_app = False
@@ -53,8 +55,10 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
 
         if uid_hex is None:
             print("Timeout: Keine Karte gelesen.")
+            led.stop()
     except Exception as e:
         print(f"Fehler beim Lesen: {e}")
+        led.stop()
     finally:
         if msg_box:
             msg_box.close()
@@ -62,6 +66,7 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
         if created_app:
             app.quit()
         GPIO.cleanup()
+        led.stop()
 
     return uid_hex
 
