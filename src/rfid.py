@@ -4,14 +4,24 @@ from __future__ import annotations
 from typing import Optional
 import time
 from PyQt5 import QtWidgets, QtCore
-from mfrc522 import MFRC522
-import RPi.GPIO as GPIO
 
-# Unterdrücke "GPIO already in use"-Warnings
-GPIO.setwarnings(False)
+try:
+    from mfrc522 import MFRC522
+    import RPi.GPIO as GPIO
+    GPIO.setwarnings(False)
+except Exception as e:  # pragma: no cover - hardware might be missing
+    MFRC522 = None  # type: ignore
+    GPIO = None  # type: ignore
+    print(f"RFID-Initialisierung fehlgeschlagen: {e}")
 
 def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     """Liest nur die UID mit MFRC522, zeigt GUI an, keine AUTH ERRORs mehr."""
+
+    if MFRC522 is None:
+        print("RFID-Reader nicht verfügbar")
+        if show_dialog:
+            QtWidgets.QMessageBox.warning(None, "RFID", "RFID-Reader nicht verfügbar")
+        return None
 
     reader = MFRC522()
 
@@ -61,7 +71,8 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
             app.processEvents()
         if created_app:
             app.quit()
-        GPIO.cleanup()
+        if GPIO:
+            GPIO.cleanup()
 
     return uid_hex
 
