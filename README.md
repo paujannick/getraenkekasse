@@ -54,5 +54,4 @@ Beim Kauf wird der Lagerbestand des jeweiligen Getränks automatisch reduziert. 
 Das Admin-Passwort lässt sich im Web-Admin über den Punkt "Passwort" ändern.
 
 
-
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).

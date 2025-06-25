@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+
+import os
+
 from pathlib import Path
 
 ADMIN_PW_FILE = Path(__file__).resolve().parent.parent / 'data' / 'admin_pw.txt'
@@ -22,4 +25,12 @@ def verify_password(password: str) -> bool:
 
 def set_password(password: str) -> None:
     ADMIN_PW_FILE.parent.mkdir(parents=True, exist_ok=True)
-    ADMIN_PW_FILE.write_text(hashlib.sha256(password.encode()).hexdigest())
+
+    tmp_path = ADMIN_PW_FILE.with_suffix('.tmp')
+    hashed = hashlib.sha256(password.encode()).hexdigest()
+    with open(tmp_path, 'w', encoding='utf-8') as fh:
+        fh.write(hashed)
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp_path, ADMIN_PW_FILE)
+
