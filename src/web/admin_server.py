@@ -6,6 +6,28 @@ from typing import Optional
 
 from .. import admin_auth
 
+    @app.route('/password', methods=['GET', 'POST'])
+    @login_required
+    def change_password():
+        error: Optional[str] = None
+        info: Optional[str] = None
+        if request.method == 'POST':
+            old_pw = request.form.get('old_pw') or ''
+            new_pw1 = request.form.get('new_pw1') or ''
+            new_pw2 = request.form.get('new_pw2') or ''
+            if not admin_auth.verify_password(old_pw):
+                error = 'Altes Passwort falsch'
+            elif not new_pw1:
+                error = 'Neues Passwort darf nicht leer sein'
+            elif new_pw1 != new_pw2:
+                error = 'Passwörter stimmen nicht überein'
+            else:
+                admin_auth.set_password(new_pw1)
+                info = 'Passwort gespeichert'
+        return render_template('change_password.html', error=error, info=info)
+
+            if user == 'admin' and admin_auth.verify_password(pw or ''):
+
 from flask import Flask, redirect, render_template, request, session, url_for
 
 from flask import jsonify
