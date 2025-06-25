@@ -1,0 +1,79 @@
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+ * Serving Flask app 'admin_server'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.188.61:8000
+Press CTRL+C to quit
+qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
+192.168.188.10 - - [25/Jun/2025 12:34:08] "GET /users HTTP/1.1" 200 -
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:34:15] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:34:29] "POST /users/add HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:34:29] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:34:36] "GET /users/delete/7 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:34:36] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:34:46] "GET /users/delete/5 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:34:46] "GET /users HTTP/1.1" 200 -
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:34:56] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:34:58] "POST /users/add HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:34:58] "GET /users HTTP/1.1" 200 -
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:35:17] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:35:21] "POST /users/topup HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:35:21] "GET /users HTTP/1.1" 200 -
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:35:49] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:35:55] "POST /users/topup HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:35:55] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:36:31] "GET /users/delete/8 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:36:31] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:36:35] "GET /users/delete/6 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:36:35] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:36:37] "GET /log HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:36:40] "GET /log HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:36:41] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:36:44] "GET /drinks/edit/2 HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:36:48] "POST /drinks/edit/2 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:36:48] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:36:56] "GET /drinks/edit/1 HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:37:01] "POST /drinks/edit/1 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:37:01] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:37:06] "GET /drinks/edit/1 HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:37:14] "POST /drinks/edit/1 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:37:14] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:37:33] "GET /drinks/edit/1 HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:37:38] "POST /drinks/edit/1 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:37:38] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:37:44] "GET /drinks/edit/3 HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:37:54] "POST /drinks/edit/3 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:37:54] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:38:01] "GET /drinks/edit/1 HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:38:14] "POST /drinks/edit/1 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:38:14] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:38:18] "GET /drinks/edit/3 HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:38:42] "POST /drinks/edit/3 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:38:42] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:38:51] "GET /drinks/delete/3 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:38:51] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:38:54] "GET /drinks/edit/2 HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:39:06] "POST /drinks/edit/2 HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:39:06] "GET /drinks HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:39:23] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:39:44] "GET /users HTTP/1.1" 200 -
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:39:56] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:39:59] "POST /users/add HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:39:59] "GET /users HTTP/1.1" 200 -
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+192.168.188.10 - - [25/Jun/2025 12:40:04] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:40:09] "POST /users/topup HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:40:09] "GET /users HTTP/1.1" 200 -

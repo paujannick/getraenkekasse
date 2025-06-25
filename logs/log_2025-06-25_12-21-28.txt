@@ -36,3 +36,104 @@ QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 inst
 192.168.188.10 - - [25/Jun/2025 12:24:33] "GET /drinks/delete/4 HTTP/1.1" 302 -
 192.168.188.10 - - [25/Jun/2025 12:24:33] "GET /drinks HTTP/1.1" 200 -
 192.168.188.10 - - [25/Jun/2025 12:24:43] "GET /log HTTP/1.1" 200 -
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+192.168.188.10 - - [25/Jun/2025 12:29:10] "GET /users HTTP/1.1" 200 -
+WARNING: QApplication was not created in the main() thread.
+QStandardPaths: wrong permissions on runtime directory /run/user/1000, 0770 instead of 0700
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+192.168.188.10 - - [25/Jun/2025 12:29:20] "GET /read_uid HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:29:35] "POST /users/add HTTP/1.1" 302 -
+192.168.188.10 - - [25/Jun/2025 12:29:35] "GET /users HTTP/1.1" 200 -
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR!!
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+AUTH ERROR(status2reg & 0x08) != 0
+192.168.188.10 - - [25/Jun/2025 12:30:08] "GET /users HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:30:26] "GET /log HTTP/1.1" 200 -
+192.168.188.10 - - [25/Jun/2025 12:30:29] "GET /drinks HTTP/1.1" 200 -
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824
+Bitte Karte auflegen...
+Gelesene UID: 8804404589
+Bitte Karte auflegen...
+Gelesene UID: 8804404589
+Bitte Karte auflegen...
+Gelesene UID: 8804404589
+Bitte Karte auflegen...
+Timeout: Keine Karte gelesen.
+Bitte Karte auflegen...
+Gelesene UID: 3E0CF0824

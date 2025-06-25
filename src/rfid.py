@@ -1,15 +1,19 @@
-"""RFID reader utilities für MFRC522 mit GUI, ohne Neopixel."""
+"""RFID UID Reader für MFRC522 — saubere UID-Abfrage ohne AUTH ERRORs."""
 
 from __future__ import annotations
 from typing import Optional
-from mfrc522 import SimpleMFRC522
 import time
 from PyQt5 import QtWidgets, QtCore
+from mfrc522 import MFRC522
+import RPi.GPIO as GPIO
+
+# Unterdrücke "GPIO already in use"-Warnings
+GPIO.setwarnings(False)
 
 def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
-    """Liest eine UID mit MFRC522, zeigt GUI an."""
+    """Liest nur die UID mit MFRC522, zeigt GUI an, keine AUTH ERRORs mehr."""
 
-    reader = SimpleMFRC522()
+    reader = MFRC522()
 
     app = QtWidgets.QApplication.instance()
     created_app = False
@@ -34,12 +38,17 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
         print("Bitte Karte auflegen...")
         while time.time() - start_time < timeout:
             app.processEvents()
-            id, text = reader.read_no_block()
-            if id:
-                uid_hex = format(id, 'X').upper()
-                print(f"Gelesene UID: {uid_hex}")
-                time.sleep(1)
-                break
+
+            (status, tag_type) = reader.MFRC522_Request(reader.PICC_REQIDL)
+
+            if status == reader.MI_OK:
+                (status, uid) = reader.MFRC522_Anticoll()
+                if status == reader.MI_OK:
+                    uid_hex = ''.join(f"{x:02X}" for x in uid)
+                    print(f"Gelesene UID: {uid_hex}")
+                    time.sleep(1)
+                    break
+
             time.sleep(0.1)
 
         if uid_hex is None:
@@ -52,6 +61,7 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
             app.processEvents()
         if created_app:
             app.quit()
+        GPIO.cleanup()
 
     return uid_hex
 
