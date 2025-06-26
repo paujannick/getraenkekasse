@@ -23,6 +23,16 @@ def set_overdraft_limit(limit_cents: int, conn: Optional[sqlite3.Connection] = N
     set_setting('overdraft_limit', str(int(limit_cents)), conn)
 
 
+def get_topup_uid(conn: Optional[sqlite3.Connection] = None) -> str | None:
+    """Return the UID configured as top-up card."""
+    return get_setting('topup_uid', conn)
+
+
+def set_topup_uid(uid: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    """Store the UID of the special top-up card."""
+    set_setting('topup_uid', uid, conn)
+
+
 
 @dataclass
 class User:

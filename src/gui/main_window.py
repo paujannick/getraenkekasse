@@ -62,6 +62,29 @@ class QuantityDialog(QtWidgets.QDialog):
         super().accept()
 
 
+class TopupDialog(QtWidgets.QDialog):
+    """Dialog to choose a top-up amount."""
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Betrag wählen")
+        layout = QtWidgets.QVBoxLayout(self)
+        self.combo = QtWidgets.QComboBox()
+        for val in (5, 10, 20, 50):
+            self.combo.addItem(f"{val} €", val)
+        layout.addWidget(self.combo)
+
+        btns = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        self.btnBox = QtWidgets.QDialogButtonBox(btns)
+        self.btnBox.accepted.connect(self.accept)
+        self.btnBox.rejected.connect(self.reject)
+        layout.addWidget(self.btnBox)
+
+    @property
+    def amount(self) -> int:
+        return int(self.combo.currentData())
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -154,6 +177,10 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
             self.show_start_page()
             return
+        topup_uid = models.get_topup_uid()
+        if topup_uid and uid == topup_uid:
+            self._handle_topup()
+            return
         user = models.get_user_by_uid(uid)
         if not user:
             led.indicate_error()
@@ -197,4 +224,39 @@ class MainWindow(QtWidgets.QMainWindow):
             if widget:
                 widget.deleteLater()
         self._populate_start_page()
+
+    def _handle_topup(self) -> None:
+        dialog = TopupDialog(self)
+        if dialog.exec_() != QtWidgets.QDialog.Accepted:
+            self.show_start_page()
+            return
+        amount = dialog.amount
+        self.info_label.setText("Bitte Zielkarte auflegen…")
+        self.stack.setCurrentWidget(self.info_label)
+        uid = rfid.read_uid(show_dialog=False)
+        if not uid:
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
+            self.show_start_page()
+            return
+        user = models.get_user_by_uid(uid)
+        if not user:
+            led.indicate_error()
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+            self.show_start_page()
+            return
+        old_balance = user.balance
+        if not models.update_balance(user.id, amount * 100):
+            led.indicate_error()
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Aufladen fehlgeschlagen")
+            self.show_start_page()
+            return
+        new_user = models.get_user_by_uid(uid)
+        led.indicate_success()
+        msg = (
+            f"Aufgeladen!\nAltes Guthaben: {old_balance/100:.2f} €\n"
+            f"Neues Guthaben: {new_user.balance/100:.2f} €"
+        )
+        self.info_label.setText(msg)
+        QtCore.QTimer.singleShot(3000, self.show_start_page)
+        self.stack.setCurrentWidget(self.info_label)
 
