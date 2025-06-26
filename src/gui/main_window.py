@@ -94,6 +94,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.info_label = QtWidgets.QLabel()
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
+        font = self.info_label.font()
+        font.setPointSize(24)
+        self.info_label.setFont(font)
         self.stack.addWidget(self.info_label)
 
         self.show_start_page()
