@@ -6,6 +6,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from .. import database
 from .. import models
 from .. import rfid
+from .. import led
 
 
 class QuantityDialog(QtWidgets.QDialog):
@@ -155,6 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         user = models.get_user_by_uid(uid)
         if not user:
+            led.indicate_error()
             QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
             self.show_start_page()
             return
@@ -167,6 +169,7 @@ class MainWindow(QtWidgets.QMainWindow):
         models.update_drink_stock(drink.id, -quantity)
         models.add_transaction(user.id, drink.id, quantity)
         new_user = models.get_user_by_uid(uid)
+        led.indicate_success()
         msg = (
             f"Danke {new_user.name}!\nAltes Guthaben: {old_balance/100:.2f} €\n"
             f"Neues Guthaben: {new_user.balance/100:.2f} €"

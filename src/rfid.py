@@ -5,6 +5,8 @@ from typing import Optional
 import time
 from PyQt5 import QtWidgets, QtCore
 
+from . import led
+
 try:
     from mfrc522 import MFRC522
     import RPi.GPIO as GPIO
@@ -24,6 +26,7 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
         return None
 
     reader = MFRC522()
+    led.indicate_waiting()
 
     app = QtWidgets.QApplication.instance()
     created_app = False
@@ -76,6 +79,7 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
             app.quit()
         if GPIO:
             GPIO.cleanup()
+        led.off()
 
     return uid_hex
 
