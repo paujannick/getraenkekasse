@@ -5,7 +5,7 @@
     <label>Name:<br><input type="text" name="name" value="{{ user['name'] }}"></label><br>
     <label>UID:<br><input type="text" name="uid" id="uid_edit" value="{{ user['rfid_uid'] }}"></label>
     <button type="button" onclick="readUid('uid_edit')">UID lesen</button><br>
-    <label>Guthaben in Cent:<br><input type="number" name="balance" value="{{ user['balance'] }}"></label><br>
+    <label>Guthaben in Euro:<br><input type="number" step="0.01" name="balance" value="{{ (user['balance']/100)|round(2) }}"></label><br>
     <button type="submit">Speichern</button>
 </form>
 <script>

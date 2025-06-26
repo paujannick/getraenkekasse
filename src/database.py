@@ -5,6 +5,8 @@ from typing import Optional
 DB_PATH = Path(__file__).resolve().parent.parent / 'data' / 'getraenkekasse.db'
 
 REFRESH_FLAG = Path(__file__).resolve().parent.parent / 'data' / 'refresh.flag'
+# File that signals the application to terminate
+EXIT_FLAG = Path(__file__).resolve().parent.parent / 'data' / 'exit.flag'
 
 
 _SCHEMA = {
@@ -37,12 +39,21 @@ _SCHEMA = {
         'FOREIGN KEY(user_id) REFERENCES users(id), '
         'FOREIGN KEY(drink_id) REFERENCES drinks(id)'
         ')'
+    ),
+    'config': (
+        'CREATE TABLE IF NOT EXISTS config ('
+        'key TEXT PRIMARY KEY, '
+        'value TEXT'
+        ')'
     )
 }
 
 def get_connection() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+    except sqlite3.Error as e:  # pragma: no cover - hard to trigger in tests
+        raise RuntimeError(f"Datenbank konnte nicht geöffnet werden: {e}") from e
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -52,6 +63,25 @@ def touch_refresh_flag() -> None:
     """Create or update the refresh flag file."""
     REFRESH_FLAG.parent.mkdir(exist_ok=True)
     REFRESH_FLAG.touch()
+
+
+def set_exit_flag() -> None:
+    """Create the exit flag file to signal termination."""
+    EXIT_FLAG.parent.mkdir(exist_ok=True)
+    EXIT_FLAG.touch()
+
+
+def exit_flag_set() -> bool:
+    """Return True if an exit has been requested."""
+    return EXIT_FLAG.exists()
+
+
+def clear_exit_flag() -> None:
+    """Remove the exit flag file if it exists."""
+    try:
+        EXIT_FLAG.unlink()
+    except FileNotFoundError:
+        pass
 
 
 def refresh_needed(last_mtime: float) -> bool:
@@ -70,6 +100,10 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     cursor = conn.cursor()
     for stmt in _SCHEMA.values():
         cursor.execute(stmt)
+    conn.commit()
+    cursor.execute(
+        "INSERT OR IGNORE INTO config (key, value) VALUES ('overdraft_limit', '0')"
+    )
     conn.commit()
     add_sample_data(conn)
     if own_conn:
@@ -99,3 +133,34 @@ def add_sample_data(conn: sqlite3.Connection) -> None:
 
 
     conn.commit()
+
+
+def get_setting(key: str, conn: Optional[sqlite3.Connection] = None) -> str | None:
+    own = False
+    try:
+        if conn is None:
+            conn = get_connection()
+            own = True
+        cur = conn.execute('SELECT value FROM config WHERE key=?', (key,))
+        row = cur.fetchone()
+        return row['value'] if row else None
+    finally:
+        if own and conn is not None:
+            conn.close()
+
+
+def set_setting(key: str, value: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    own = False
+    try:
+        if conn is None:
+            conn = get_connection()
+            own = True
+        conn.execute(
+            'INSERT INTO config (key, value) VALUES (?, ?) '
+            'ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+            (key, value),
+        )
+        conn.commit()
+    finally:
+        if own and conn is not None:
+            conn.close()

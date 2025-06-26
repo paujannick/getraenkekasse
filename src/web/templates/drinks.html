@@ -5,7 +5,7 @@
 
 <tr><th>Name</th><th>Preis</th><th>Lager</th><th>Auffüllen</th><th colspan="2">Aktion</th></tr>
 {% for d in drinks %}
-<tr>
+<tr class="{% if d['stock'] < 0 %}negstock{% endif %}">
 <td>{{ d['name'] }}</td>
 <td>{{ (d['price']/100)|round(2) }} €</td>
 <td>{{ d['stock'] }}</td>

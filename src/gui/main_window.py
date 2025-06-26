@@ -95,6 +95,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.info_label = QtWidgets.QLabel()
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
+        font = self.info_label.font()
+        font.setPointSize(24)
+        self.info_label.setFont(font)
         self.stack.addWidget(self.info_label)
 
         self.show_start_page()
@@ -103,7 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout = self.start_layout
         conn = database.get_connection()
 
-        drinks = models.get_drinks(conn, limit=10)
+        drinks = models.get_drinks(conn, limit=9)
         font = QtGui.QFont()
         font.setPointSize(16)
 
@@ -117,6 +120,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 button.setIconSize(QtCore.QSize(120, 120))
             button.setMinimumSize(220, 140)
 
+            if drink.stock < 0:
+                button.setStyleSheet('background-color:#fdd;')
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
             layout.addWidget(button, r, c)
@@ -155,27 +160,38 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
             self.show_start_page()
             return
+
         led.indicate_success()
         if not models.update_drink_stock(drink.id, -quantity):
             QtWidgets.QMessageBox.information(self, "Lager", "Nicht genug Bestand")
             self.show_start_page()
             return
+
         total_price = drink.price * quantity
         old_balance = user.balance
         if not models.update_balance(user.id, -total_price):
-            QtWidgets.QMessageBox.information(self, "Guthaben", "Nicht genug Guthaben")
+            QtWidgets.QMessageBox.information(self, "Guthaben", "Limit überschritten - bitte Guthaben aufladen")
             self.show_start_page()
             return
+        models.update_drink_stock(drink.id, -quantity)
         models.add_transaction(user.id, drink.id, quantity)
         new_user = models.get_user_by_uid(uid)
-        self.info_label.setText(
+        msg = (
             f"Danke {new_user.name}!\nAltes Guthaben: {old_balance/100:.2f} €\n"
-            f"Neues Guthaben: {new_user.balance/100:.2f} €")
+            f"Neues Guthaben: {new_user.balance/100:.2f} €"
+        )
+        if new_user.balance < 0:
+            msg += "\nBitte Guthaben aufladen!"
+        self.info_label.setText(msg)
         QtCore.QTimer.singleShot(3000, self.show_start_page)
         self.stack.setCurrentWidget(self.info_label)
 
 
     def check_refresh(self) -> None:
+        if database.exit_flag_set():
+            database.clear_exit_flag()
+            QtWidgets.QApplication.quit()
+            return
         if database.refresh_needed(self.refresh_mtime):
             self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime
             self._rebuild_start_page()

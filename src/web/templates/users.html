@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Benutzer</h1>
+{% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
 <table>
 
 <tr><th>Name</th><th>UID</th><th>Guthaben</th><th colspan="2">Aktion</th></tr>
@@ -31,14 +32,25 @@
 <form method="post" action="{{ url_for('users_topup') }}">
     <input type="text" name="uid" id="uid_topup" placeholder="UID">
     <button type="button" onclick="readUid('uid_topup')">UID lesen</button>
+    <span id="name_topup"></span>
     <input type="number" step="0.01" name="amount" placeholder="Betrag in Euro">
     <button type="submit">Aufladen</button>
 </form>
 
 <script>
+function updateName() {
+    var uid = document.getElementById('uid_topup').value;
+    if(!uid) { document.getElementById('name_topup').innerText = ''; return; }
+    fetch('{{ url_for('user_name') }}?uid=' + encodeURIComponent(uid)).then(r => r.json()).then(data => {
+        document.getElementById('name_topup').innerText = data.name || 'Unbekannt';
+    });
+}
+document.getElementById('uid_topup').addEventListener('change', updateName);
 function readUid(targetId) {
     fetch('{{ url_for('read_uid') }}').then(r => r.json()).then(data => {
-        document.getElementById(targetId).value = data.uid;
+        var el = document.getElementById(targetId);
+        el.value = data.uid;
+        if(targetId === 'uid_topup') updateName();
     });
 }
 </script>
