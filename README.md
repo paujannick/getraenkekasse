@@ -46,6 +46,10 @@ zuverlässiger ohne AUTH-Fehler.
    Die GUI zeigt optional ein DRK-Logo im Hintergrund an. Lege dazu eine Bilddatei unter `data/background.png` ab. Ist diese Datei nicht vorhanden, wird kein Hintergrundbild angezeigt.
 
 Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
+Über die Einstellungen lässt sich zudem eine spezielle Aufladekarte definieren.
+Wird diese Karte an der GUI erkannt, erscheint ein Menü, über das ein Betrag
+in 5/10/20/50&nbsp;€ ausgewählt werden kann. Anschließend legt man die zu
+aufladende Karte auf und der Betrag wird gutgeschrieben.
 
 Im Web-Admin lassen sich jetzt sowohl Benutzer als auch Getränke bearbeiten. Für Getränke können optional Logos hochgeladen werden, die in der GUI angezeigt werden.
 

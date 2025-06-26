@@ -94,14 +94,19 @@ def create_app() -> Flask:
     def settings():
         conn = database.get_connection()
         current_limit = models.get_overdraft_limit(conn)
+        current_topup = models.get_topup_uid(conn) or ''
         if request.method == 'POST':
             val = request.form.get('overdraft', type=float)
             if val is not None:
                 models.set_overdraft_limit(int(val * 100), conn)
+            topup_uid = request.form.get('topup_uid')
+            if topup_uid is not None:
+                models.set_topup_uid(topup_uid, conn)
             conn.close()
             return redirect(url_for('settings'))
         conn.close()
-        return render_template('settings.html', overdraft_limit=current_limit)
+        return render_template('settings.html', overdraft_limit=current_limit,
+                               topup_uid=current_topup)
 
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -257,7 +262,10 @@ def create_app() -> Flask:
             user = models.get_user_by_uid(uid)
             if user:
                 models.update_balance(user.id, int(amount_euro * 100))
-        return redirect(url_for('users'))
+                return redirect(url_for('users'))
+            else:
+                return users(error='Unbekannte UID')
+        return users(error='Ungültige Eingabe')
 
 
     @app.route('/users/delete/<int:user_id>')

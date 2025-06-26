@@ -104,6 +104,9 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     cursor.execute(
         "INSERT OR IGNORE INTO config (key, value) VALUES ('overdraft_limit', '0')"
     )
+    cursor.execute(
+        "INSERT OR IGNORE INTO config (key, value) VALUES ('topup_uid', '')"
+    )
     conn.commit()
     add_sample_data(conn)
     if own_conn:
