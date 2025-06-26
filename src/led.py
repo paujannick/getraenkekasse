@@ -13,7 +13,7 @@ except Exception as e:  # pragma: no cover - optional dependency
 
 
 _PORT_CANDIDATES = ["/dev/ttyUSB0", "/dev/ttyACM0"]
-_BAUDRATE = 115200
+_BAUDRATE = 9600
 
 _serial: Optional["serial.Serial"] = None
 
