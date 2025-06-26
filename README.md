@@ -55,28 +55,3 @@ Das Admin-Passwort lässt sich im Web-Admin über den Punkt "Passwort" ändern.
 
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).
-
-## NeoPixel-Status-LED
-
-Die Anwendung kann optional einen NeoPixel-Streifen als Statusanzeige nutzen. 
-Standardmäßig wird dafür der Pin `D12` verwendet. Über die Umgebungsvariable
-`NEOPIXEL_PIN` lässt sich ein anderer Pin wählen, falls die Standardbelegung mit
-weiterer Hardware kollidiert. Schlägt die Initialisierung wegen fehlender
-Berechtigungen fehl (z.B. ohne Root-Rechte), wird die LED-Funktion automatisch
-deaktiviert.
-
-## Pinbelegung
-
-Der RFID-Reader MFRC522 wird wie üblich über SPI angeschlossen:
-
-- SDA an GPIO8 (Pin 24)
-- SCK an GPIO11 (Pin 23)
-- MOSI an GPIO10 (Pin 19)
-- MISO an GPIO9 (Pin 21)
-- RST an GPIO25 (Pin 22)
-- Versorgung über 3V3 (Pin 1) und GND (Pin 6)
-
-Der NeoPixel-Streifen nutzt standardmäßig den Pin `D12` (GPIO18, Pin 12).
-Ein anderer GPIO kann über die Umgebungsvariable `NEOPIXEL_PIN` gewählt werden.
-Um Zugriff auf die GPIO-Pins zu erhalten, sollte `start.sh` per `sudo`
-ausgeführt werden.
