@@ -46,6 +46,13 @@ class QuantityDialog(QtWidgets.QDialog):
         self.btnBox = QtWidgets.QDialogButtonBox(btns)
         self.btnBox.accepted.connect(self.accept)
         self.btnBox.rejected.connect(self.reject)
+        for role in (QtWidgets.QDialogButtonBox.Ok, QtWidgets.QDialogButtonBox.Cancel):
+            btn = self.btnBox.button(role)
+            if btn is not None:
+                f = btn.font()
+                f.setPointSize(16)
+                btn.setFont(f)
+                btn.setMinimumHeight(60)
         layout.addWidget(self.btnBox)
 
     def inc(self) -> None:
@@ -78,6 +85,13 @@ class TopupDialog(QtWidgets.QDialog):
         self.btnBox = QtWidgets.QDialogButtonBox(btns)
         self.btnBox.accepted.connect(self.accept)
         self.btnBox.rejected.connect(self.reject)
+        for role in (QtWidgets.QDialogButtonBox.Ok, QtWidgets.QDialogButtonBox.Cancel):
+            btn = self.btnBox.button(role)
+            if btn is not None:
+                f = btn.font()
+                f.setPointSize(16)
+                btn.setFont(f)
+                btn.setMinimumHeight(60)
         layout.addWidget(self.btnBox)
 
     @property
@@ -153,9 +167,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for btn in (self.buy_button, self.cancel_button):
             f = btn.font()
-            f.setPointSize(16)
+            f.setPointSize(20)
             btn.setFont(f)
-            btn.setMinimumHeight(60)
+            btn.setMinimumHeight(80)
 
         layout.addWidget(self.buy_button, layout.rowCount(), 0)
         layout.addWidget(self.cancel_button, layout.rowCount() - 1, 1)
