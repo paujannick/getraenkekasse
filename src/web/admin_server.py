@@ -425,6 +425,7 @@ def create_app() -> Flask:
         if request.method == 'POST':
             file = request.files.get('file')
             if file and file.filename:
+
                 content = io.StringIO(file.read().decode('utf-8'))
                 reader = csv.DictReader(content)
                 conn = database.get_connection()
@@ -441,6 +442,7 @@ def create_app() -> Flask:
                         conn.execute(
                             'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
                             (name, uid, balance),
+
                         )
                     except sqlite3.IntegrityError:
                         pass

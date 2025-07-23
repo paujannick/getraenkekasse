@@ -3,9 +3,11 @@
 <h1>Guthaben aufladen</h1>
 <form method="post" action="{{ url_for('topup_submit') }}">
     <label>UID scannen:<br>
+
         <input type="text" name="uid" id="uid_scan" onchange="updateName()">
         <button type="button" onclick="readUid('uid_scan')">UID lesen</button>
         <span id="scan_name"></span>
+
     </label>
     <p><strong>oder</strong></p>
     <label>Benutzername:<br>
@@ -25,6 +27,7 @@
 function readUid(target){
     fetch('{{ url_for('read_uid') }}').then(r=>r.json()).then(d=>{
         document.getElementById(target).value=d.uid;
+
         if(target==='uid_scan') updateName();
     });
 }
@@ -36,5 +39,6 @@ function updateName(){
           document.getElementById('scan_name').innerText = d.name || 'Benutzer nicht verf\u00fcgbar';
       });
 }
+
 </script>
 {% endblock %}

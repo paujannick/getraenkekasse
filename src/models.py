@@ -120,6 +120,7 @@ def update_drink_stock(drink_id: int, diff: int) -> bool:
         return False
 
 
+
 def get_cash_user_id(conn: Optional[sqlite3.Connection] = None) -> int:
     """Ensure a special user for cash payments exists and return its id."""
     own = False
