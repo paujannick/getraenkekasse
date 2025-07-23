@@ -15,4 +15,16 @@
 <form method="post" action="{{ url_for('log_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
     <button type="submit">Log löschen</button>
 </form>
+
+<h2>Auffüllungen</h2>
+<table>
+<tr><th>Zeitpunkt</th><th>Getränk</th><th>Menge</th></tr>
+{% for r in restocks %}
+<tr>
+<td>{{ r['timestamp'] }}</td>
+<td>{{ r['drink_name'] }}</td>
+<td>{{ r['quantity'] }}</td>
+</tr>
+{% endfor %}
+</table>
 {% endblock %}
