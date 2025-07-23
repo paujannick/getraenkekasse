@@ -120,6 +120,88 @@ def update_drink_stock(drink_id: int, diff: int) -> bool:
         return False
 
 
+def get_cash_user_id(conn: Optional[sqlite3.Connection] = None) -> int:
+    """Ensure a special user for cash payments exists and return its id."""
+    own = False
+    if conn is None:
+        conn = get_connection()
+        own = True
+    cur = conn.execute("SELECT id FROM users WHERE name='BARZAHLUNG'")
+    row = cur.fetchone()
+    if row:
+        uid = row['id']
+    else:
+        conn.execute(
+            "INSERT INTO users (name, rfid_uid, balance) VALUES ('BARZAHLUNG', 'CASH', 0)"
+        )
+        conn.commit()
+        uid = conn.execute("SELECT id FROM users WHERE name='BARZAHLUNG'").fetchone()['id']
+    if own:
+        conn.close()
+    return uid
+
+
+def log_restock(drink_id: int, quantity: int) -> None:
+    """Record a restock event."""
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                'INSERT INTO restocks (drink_id, quantity) VALUES (?, ?)',
+                (drink_id, quantity),
+            )
+            conn.commit()
+    except sqlite3.Error as e:  # pragma: no cover - DB failure
+        print(f"Fehler beim Schreiben der Auffüllung: {e}")
+
+
+def get_restock_log(limit: int | None = None) -> list[sqlite3.Row]:
+    try:
+        with get_connection() as conn:
+            query = (
+                'SELECT r.timestamp, d.name as drink_name, r.quantity '
+                'FROM restocks r JOIN drinks d ON d.id = r.drink_id '
+                'ORDER BY r.timestamp DESC'
+            )
+            if limit is not None:
+                query += f' LIMIT {int(limit)}'
+            cur = conn.execute(query)
+            return cur.fetchall()
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Lesen der Auffüllungen: {e}")
+        return []
+
+
+def add_topup(user_id: int, amount: int) -> None:
+    """Store a top-up event and keep only the most recent 50."""
+    try:
+        with get_connection() as conn:
+            conn.execute(
+                'INSERT INTO topups (user_id, amount) VALUES (?, ?)',
+                (user_id, amount),
+            )
+            conn.execute(
+                'DELETE FROM topups WHERE id NOT IN ('
+                'SELECT id FROM topups ORDER BY id DESC LIMIT 50)'
+            )
+            conn.commit()
+    except sqlite3.Error as e:  # pragma: no cover - DB failure
+        print(f"Fehler beim Schreiben der Aufladung: {e}")
+
+
+def get_topup_log() -> list[sqlite3.Row]:
+    try:
+        with get_connection() as conn:
+            cur = conn.execute(
+                'SELECT t.timestamp, u.name as user_name, t.amount '
+                'FROM topups t JOIN users u ON u.id = t.user_id '
+                'ORDER BY t.timestamp DESC'
+            )
+            return cur.fetchall()
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Lesen der Aufladungen: {e}")
+        return []
+
+
 def get_drink_by_id(drink_id: int) -> Optional[Drink]:
     try:
         with get_connection() as conn:

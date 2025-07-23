@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Benutzer importieren</h1>
+<form method="post" enctype="multipart/form-data">
+    <input type="file" name="file">
+    <button type="submit">Importieren</button>
+</form>
+<p>CSV Spalten: name, uid, balance_euro</p>
+{% endblock %}

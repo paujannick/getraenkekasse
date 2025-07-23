@@ -40,6 +40,24 @@ _SCHEMA = {
         'FOREIGN KEY(drink_id) REFERENCES drinks(id)'
         ')'
     ),
+    'restocks': (
+        'CREATE TABLE IF NOT EXISTS restocks ('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        'drink_id INTEGER NOT NULL, '
+        'quantity INTEGER NOT NULL, '
+        'timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,'
+        'FOREIGN KEY(drink_id) REFERENCES drinks(id)'
+        ')'
+    ),
+    'topups': (
+        'CREATE TABLE IF NOT EXISTS topups ('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        'user_id INTEGER NOT NULL, '
+        'amount INTEGER NOT NULL, '
+        'timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,'
+        'FOREIGN KEY(user_id) REFERENCES users(id)'
+        ')'
+    ),
     'config': (
         'CREATE TABLE IF NOT EXISTS config ('
         'key TEXT PRIMARY KEY, '
@@ -123,6 +141,7 @@ def add_sample_data(conn: sqlite3.Connection) -> None:
         conn.execute(
             'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
             ('Bob', 'TESTCARD456', 500))
+    conn.execute("INSERT OR IGNORE INTO users (name, rfid_uid, balance) VALUES ('BARZAHLUNG', 'CASH', 0)")
 
     cur = conn.execute('SELECT COUNT(*) FROM drinks')
     if cur.fetchone()[0] == 0:
