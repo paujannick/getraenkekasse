@@ -6,9 +6,14 @@
     <title>Admin</title>
     <style>
         body { margin:0; padding:0; font-family: Arial, sans-serif; background:#f0f0f0; }
-        nav { background:#003366; padding:1em; }
-        nav a { color:#fff; text-decoration:none; margin-right:1em; font-size:1.1em; }
-nav a:hover { text-decoration:underline; }
+        nav { background:#003366; padding:0; }
+        nav ul { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; }
+        nav li { position:relative; }
+        nav a { color:#fff; text-decoration:none; padding:1em; display:block; font-size:1.1em; }
+        nav li:hover > a { background:#00224d; }
+        nav .submenu { display:none; position:absolute; left:0; top:100%; background:#003366; min-width:180px; z-index:5; }
+        nav .submenu li { width:100%; }
+        nav li:hover .submenu { display:block; }
         .container { max-width:1000px; margin:1em auto; background:#fff; padding:1em; box-shadow:0 0 10px rgba(0,0,0,0.1); }
         table { width:100%; border-collapse:collapse; margin-bottom:1em; }
         th, td { border:1px solid #ccc; padding:0.5em; text-align:left; }
@@ -20,39 +25,45 @@ nav a:hover { text-decoration:underline; }
         .info { color:green; }
         .negstock { background:#fdd; }
         @media(max-width:600px){
-            nav a { display:block; margin:0.5em 0; }
+            nav ul { flex-direction:column; }
+            nav .submenu { position:static; display:none; }
+            nav li:hover .submenu { display:block; }
             table { font-size:0.9em; }
         }
     </style>
 </head>
 <body>
 <nav>
-    <a href="{{ url_for('index') }}">Home</a>
+    <ul class="menu">
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="dropdown"><a href="#">Getränke</a>
+            <ul class="submenu">
+                <li><a href="{{ url_for('drinks') }}">Verwalten</a></li>
+                <li><a href="{{ url_for('export_inventory') }}">CSV Bestand</a></li>
+                <li><a href="{{ url_for('export_restocks') }}">CSV Auffüllungen</a></li>
+            </ul>
+        </li>
+        <li class="dropdown"><a href="#">Benutzer</a>
+            <ul class="submenu">
+                <li><a href="{{ url_for('users') }}">Verwalten</a></li>
+                <li><a href="{{ url_for('topup') }}">Aufladen</a></li>
+                <li><a href="{{ url_for('topup_log') }}">Aufladungen</a></li>
+                <li><a href="{{ url_for('export_topups') }}">CSV Aufladungen</a></li>
+                <li><a href="{{ url_for('export_users') }}">CSV Benutzer</a></li>
+                <li><a href="{{ url_for('import_users') }}">Import Benutzer</a></li>
+            </ul>
+        </li>
+        <li class="dropdown"><a href="#">Logs</a>
+            <ul class="submenu">
+                <li><a href="{{ url_for('log') }}">Verkäufe</a></li>
+                <li><a href="{{ url_for('export_transactions') }}">CSV Verkäufe</a></li>
+            </ul>
+        </li>
+        <li><a href="{{ url_for('settings') }}">Einstellungen</a></li>
+        <li><a href="{{ url_for('change_password') }}">Passwort</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+    </ul>
 
-    <details style="display:inline-block">
-        <summary style="color:#fff; cursor:pointer">Getränke</summary>
-        <a href="{{ url_for('drinks') }}">Verwalten</a>
-        <a href="{{ url_for('export_inventory') }}">CSV Bestand</a>
-        <a href="{{ url_for('export_restocks') }}">CSV Auffüllungen</a>
-    </details>
-    <details style="display:inline-block">
-        <summary style="color:#fff; cursor:pointer">Benutzer</summary>
-        <a href="{{ url_for('users') }}">Verwalten</a>
-        <a href="{{ url_for('topup') }}">Aufladen</a>
-        <a href="{{ url_for('topup_log') }}">Aufladungen</a>
-        <a href="{{ url_for('export_topups') }}">CSV Aufladungen</a>
-        <a href="{{ url_for('export_users') }}">CSV Benutzer</a>
-        <a href="{{ url_for('import_users') }}">Import Benutzer</a>
-    </details>
-    <details style="display:inline-block">
-        <summary style="color:#fff; cursor:pointer">Logs</summary>
-        <a href="{{ url_for('log') }}">Verkäufe</a>
-        <a href="{{ url_for('export_transactions') }}">CSV Verkäufe</a>
-    </details>
-    <a href="{{ url_for('settings') }}">Einstellungen</a>
-    <a href="{{ url_for('change_password') }}">Passwort</a>
-
-    <a href="{{ url_for('logout') }}">Logout</a>
 </nav>
 <div class="container">
 {% block content %}{% endblock %}

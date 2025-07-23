@@ -426,14 +426,21 @@ def create_app() -> Flask:
             file = request.files.get('file')
             if file and file.filename:
 
-                content = io.StringIO(file.read().decode('utf-8'))
-                reader = csv.DictReader(content)
+                raw = file.read().decode('utf-8')
+                try:
+                    dialect = csv.Sniffer().sniff(raw.splitlines()[0], delimiters=',;')
+                except csv.Error:
+                    dialect = csv.get_dialect('excel')
+                reader = csv.DictReader(io.StringIO(raw), dialect=dialect)
                 conn = database.get_connection()
                 for row in reader:
-                    name = row.get('name')
-                    uid = row.get('uid')
+                    name = (row.get('name') or '').strip()
+                    uid = (row.get('uid') or '').strip()
+                    val = row.get('balance_euro') or row.get('balance') or '0'
+                    val = val.replace(',', '.')
                     try:
-                        balance = int(float(row.get('balance_euro') or 0) * 100)
+                        balance = int(float(val) * 100)
+
                     except ValueError:
                         balance = 0
                     if not name or not uid:

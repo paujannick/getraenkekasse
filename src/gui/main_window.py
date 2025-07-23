@@ -159,6 +159,10 @@ class MainWindow(QtWidgets.QMainWindow):
         font = QtGui.QFont()
         font.setPointSize(16)
 
+        rows = (len(drinks) + 2) // 3
+        for row in range(rows):
+            layout.setRowStretch(row, 1)
+
         for idx, drink in enumerate(drinks):
             button = QtWidgets.QPushButton()
             button.setText(f"{drink.name}\n{drink.price/100:.2f} €")
@@ -183,8 +187,10 @@ class MainWindow(QtWidgets.QMainWindow):
             btn.setFont(f)
             btn.setMinimumHeight(80)
 
-        layout.addWidget(self.buy_button, layout.rowCount(), 0)
-        layout.addWidget(self.cancel_button, layout.rowCount() - 1, 1)
+        bottom = layout.rowCount()
+        layout.addWidget(self.buy_button, bottom, 0)
+        layout.addWidget(self.cancel_button, bottom, 1)
+        layout.setRowStretch(bottom, 0)
         self.buy_button.hide()
         self.cancel_button.hide()
 
