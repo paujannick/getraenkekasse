@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Guthaben aufladen</h1>
+<form method="post" action="{{ url_for('topup_submit') }}">
+    <label>UID scannen:<br>
+        <input type="text" name="uid" id="uid_scan">
+        <button type="button" onclick="readUid('uid_scan')">UID lesen</button>
+    </label>
+    <p><strong>oder</strong></p>
+    <label>Benutzername:<br>
+        <input list="userlist" name="user_name" id="user_name">
+        <datalist id="userlist">
+            {% for u in users %}
+            <option value="{{ u['name'] }}">
+            {% endfor %}
+        </datalist>
+    </label>
+    <label>Betrag in Euro:<br>
+        <input type="number" step="0.01" name="amount">
+    </label>
+    <button type="submit">Aufladen</button>
+</form>
+<script>
+function readUid(target){
+    fetch('{{ url_for('read_uid') }}').then(r=>r.json()).then(d=>{
+        document.getElementById(target).value=d.uid;
+    });
+}
+</script>
+{% endblock %}
