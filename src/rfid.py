@@ -60,7 +60,10 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
             if status == reader.MI_OK:
                 (status, uid) = reader.MFRC522_Anticoll()
                 if status == reader.MI_OK:
-                    uid_hex = ''.join(f"{x:02X}" for x in uid)
+                    # The MFRC522 library returns five bytes where the last
+                    # byte is a BCC/checksum. Only return the first four bytes
+                    # to match the actual card UID.
+                    uid_hex = ''.join(f"{x:02X}" for x in uid[:4])
                     print(f"Gelesene UID: {uid_hex}")
                     time.sleep(1)
                     break
