@@ -44,16 +44,20 @@ class QuantityDialog(QtWidgets.QDialog):
 
         btns = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
         self.btnBox = QtWidgets.QDialogButtonBox(btns)
+        self.cash_btn = QtWidgets.QPushButton("Barzahlung")
+        self.btnBox.addButton(self.cash_btn, QtWidgets.QDialogButtonBox.ActionRole)
+        self.cash_btn.clicked.connect(self.cash)
         self.btnBox.accepted.connect(self.accept)
         self.btnBox.rejected.connect(self.reject)
-        for role in (QtWidgets.QDialogButtonBox.Ok, QtWidgets.QDialogButtonBox.Cancel):
-            btn = self.btnBox.button(role)
+        for btn in [self.cash_btn, self.btnBox.button(QtWidgets.QDialogButtonBox.Ok),
+                    self.btnBox.button(QtWidgets.QDialogButtonBox.Cancel)]:
             if btn is not None:
                 f = btn.font()
                 f.setPointSize(16)
                 btn.setFont(f)
                 btn.setMinimumHeight(60)
         layout.addWidget(self.btnBox)
+        self._cash = False
 
     def inc(self) -> None:
         if self.quantity < 10:
@@ -67,6 +71,14 @@ class QuantityDialog(QtWidgets.QDialog):
 
     def accept(self) -> None:
         super().accept()
+
+    def cash(self) -> None:
+        self._cash = True
+        self.accept()
+
+    @property
+    def is_cash(self) -> bool:
+        return self._cash
 
 
 class TopupDialog(QtWidgets.QDialog):
@@ -147,6 +159,10 @@ class MainWindow(QtWidgets.QMainWindow):
         font = QtGui.QFont()
         font.setPointSize(16)
 
+        rows = (len(drinks) + 2) // 3
+        for row in range(rows):
+            layout.setRowStretch(row, 1)
+
         for idx, drink in enumerate(drinks):
             button = QtWidgets.QPushButton()
             button.setText(f"{drink.name}\n{drink.price/100:.2f} €")
@@ -171,8 +187,10 @@ class MainWindow(QtWidgets.QMainWindow):
             btn.setFont(f)
             btn.setMinimumHeight(80)
 
-        layout.addWidget(self.buy_button, layout.rowCount(), 0)
-        layout.addWidget(self.cancel_button, layout.rowCount() - 1, 1)
+        bottom = layout.rowCount()
+        layout.addWidget(self.buy_button, bottom, 0)
+        layout.addWidget(self.cancel_button, bottom, 1)
+        layout.setRowStretch(bottom, 0)
         self.buy_button.hide()
         self.cancel_button.hide()
 
@@ -184,6 +202,15 @@ class MainWindow(QtWidgets.QMainWindow):
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
         quantity = dialog.quantity
+        if dialog.is_cash:
+            models.update_drink_stock(drink.id, -quantity)
+            cash_id = models.get_cash_user_id()
+            models.add_transaction(cash_id, drink.id, quantity)
+            led.indicate_success()
+            self.info_label.setText("Barverkauf verbucht")
+            self.stack.setCurrentWidget(self.info_label)
+            QtCore.QTimer.singleShot(2000, self.show_start_page)
+            return
         self.info_label.setText("Bitte Karte auflegen…")
         self.stack.setCurrentWidget(self.info_label)
         uid = rfid.read_uid(show_dialog=False)
@@ -218,8 +245,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if new_user.balance < 0:
             msg += "\nBitte Guthaben aufladen!"
         self.info_label.setText(msg)
-        QtCore.QTimer.singleShot(3000, self.show_start_page)
         self.stack.setCurrentWidget(self.info_label)
+        QtWidgets.QApplication.processEvents()
+        QtCore.QTimer.singleShot(4000, self.show_start_page)
 
 
     def check_refresh(self) -> None:
@@ -227,7 +255,7 @@ class MainWindow(QtWidgets.QMainWindow):
             database.clear_exit_flag()
             QtWidgets.QApplication.quit()
             return
-        if database.refresh_needed(self.refresh_mtime):
+        if self.stack.currentWidget() is self.start_page and database.refresh_needed(self.refresh_mtime):
             self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime
             self._rebuild_start_page()
 

@@ -184,6 +184,7 @@ def create_app() -> Flask:
                 conn.execute('UPDATE drinks SET stock=? WHERE id=?', (new_stock, drink_id))
                 conn.commit()
                 conn.close()
+                models.log_restock(drink_id, amount)
                 database.touch_refresh_flag()
             else:
                 conn.close()
@@ -226,6 +227,45 @@ def create_app() -> Flask:
         conn.close()
         return render_template('users.html', users=items, error=error)
 
+    @app.route('/topup')
+    @login_required
+    def topup():
+        conn = database.get_connection()
+        cur = conn.execute('SELECT id, name FROM users ORDER BY name')
+        items = cur.fetchall()
+        conn.close()
+        return render_template('topup.html', users=items)
+
+    @app.route('/topup/submit', methods=['POST'])
+    @login_required
+    def topup_submit():
+        uid = request.form.get('uid')
+        name = request.form.get('user_name')
+        amount_euro = request.form.get('amount', type=float)
+        if amount_euro is None:
+            return redirect(url_for('topup'))
+        user = None
+        if uid:
+            user = models.get_user_by_uid(uid)
+        elif name:
+            conn = database.get_connection()
+            cur = conn.execute('SELECT * FROM users WHERE name=?', (name,))
+            row = cur.fetchone()
+            conn.close()
+            if row:
+                user = models.User(**row)
+        if user:
+            cents = int(amount_euro * 100)
+            models.update_balance(user.id, cents)
+            models.add_topup(user.id, cents)
+        return redirect(url_for('topup'))
+
+    @app.route('/topup_log')
+    @login_required
+    def topup_log():
+        items = models.get_topup_log()
+        return render_template('topup_log.html', items=items)
+
     @app.route('/users/add', methods=['POST'])
     @login_required
     def user_add():
@@ -261,7 +301,9 @@ def create_app() -> Flask:
         if uid and amount_euro is not None:
             user = models.get_user_by_uid(uid)
             if user:
-                models.update_balance(user.id, int(amount_euro * 100))
+                cents = int(amount_euro * 100)
+                models.update_balance(user.id, cents)
+                models.add_topup(user.id, cents)
                 return redirect(url_for('users'))
             else:
                 return users(error='Unbekannte UID')
@@ -307,14 +349,16 @@ def create_app() -> Flask:
             'JOIN drinks d ON d.id = t.drink_id '
             'ORDER BY t.timestamp DESC LIMIT 100')
         items = cur.fetchall()
+        restocks = models.get_restock_log(100)
         conn.close()
-        return render_template('log.html', items=items)
+        return render_template('log.html', items=items, restocks=restocks)
 
     @app.route('/log/clear', methods=['POST'])
     @login_required
     def log_clear():
         conn = database.get_connection()
         conn.execute('DELETE FROM transactions')
+        conn.execute('DELETE FROM restocks')
         conn.commit()
         conn.close()
         return redirect(url_for('log'))
@@ -356,6 +400,87 @@ def create_app() -> Flask:
         resp = make_response(out.getvalue())
         resp.headers['Content-Type'] = 'text/csv'
         resp.headers['Content-Disposition'] = 'attachment; filename=inventory.csv'
+        return resp
+
+    @app.route('/export/users')
+    @login_required
+    def export_users():
+        conn = database.get_connection()
+        cur = conn.execute('SELECT name, rfid_uid, balance FROM users ORDER BY name')
+        rows = cur.fetchall()
+        conn.close()
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['name', 'uid', 'balance_euro'])
+        for r in rows:
+            writer.writerow([r['name'], r['rfid_uid'], f"{r['balance']/100:.2f}"])
+        resp = make_response(out.getvalue())
+        resp.headers['Content-Type'] = 'text/csv'
+        resp.headers['Content-Disposition'] = 'attachment; filename=users.csv'
+        return resp
+
+    @app.route('/import/users', methods=['GET', 'POST'])
+    @login_required
+    def import_users():
+        if request.method == 'POST':
+            file = request.files.get('file')
+            if file and file.filename:
+                raw = file.read().decode('utf-8')
+                try:
+                    dialect = csv.Sniffer().sniff(raw.splitlines()[0], delimiters=',;')
+                except csv.Error:
+                    dialect = csv.get_dialect('excel')
+                reader = csv.DictReader(io.StringIO(raw), dialect=dialect)
+                conn = database.get_connection()
+                for row in reader:
+                    name = (row.get('name') or '').strip()
+                    uid = (row.get('uid') or '').strip()
+                    val = row.get('balance_euro') or row.get('balance') or '0'
+                    val = val.replace(',', '.')
+                    try:
+                        balance = int(float(val) * 100)
+                    except ValueError:
+                        balance = 0
+                    if not name or not uid:
+                        continue
+                    try:
+                        conn.execute(
+                            'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
+                            (name, uid, balance),
+                        )
+                    except sqlite3.IntegrityError:
+                        pass
+                conn.commit()
+                conn.close()
+            return redirect(url_for('users'))
+        return render_template('import_users.html')
+
+    @app.route('/export/restocks')
+    @login_required
+    def export_restocks():
+        rows = models.get_restock_log()
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['timestamp', 'drink', 'quantity'])
+        for r in rows:
+            writer.writerow([r['timestamp'], r['drink_name'], r['quantity']])
+        resp = make_response(out.getvalue())
+        resp.headers['Content-Type'] = 'text/csv'
+        resp.headers['Content-Disposition'] = 'attachment; filename=restocks.csv'
+        return resp
+
+    @app.route('/export/topups')
+    @login_required
+    def export_topups():
+        rows = models.get_topup_log()
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['timestamp', 'user', 'amount_euro'])
+        for r in rows:
+            writer.writerow([r['timestamp'], r['user_name'], f"{r['amount']/100:.2f}"])
+        resp = make_response(out.getvalue())
+        resp.headers['Content-Type'] = 'text/csv'
+        resp.headers['Content-Disposition'] = 'attachment; filename=topups.csv'
         return resp
 
     return app

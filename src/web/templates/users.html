@@ -14,7 +14,7 @@
 <td>{{ (u['balance']/100)|round(2) }} €</td>
 
 <td><a href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a></td>
-<td><a href="{{ url_for('user_delete', user_id=u['id']) }}">Löschen</a></td>
+<td><a href="{{ url_for('user_delete', user_id=u['id']) }}" onclick="return confirm('Benutzer wirklich löschen?');">Löschen</a></td>
 </tr>
 {% endfor %}
 </table>
@@ -29,6 +29,7 @@
 </form>
 
 <h2>Guthaben aufladen</h2>
+<p>Für eine komfortable Ansicht siehe <a href="{{ url_for('topup') }}">Aufladen</a>.</p>
 <form method="post" action="{{ url_for('users_topup') }}">
     <input type="text" name="uid" id="uid_topup" placeholder="UID">
     <button type="button" onclick="readUid('uid_topup')">UID lesen</button>
