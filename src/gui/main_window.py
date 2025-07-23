@@ -218,8 +218,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if new_user.balance < 0:
             msg += "\nBitte Guthaben aufladen!"
         self.info_label.setText(msg)
-        QtCore.QTimer.singleShot(3000, self.show_start_page)
         self.stack.setCurrentWidget(self.info_label)
+        QtWidgets.QApplication.processEvents()
+        QtCore.QTimer.singleShot(4000, self.show_start_page)
 
 
     def check_refresh(self) -> None:
@@ -227,7 +228,7 @@ class MainWindow(QtWidgets.QMainWindow):
             database.clear_exit_flag()
             QtWidgets.QApplication.quit()
             return
-        if database.refresh_needed(self.refresh_mtime):
+        if self.stack.currentWidget() is self.start_page and database.refresh_needed(self.refresh_mtime):
             self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime
             self._rebuild_start_page()
 

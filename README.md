@@ -59,3 +59,19 @@ Das Admin-Passwort lässt sich im Web-Admin über den Punkt "Passwort" ändern.
 
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).
+
+## Update von älteren Versionen
+
+Um die neuen Funktionen (z.B. Auflade- und Bestandslog) ohne Datenverlust zu nutzen,
+reicht es aus, das Repository zu aktualisieren und die Datenbanktabellen anzulegen.
+Führe dazu einfach folgende Schritte aus:
+
+```bash
+# Im Projektordner
+./update.sh
+```
+
+Das Skript holt die neuesten Dateien, installiert benötigte Pakete und ruft
+`init_db()` auf. Bestehende Daten wie Benutzer, Guthaben, Bilder und Getränke
+bleiben erhalten. Beim Start des Webservers werden neue Tabellen automatisch
+verwendet.
