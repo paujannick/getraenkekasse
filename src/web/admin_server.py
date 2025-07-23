@@ -425,6 +425,7 @@ def create_app() -> Flask:
         if request.method == 'POST':
             file = request.files.get('file')
             if file and file.filename:
+
                 raw = file.read().decode('utf-8')
                 try:
                     dialect = csv.Sniffer().sniff(raw.splitlines()[0], delimiters=',;')
@@ -439,6 +440,7 @@ def create_app() -> Flask:
                     val = val.replace(',', '.')
                     try:
                         balance = int(float(val) * 100)
+
                     except ValueError:
                         balance = 0
                     if not name or not uid:
@@ -447,6 +449,7 @@ def create_app() -> Flask:
                         conn.execute(
                             'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
                             (name, uid, balance),
+
                         )
                     except sqlite3.IntegrityError:
                         pass
