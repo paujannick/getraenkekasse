@@ -11,4 +11,18 @@
     <button type="submit">Beenden</button>
 </form>
 
+{% if to_buy %}
+<h2>Nachkaufen</h2>
+<table>
+<tr><th>Getränk</th><th>Bestand</th><th>Mindest</th></tr>
+{% for d in to_buy %}
+<tr class="{% if d.stock < d.min_stock %}negstock{% endif %}">
+<td>{{ d.name }}</td>
+<td>{{ d.stock }}</td>
+<td>{{ d.min_stock }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+
 {% endblock %}

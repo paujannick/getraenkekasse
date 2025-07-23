@@ -25,7 +25,8 @@ _SCHEMA = {
         'price INTEGER NOT NULL, '
 
         'image TEXT, '
-        'stock INTEGER NOT NULL DEFAULT 0'
+        'stock INTEGER NOT NULL DEFAULT 0, '
+        'min_stock INTEGER NOT NULL DEFAULT 0'
 
         ')'
     ),
@@ -125,6 +126,9 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     cursor.execute(
         "INSERT OR IGNORE INTO config (key, value) VALUES ('topup_uid', '')"
     )
+    cursor.execute(
+        "INSERT OR IGNORE INTO config (key, value) VALUES ('admin_pin', '1234')"
+    )
     conn.commit()
     add_sample_data(conn)
     if own_conn:
@@ -147,11 +151,11 @@ def add_sample_data(conn: sqlite3.Connection) -> None:
     if cur.fetchone()[0] == 0:
         conn.execute(
 
-            'INSERT INTO drinks (name, price, stock) VALUES (?, ?, ?)',
-            ('Wasser', 150, 20))
+            'INSERT INTO drinks (name, price, stock, min_stock) VALUES (?, ?, ?, ?)',
+            ('Wasser', 150, 20, 5))
         conn.execute(
-            'INSERT INTO drinks (name, price, stock) VALUES (?, ?, ?)',
-            ('Cola', 200, 15))
+            'INSERT INTO drinks (name, price, stock, min_stock) VALUES (?, ?, ?, ?)',
+            ('Cola', 200, 15, 5))
 
 
     conn.commit()

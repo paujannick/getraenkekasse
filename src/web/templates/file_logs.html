@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Programmlogs</h1>
+{% if files %}
+<table>
+<tr><th>Datei</th><th>Aktion</th></tr>
+{% for f in files %}
+<tr><td>{{ f }}</td>
+<td>
+<form method="post" action="{{ url_for('file_logs_delete', name=f) }}" onsubmit="return confirm('Log wirklich löschen?');">
+<button type="submit">Löschen</button>
+</form>
+</td></tr>
+{% endfor %}
+</table>
+{% else %}
+<p>Keine Logs vorhanden.</p>
+{% endif %}
+{% endblock %}

@@ -51,7 +51,10 @@ def create_app() -> Flask:
     def index():
         if not session.get('user'):
             return redirect(url_for('login'))
-        return render_template('index.html')
+        conn = database.get_connection()
+        to_buy = models.get_drinks_below_min(conn)
+        conn.close()
+        return render_template('index.html', to_buy=to_buy)
 
 
     @app.route('/refresh', methods=['POST'])
@@ -95,6 +98,7 @@ def create_app() -> Flask:
         conn = database.get_connection()
         current_limit = models.get_overdraft_limit(conn)
         current_topup = models.get_topup_uid(conn) or ''
+        current_pin = models.get_admin_pin(conn)
         if request.method == 'POST':
             val = request.form.get('overdraft', type=float)
             if val is not None:
@@ -102,11 +106,15 @@ def create_app() -> Flask:
             topup_uid = request.form.get('topup_uid')
             if topup_uid is not None:
                 models.set_topup_uid(topup_uid, conn)
+            pin_val = request.form.get('admin_pin')
+            if pin_val is not None:
+                models.set_admin_pin(pin_val, conn)
             conn.close()
             return redirect(url_for('settings'))
         conn.close()
         return render_template('settings.html', overdraft_limit=current_limit,
-                               topup_uid=current_topup)
+                               topup_uid=current_topup,
+                               admin_pin=current_pin)
 
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -141,6 +149,7 @@ def create_app() -> Flask:
         name = request.form.get('name')
         price_euro = request.form.get('price', type=float)
         stock = request.form.get('stock', type=int)
+        min_stock = request.form.get('min_stock', type=int)
         image_file = request.files.get('image')
         image_path = None
         if image_file and image_file.filename:
@@ -154,8 +163,8 @@ def create_app() -> Flask:
             price = int(price_euro * 100)
             conn = database.get_connection()
             conn.execute(
-                'INSERT INTO drinks (name, price, stock, image) VALUES (?, ?, ?, ?)',
-                (name, price, stock or 0, image_path))
+                'INSERT INTO drinks (name, price, stock, min_stock, image) VALUES (?, ?, ?, ?, ?)',
+                (name, price, stock or 0, min_stock or 0, image_path))
             conn.commit()
             conn.close()
             database.touch_refresh_flag()
@@ -198,6 +207,7 @@ def create_app() -> Flask:
             name = request.form.get('name')
             price_euro = request.form.get('price', type=float)
             stock = request.form.get('stock', type=int)
+            min_stock = request.form.get('min_stock', type=int)
             image_path = request.form.get('current_image') or None
             image_file = request.files.get('image')
             if image_file and image_file.filename:
@@ -207,8 +217,8 @@ def create_app() -> Flask:
                 image_file.save(dest)
                 image_path = str(dest)
             conn.execute(
-                'UPDATE drinks SET name=?, price=?, stock=?, image=? WHERE id=?',
-                (name, int(price_euro * 100), stock or 0, image_path, drink_id))
+                'UPDATE drinks SET name=?, price=?, stock=?, min_stock=?, image=? WHERE id=?',
+                (name, int(price_euro * 100), stock or 0, min_stock or 0, image_path, drink_id))
             conn.commit()
             conn.close()
             database.touch_refresh_flag()
@@ -265,6 +275,15 @@ def create_app() -> Flask:
     def topup_log():
         items = models.get_topup_log()
         return render_template('topup_log.html', items=items)
+
+    @app.route('/topup_log/clear', methods=['POST'])
+    @login_required
+    def topup_log_clear():
+        conn = database.get_connection()
+        conn.execute('DELETE FROM topups')
+        conn.commit()
+        conn.close()
+        return redirect(url_for('topup_log'))
 
     @app.route('/users/add', methods=['POST'])
     @login_required
@@ -359,6 +378,7 @@ def create_app() -> Flask:
         conn = database.get_connection()
         conn.execute('DELETE FROM transactions')
         conn.execute('DELETE FROM restocks')
+        conn.execute('DELETE FROM topups')
         conn.commit()
         conn.close()
         return redirect(url_for('log'))
@@ -485,6 +505,24 @@ def create_app() -> Flask:
         resp.headers['Content-Type'] = 'text/csv'
         resp.headers['Content-Disposition'] = 'attachment; filename=topups.csv'
         return resp
+
+    @app.route('/file_logs')
+    @login_required
+    def file_logs():
+        log_dir = Path(__file__).resolve().parents[1] / 'logs'
+        files = []
+        if log_dir.exists():
+            files = sorted(log_dir.glob('log_*.txt'))
+        return render_template('file_logs.html', files=[f.name for f in files])
+
+    @app.route('/file_logs/delete/<name>', methods=['POST'])
+    @login_required
+    def file_logs_delete(name: str):
+        log_dir = Path(__file__).resolve().parents[1] / 'logs'
+        target = log_dir / name
+        if target.exists() and target.is_file():
+            target.unlink()
+        return redirect(url_for('file_logs'))
 
     return app
 

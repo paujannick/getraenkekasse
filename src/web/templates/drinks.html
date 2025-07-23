@@ -3,12 +3,13 @@
 <h1>Getränke</h1>
 <table>
 
-<tr><th>Name</th><th>Preis</th><th>Lager</th><th>Auffüllen</th><th colspan="2">Aktion</th></tr>
+<tr><th>Name</th><th>Preis</th><th>Lager</th><th>Mindestens</th><th>Auffüllen</th><th colspan="2">Aktion</th></tr>
 {% for d in drinks %}
-<tr class="{% if d['stock'] < 0 %}negstock{% endif %}">
+<tr class="{% if d['stock'] < d['min_stock'] %}negstock{% endif %}">
 <td>{{ d['name'] }}</td>
 <td>{{ (d['price']/100)|round(2) }} €</td>
 <td>{{ d['stock'] }}</td>
+<td>{{ d['min_stock'] }}</td>
 
 <td>
   <form method="post" action="{{ url_for('drink_restock', drink_id=d['id']) }}" style="display:inline">
@@ -27,6 +28,7 @@
 
     <input type="number" step="0.01" name="price" placeholder="Preis in Euro">
     <input type="number" name="stock" placeholder="Lagerbestand">
+    <input type="number" name="min_stock" placeholder="Mindestbestand">
     <input type="file" name="image">
 
     <button type="submit">Hinzufügen</button>

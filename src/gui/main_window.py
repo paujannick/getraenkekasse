@@ -190,6 +190,13 @@ class MainWindow(QtWidgets.QMainWindow):
         bottom = layout.rowCount()
         layout.addWidget(self.buy_button, bottom, 0)
         layout.addWidget(self.cancel_button, bottom, 1)
+        self.admin_button = QtWidgets.QPushButton("Admin")
+        f = self.admin_button.font()
+        f.setPointSize(12)
+        self.admin_button.setFont(f)
+        self.admin_button.setFixedSize(80, 40)
+        self.admin_button.clicked.connect(self._open_admin)
+        layout.addWidget(self.admin_button, bottom, 2, alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
         layout.setRowStretch(bottom, 0)
         self.buy_button.hide()
         self.cancel_button.hide()
@@ -207,7 +214,10 @@ class MainWindow(QtWidgets.QMainWindow):
             cash_id = models.get_cash_user_id()
             models.add_transaction(cash_id, drink.id, quantity)
             led.indicate_success()
-            self.info_label.setText("Barverkauf verbucht")
+            total_price = drink.price * quantity
+            self.info_label.setText(
+                f"Bitte {total_price/100:.2f} \u20ac passend in die Getränkekasse legen"
+            )
             self.stack.setCurrentWidget(self.info_label)
             QtCore.QTimer.singleShot(2000, self.show_start_page)
             return
@@ -301,4 +311,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.info_label.setText(msg)
         QtCore.QTimer.singleShot(3000, self.show_start_page)
         self.stack.setCurrentWidget(self.info_label)
+
+    def _open_admin(self) -> None:
+        pin, ok = QtWidgets.QInputDialog.getText(
+            self,
+            "PIN",
+            "Admin-PIN:",
+            QtWidgets.QLineEdit.Password,
+        )
+        if not ok:
+            return
+        if pin == models.get_admin_pin():
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://localhost:8000"))
+        else:
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Falscher PIN")
 
