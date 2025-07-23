@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Aufladungen</h1>
+<table>
+<tr><th>Zeitpunkt</th><th>Benutzer</th><th>Betrag</th></tr>
+{% for r in items %}
+<tr>
+<td>{{ r['timestamp'] }}</td>
+<td>{{ r['user_name'] }}</td>
+<td>{{ (r['amount']/100)|round(2) }} €</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

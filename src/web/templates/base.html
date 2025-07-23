@@ -30,11 +30,17 @@ nav a:hover { text-decoration:underline; }
     <a href="{{ url_for('index') }}">Home</a>
     <a href="{{ url_for('drinks') }}">Getränke</a>
     <a href="{{ url_for('users') }}">Benutzer</a>
+    <a href="{{ url_for('topup') }}">Aufladen</a>
     <a href="{{ url_for('log') }}">Log</a>
+    <a href="{{ url_for('topup_log') }}">Aufladungen</a>
     <a href="{{ url_for('settings') }}">Einstellungen</a>
     <a href="{{ url_for('change_password') }}">Passwort</a>
     <a href="{{ url_for('export_transactions') }}">CSV Verkäufe</a>
     <a href="{{ url_for('export_inventory') }}">CSV Bestand</a>
+    <a href="{{ url_for('export_restocks') }}">CSV Auffüllungen</a>
+    <a href="{{ url_for('export_topups') }}">CSV Aufladungen</a>
+    <a href="{{ url_for('export_users') }}">CSV Benutzer</a>
+    <a href="{{ url_for('import_users') }}">Import Benutzer</a>
     <a href="{{ url_for('logout') }}">Logout</a>
 </nav>
 <div class="container">
