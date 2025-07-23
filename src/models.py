@@ -120,6 +120,28 @@ def update_drink_stock(drink_id: int, diff: int) -> bool:
         return False
 
 
+
+def get_cash_user_id(conn: Optional[sqlite3.Connection] = None) -> int:
+    """Ensure a special user for cash payments exists and return its id."""
+    own = False
+    if conn is None:
+        conn = get_connection()
+        own = True
+    cur = conn.execute("SELECT id FROM users WHERE name='BARZAHLUNG'")
+    row = cur.fetchone()
+    if row:
+        uid = row['id']
+    else:
+        conn.execute(
+            "INSERT INTO users (name, rfid_uid, balance) VALUES ('BARZAHLUNG', 'CASH', 0)"
+        )
+        conn.commit()
+        uid = conn.execute("SELECT id FROM users WHERE name='BARZAHLUNG'").fetchone()['id']
+    if own:
+        conn.close()
+    return uid
+
+
 def log_restock(drink_id: int, quantity: int) -> None:
     """Record a restock event."""
     try:

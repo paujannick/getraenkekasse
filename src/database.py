@@ -141,6 +141,7 @@ def add_sample_data(conn: sqlite3.Connection) -> None:
         conn.execute(
             'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
             ('Bob', 'TESTCARD456', 500))
+    conn.execute("INSERT OR IGNORE INTO users (name, rfid_uid, balance) VALUES ('BARZAHLUNG', 'CASH', 0)")
 
     cur = conn.execute('SELECT COUNT(*) FROM drinks')
     if cur.fetchone()[0] == 0:
