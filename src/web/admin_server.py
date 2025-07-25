@@ -304,6 +304,15 @@ def create_app() -> Flask:
         conn.close()
         return redirect(url_for('topup_log'))
 
+    @app.route('/topup_log/delete/<int:topup_id>', methods=['POST'])
+    @login_required
+    def topup_delete(topup_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM topups WHERE id=?', (topup_id,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('topup_log'))
+
     @app.route('/users/add', methods=['POST'])
     @login_required
     def user_add():
@@ -400,11 +409,29 @@ def create_app() -> Flask:
         conn.close()
         return redirect(url_for('log'))
 
+    @app.route('/log/transaction_delete/<int:tx_id>', methods=['POST'])
+    @login_required
+    def transaction_delete(tx_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM transactions WHERE id=?', (tx_id,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('log'))
+
     @app.route('/log/restocks_clear', methods=['POST'])
     @login_required
     def restocks_clear():
         conn = database.get_connection()
         conn.execute('DELETE FROM restocks')
+        conn.commit()
+        conn.close()
+        return redirect(url_for('log'))
+
+    @app.route('/log/restock_delete/<int:restock_id>', methods=['POST'])
+    @login_required
+    def restock_delete(restock_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM restocks WHERE id=?', (restock_id,))
         conn.commit()
         conn.close()
         return redirect(url_for('log'))

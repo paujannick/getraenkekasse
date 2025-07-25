@@ -10,14 +10,13 @@
 <td>{{ r['drink_name'] }}</td>
 <td>{{ r['quantity'] }}</td>
 <td>
-  <form method="post" action="{{ url_for('transaction_delete', tx_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
-    <button type="submit">Löschen</button>
-  </form>
+    <form method="post" action="{{ url_for('transaction_delete', tx_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
+        <button type="submit">Löschen</button>
+    </form>
 </td>
 </tr>
 {% endfor %}
 </table>
-
 <form method="post" action="{{ url_for('transactions_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
     <button type="submit">Log löschen</button>
 </form>
@@ -32,9 +31,9 @@
 <td>{{ r['drink_name'] }}</td>
 <td>{{ r['quantity'] }}</td>
 <td>
-  <form method="post" action="{{ url_for('restock_delete', restock_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
-    <button type="submit">Löschen</button>
-  </form>
+    <form method="post" action="{{ url_for('restock_delete', restock_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
+        <button type="submit">Löschen</button>
+    </form>
 </td>
 </tr>
 {% endfor %}
