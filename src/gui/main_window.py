@@ -111,6 +111,41 @@ class TopupDialog(QtWidgets.QDialog):
         return int(self.combo.currentData())
 
 
+class PinDialog(QtWidgets.QDialog):
+    """Numeric keypad dialog for entering the admin PIN."""
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("PIN eingeben")
+        layout = QtWidgets.QVBoxLayout(self)
+        self.edit = QtWidgets.QLineEdit()
+        self.edit.setEchoMode(QtWidgets.QLineEdit.Password)
+        layout.addWidget(self.edit)
+
+        grid = QtWidgets.QGridLayout()
+        for i in range(9):
+            btn = QtWidgets.QPushButton(str(i + 1))
+            btn.setFixedSize(60, 60)
+            btn.clicked.connect(lambda _, d=i + 1: self.edit.insert(str(d)))
+            r, c = divmod(i, 3)
+            grid.addWidget(btn, r, c)
+        zero = QtWidgets.QPushButton("0")
+        zero.setFixedSize(60, 60)
+        zero.clicked.connect(lambda: self.edit.insert("0"))
+        grid.addWidget(zero, 3, 1)
+        layout.addLayout(grid)
+
+        btns = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        box = QtWidgets.QDialogButtonBox(btns)
+        box.accepted.connect(self.accept)
+        box.rejected.connect(self.reject)
+        layout.addWidget(box)
+
+    @property
+    def pin(self) -> str:
+        return self.edit.text()
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -194,17 +229,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
 
-        bottom = layout.rowCount()
-        layout.addWidget(self.prev_button, bottom, 0)
-        layout.addWidget(self.next_button, bottom, 1)
+
+        bottom = rows
+        layout.addWidget(self.prev_button, bottom, 0, alignment=QtCore.Qt.AlignBottom)
+        layout.addWidget(self.next_button, bottom, 1, alignment=QtCore.Qt.AlignBottom)
+
         self.admin_button = QtWidgets.QPushButton("Admin")
         f = self.admin_button.font()
         f.setPointSize(12)
         self.admin_button.setFont(f)
         self.admin_button.setFixedSize(80, 40)
         self.admin_button.clicked.connect(self._open_admin)
-        layout.addWidget(self.admin_button, bottom, 2, alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
+        layout.addWidget(self.admin_button, bottom, 2,
+                         alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
         layout.setRowStretch(bottom, 0)
+
+        layout.setRowStretch(bottom + 1, 1)
+
         self.prev_button.setEnabled(self.current_page > 1)
         self.next_button.setEnabled(self.current_page < self.page_count)
 
@@ -320,15 +361,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.setCurrentWidget(self.info_label)
 
     def _open_admin(self) -> None:
-        pin, ok = QtWidgets.QInputDialog.getText(
-            self,
-            "PIN",
-            "Admin-PIN:",
-            QtWidgets.QLineEdit.Password,
-        )
-        if not ok:
+        dialog = PinDialog(self)
+        if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
-        if pin == models.get_admin_pin():
+        if dialog.pin == models.get_admin_pin():
             QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://localhost:8000"))
         else:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Falscher PIN")
