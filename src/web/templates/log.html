@@ -2,29 +2,42 @@
 {% block content %}
 <h1>Transaktionen</h1>
 <table>
-<tr><th>Zeitpunkt</th><th>Benutzer</th><th>Getränk</th><th>Menge</th></tr>
+<tr><th>Zeitpunkt</th><th>Benutzer</th><th>Getränk</th><th>Menge</th><th>Aktion</th></tr>
 {% for r in items %}
 <tr>
 <td>{{ r['timestamp'] }}</td>
 <td>{{ r['user_name'] }}</td>
 <td>{{ r['drink_name'] }}</td>
 <td>{{ r['quantity'] }}</td>
+<td>
+    <form method="post" action="{{ url_for('transaction_delete', tx_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
+        <button type="submit">Löschen</button>
+    </form>
+</td>
 </tr>
 {% endfor %}
 </table>
-<form method="post" action="{{ url_for('log_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
+<form method="post" action="{{ url_for('transactions_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
     <button type="submit">Log löschen</button>
 </form>
 
 <h2>Auffüllungen</h2>
 <table>
-<tr><th>Zeitpunkt</th><th>Getränk</th><th>Menge</th></tr>
+<tr><th>Zeitpunkt</th><th>Getränk</th><th>Menge</th><th>Aktion</th></tr>
 {% for r in restocks %}
 <tr>
 <td>{{ r['timestamp'] }}</td>
 <td>{{ r['drink_name'] }}</td>
 <td>{{ r['quantity'] }}</td>
+<td>
+    <form method="post" action="{{ url_for('restock_delete', restock_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
+        <button type="submit">Löschen</button>
+    </form>
+</td>
 </tr>
 {% endfor %}
 </table>
+<form method="post" action="{{ url_for('restocks_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
+    <button type="submit">Log löschen</button>
+</form>
 {% endblock %}

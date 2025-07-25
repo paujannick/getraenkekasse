@@ -2,13 +2,21 @@
 {% block content %}
 <h1>Aufladungen</h1>
 <table>
-<tr><th>Zeitpunkt</th><th>Benutzer</th><th>Betrag</th></tr>
+<tr><th>Zeitpunkt</th><th>Benutzer</th><th>Betrag</th><th>Aktion</th></tr>
 {% for r in items %}
 <tr>
 <td>{{ r['timestamp'] }}</td>
 <td>{{ r['user_name'] }}</td>
 <td>{{ (r['amount']/100)|round(2) }} €</td>
+<td>
+    <form method="post" action="{{ url_for('topup_delete', topup_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
+        <button type="submit">Löschen</button>
+    </form>
+</td>
 </tr>
 {% endfor %}
 </table>
+<form method="post" action="{{ url_for('topup_log_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
+    <button type="submit">Log löschen</button>
+</form>
 {% endblock %}
