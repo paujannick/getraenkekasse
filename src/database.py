@@ -111,6 +111,24 @@ def refresh_needed(last_mtime: float) -> bool:
     return REFRESH_FLAG.stat().st_mtime > last_mtime
 
 
+def upgrade_schema(conn: sqlite3.Connection) -> None:
+    """Ensure all required columns and config entries exist."""
+    cur = conn.execute("PRAGMA table_info(drinks)")
+    cols = [row[1] for row in cur.fetchall()]
+    if "min_stock" not in cols:
+        conn.execute(
+            "ALTER TABLE drinks ADD COLUMN min_stock INTEGER NOT NULL DEFAULT 0"
+        )
+    if "page" not in cols:
+        conn.execute(
+            "ALTER TABLE drinks ADD COLUMN page INTEGER NOT NULL DEFAULT 1"
+        )
+    cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='admin_pin'")
+    if cur.fetchone()[0] == 0:
+        conn.execute("INSERT INTO config(key, value) VALUES ('admin_pin', '1234')")
+    conn.commit()
+
+
 
 def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     own_conn = False
@@ -121,14 +139,12 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     for stmt in _SCHEMA.values():
         cursor.execute(stmt)
     conn.commit()
+    upgrade_schema(conn)
     cursor.execute(
         "INSERT OR IGNORE INTO config (key, value) VALUES ('overdraft_limit', '0')"
     )
     cursor.execute(
         "INSERT OR IGNORE INTO config (key, value) VALUES ('topup_uid', '')"
-    )
-    cursor.execute(
-        "INSERT OR IGNORE INTO config (key, value) VALUES ('admin_pin', '1234')"
     )
     conn.commit()
     add_sample_data(conn)
