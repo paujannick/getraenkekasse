@@ -18,6 +18,14 @@ venv/bin/python - <<'PY'
 import src.database as d
 conn = d.get_connection()
 d.init_db(conn)
+cur = conn.execute("PRAGMA table_info(drinks)")
+cols = [r[1] for r in cur.fetchall()]
+if 'min_stock' not in cols:
+    conn.execute("ALTER TABLE drinks ADD COLUMN min_stock INTEGER NOT NULL DEFAULT 0")
+cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='admin_pin'")
+if cur.fetchone()[0] == 0:
+    conn.execute("INSERT INTO config(key, value) VALUES ('admin_pin', '1234')")
+conn.commit()
 conn.close()
 PY
 

@@ -33,6 +33,16 @@ def set_topup_uid(uid: str, conn: Optional[sqlite3.Connection] = None) -> None:
     set_setting('topup_uid', uid, conn)
 
 
+def get_admin_pin(conn: Optional[sqlite3.Connection] = None) -> str:
+    """Return the admin PIN used for the GUI."""
+    return get_setting('admin_pin', conn) or '1234'
+
+
+def set_admin_pin(pin: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    """Store the admin PIN."""
+    set_setting('admin_pin', pin, conn)
+
+
 
 @dataclass
 class User:
@@ -50,6 +60,7 @@ class Drink:
     image: Optional[str]
 
     stock: int
+    min_stock: int
 
 
 
@@ -232,6 +243,23 @@ def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = No
         return rows
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen der Getränke: {e}")
+        return []
+    finally:
+        if own and conn is not None:
+            conn.close()
+
+
+def get_drinks_below_min(conn: Optional[sqlite3.Connection] = None) -> list[Drink]:
+    """Return drinks where stock is below the configured minimum."""
+    own = False
+    try:
+        if conn is None:
+            conn = get_connection()
+            own = True
+        cur = conn.execute('SELECT * FROM drinks WHERE stock < min_stock ORDER BY name')
+        return [Drink(**row) for row in cur.fetchall()]
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Lesen der Mindestbestände: {e}")
         return []
     finally:
         if own and conn is not None:
