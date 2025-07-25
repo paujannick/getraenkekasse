@@ -381,7 +381,7 @@ def create_app() -> Flask:
     def log():
         conn = database.get_connection()
         cur = conn.execute(
-            'SELECT t.timestamp, u.name as user_name, d.name as drink_name, t.quantity '
+            'SELECT t.id, t.timestamp, u.name as user_name, d.name as drink_name, t.quantity '
             'FROM transactions t '
             'JOIN users u ON u.id = t.user_id '
             'JOIN drinks d ON d.id = t.drink_id '

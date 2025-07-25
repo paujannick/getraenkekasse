@@ -171,7 +171,7 @@ def get_restock_log(limit: int | None = None) -> list[sqlite3.Row]:
     try:
         with get_connection() as conn:
             query = (
-                'SELECT r.timestamp, d.name as drink_name, r.quantity '
+                'SELECT r.id, r.timestamp, d.name as drink_name, r.quantity '
                 'FROM restocks r JOIN drinks d ON d.id = r.drink_id '
                 'ORDER BY r.timestamp DESC'
             )
@@ -205,7 +205,7 @@ def get_topup_log() -> list[sqlite3.Row]:
     try:
         with get_connection() as conn:
             cur = conn.execute(
-                'SELECT t.timestamp, u.name as user_name, t.amount '
+                'SELECT t.id, t.timestamp, u.name as user_name, t.amount '
                 'FROM topups t JOIN users u ON u.id = t.user_id '
                 'ORDER BY t.timestamp DESC'
             )
