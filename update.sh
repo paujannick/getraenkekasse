@@ -20,7 +20,9 @@ if [ ! -d venv ]; then
   python3 -m venv venv --system-site-packages
 fi
 source venv/bin/activate
+
 pip install --upgrade pip setuptools wheel
+
 pip install --upgrade -r requirements.txt
 
 # Create any new database tables without touching existing data
