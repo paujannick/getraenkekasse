@@ -294,14 +294,6 @@ def create_app() -> Flask:
         items = models.get_topup_log()
         return render_template('topup_log.html', items=items)
 
-    @app.route('/topup_log/delete/<int:entry_id>', methods=['POST'])
-    @login_required
-    def topup_log_delete(entry_id: int):
-        conn = database.get_connection()
-        conn.execute('DELETE FROM topups WHERE id=?', (entry_id,))
-        conn.commit()
-        conn.close()
-        return redirect(url_for('topup_log'))
 
     @app.route('/topup_log/clear', methods=['POST'])
     @login_required
@@ -399,34 +391,24 @@ def create_app() -> Flask:
         conn.close()
         return render_template('log.html', items=items, restocks=restocks)
 
-    @app.route('/log/clear', methods=['POST'])
+    @app.route('/log/transactions_clear', methods=['POST'])
     @login_required
-    def log_clear():
+    def transactions_clear():
         conn = database.get_connection()
         conn.execute('DELETE FROM transactions')
+        conn.commit()
+        conn.close()
+        return redirect(url_for('log'))
+
+    @app.route('/log/restocks_clear', methods=['POST'])
+    @login_required
+    def restocks_clear():
+        conn = database.get_connection()
         conn.execute('DELETE FROM restocks')
-        conn.execute('DELETE FROM topups')
         conn.commit()
         conn.close()
         return redirect(url_for('log'))
 
-    @app.route('/transaction/delete/<int:tx_id>', methods=['POST'])
-    @login_required
-    def transaction_delete(tx_id: int):
-        conn = database.get_connection()
-        conn.execute('DELETE FROM transactions WHERE id=?', (tx_id,))
-        conn.commit()
-        conn.close()
-        return redirect(url_for('log'))
-
-    @app.route('/restock/delete/<int:restock_id>', methods=['POST'])
-    @login_required
-    def restock_delete(restock_id: int):
-        conn = database.get_connection()
-        conn.execute('DELETE FROM restocks WHERE id=?', (restock_id,))
-        conn.commit()
-        conn.close()
-        return redirect(url_for('log'))
 
     @app.route('/export/transactions')
     @login_required

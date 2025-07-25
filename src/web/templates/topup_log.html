@@ -16,4 +16,7 @@
 </tr>
 {% endfor %}
 </table>
+<form method="post" action="{{ url_for('topup_log_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
+    <button type="submit">Log löschen</button>
+</form>
 {% endblock %}
