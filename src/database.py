@@ -26,7 +26,8 @@ _SCHEMA = {
 
         'image TEXT, '
         'stock INTEGER NOT NULL DEFAULT 0, '
-        'min_stock INTEGER NOT NULL DEFAULT 0'
+        'min_stock INTEGER NOT NULL DEFAULT 0, '
+        'page INTEGER NOT NULL DEFAULT 1'
 
         ')'
     ),
@@ -150,12 +151,11 @@ def add_sample_data(conn: sqlite3.Connection) -> None:
     cur = conn.execute('SELECT COUNT(*) FROM drinks')
     if cur.fetchone()[0] == 0:
         conn.execute(
-
-            'INSERT INTO drinks (name, price, stock, min_stock) VALUES (?, ?, ?, ?)',
-            ('Wasser', 150, 20, 5))
+            'INSERT INTO drinks (name, price, stock, min_stock, page) VALUES (?, ?, ?, ?, ?)',
+            ('Wasser', 150, 20, 5, 1))
         conn.execute(
-            'INSERT INTO drinks (name, price, stock, min_stock) VALUES (?, ?, ?, ?)',
-            ('Cola', 200, 15, 5))
+            'INSERT INTO drinks (name, price, stock, min_stock, page) VALUES (?, ?, ?, ?, ?)',
+            ('Cola', 200, 15, 5, 1))
 
 
     conn.commit()

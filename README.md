@@ -43,7 +43,9 @@ zuverlässiger ohne AUTH-Fehler.
 
    Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
 
-   Die GUI zeigt optional ein DRK-Logo im Hintergrund an. Lege dazu eine Bilddatei unter `data/background.png` ab. Ist diese Datei nicht vorhanden, wird kein Hintergrundbild angezeigt.
+Die GUI zeigt optional ein DRK-Logo im Hintergrund an. Lege dazu eine Bilddatei unter `data/background.png` ab. Ist diese Datei nicht vorhanden, wird kein Hintergrundbild angezeigt.
+
+Die Startseite zeigt maximal neun Getränke je Seite an. Über Pfeiltasten am unteren Rand lässt sich zwischen zwei Seiten wechseln. In den Getränkeeinstellungen kann mit dem neuen Feld "Seite" festgelegt werden, auf welcher Seite ein Artikel erscheint. Unterschreitet ein Getränk seinen Mindestbestand, wird der zugehörige Button in der GUI gelb hinterlegt.
 
 Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
 Über die Einstellungen lässt sich zudem eine spezielle Aufladekarte definieren.
@@ -73,5 +75,6 @@ Führe dazu einfach folgende Schritte aus:
 
 Das Skript holt die neuesten Dateien, installiert benötigte Pakete und ruft
 `init_db()` auf. Bestehende Daten wie Benutzer, Guthaben, Bilder und Getränke
-bleiben erhalten. Beim Start des Webservers werden neue Tabellen automatisch
-verwendet.
+bleiben erhalten. Beim Start des Webservers werden neue Tabellen sowie neue
+Spalten (z.B. das "page"-Feld für die Seitenauswahl) automatisch angelegt
+und verwendet.
