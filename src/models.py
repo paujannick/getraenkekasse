@@ -61,6 +61,7 @@ class Drink:
 
     stock: int
     min_stock: int
+    page: int
 
 
 
@@ -228,22 +229,45 @@ def get_drink_by_id(drink_id: int) -> Optional[Drink]:
 
 
 
-def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = None) -> list[Drink]:
+def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = None, page: int | None = None) -> list[Drink]:
     own = False
     try:
         if conn is None:
             conn = get_connection()
             own = True
 
-        query = 'SELECT * FROM drinks ORDER BY name'
+        query = 'SELECT * FROM drinks'
+        params: list = []
+        if page is not None:
+            query += ' WHERE page=?'
+            params.append(page)
+        query += ' ORDER BY name'
         if limit is not None:
             query += f' LIMIT {int(limit)}'
-        cur = conn.execute(query)
+        cur = conn.execute(query, params)
         rows = [Drink(**row) for row in cur.fetchall()]
         return rows
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen der Getränke: {e}")
         return []
+    finally:
+        if own and conn is not None:
+            conn.close()
+
+
+def get_max_page(conn: Optional[sqlite3.Connection] = None) -> int:
+    """Return the highest page number in the drinks table."""
+    own = False
+    try:
+        if conn is None:
+            conn = get_connection()
+            own = True
+        cur = conn.execute('SELECT MAX(page) FROM drinks')
+        row = cur.fetchone()
+        return row[0] or 1
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Lesen der Seitenzahl: {e}")
+        return 1
     finally:
         if own and conn is not None:
             conn.close()

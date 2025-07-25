@@ -150,6 +150,7 @@ def create_app() -> Flask:
         price_euro = request.form.get('price', type=float)
         stock = request.form.get('stock', type=int)
         min_stock = request.form.get('min_stock', type=int)
+        page = request.form.get('page', type=int) or 1
         image_file = request.files.get('image')
         image_path = None
         if image_file and image_file.filename:
@@ -163,8 +164,8 @@ def create_app() -> Flask:
             price = int(price_euro * 100)
             conn = database.get_connection()
             conn.execute(
-                'INSERT INTO drinks (name, price, stock, min_stock, image) VALUES (?, ?, ?, ?, ?)',
-                (name, price, stock or 0, min_stock or 0, image_path))
+                'INSERT INTO drinks (name, price, stock, min_stock, page, image) VALUES (?, ?, ?, ?, ?, ?)',
+                (name, price, stock or 0, min_stock or 0, page, image_path))
             conn.commit()
             conn.close()
             database.touch_refresh_flag()
@@ -208,6 +209,7 @@ def create_app() -> Flask:
             price_euro = request.form.get('price', type=float)
             stock = request.form.get('stock', type=int)
             min_stock = request.form.get('min_stock', type=int)
+            page = request.form.get('page', type=int) or 1
             image_path = request.form.get('current_image') or None
             image_file = request.files.get('image')
             if image_file and image_file.filename:
@@ -217,8 +219,8 @@ def create_app() -> Flask:
                 image_file.save(dest)
                 image_path = str(dest)
             conn.execute(
-                'UPDATE drinks SET name=?, price=?, stock=?, min_stock=?, image=? WHERE id=?',
-                (name, int(price_euro * 100), stock or 0, min_stock or 0, image_path, drink_id))
+                'UPDATE drinks SET name=?, price=?, stock=?, min_stock=?, page=?, image=? WHERE id=?',
+                (name, int(price_euro * 100), stock or 0, min_stock or 0, page, image_path, drink_id))
             conn.commit()
             conn.close()
             database.touch_refresh_flag()

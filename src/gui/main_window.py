@@ -137,6 +137,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.start_page = QtWidgets.QWidget()
         self.start_layout = QtWidgets.QGridLayout(self.start_page)
+        self.current_page = 1
+        self.page_count = 1
         self._populate_start_page()
 
 
@@ -155,7 +157,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout = self.start_layout
         conn = database.get_connection()
 
-        drinks = models.get_drinks(conn, limit=9)
+        self.page_count = models.get_max_page(conn)
+        drinks = models.get_drinks(conn, limit=9, page=self.current_page)
         font = QtGui.QFont()
         font.setPointSize(16)
 
@@ -175,21 +178,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if drink.stock < 0:
                 button.setStyleSheet('background-color:#fdd;')
+            elif drink.stock < drink.min_stock:
+                button.setStyleSheet('background-color:#ffd;')
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
             layout.addWidget(button, r, c)
-        self.buy_button = QtWidgets.QPushButton("Kaufen")
-        self.cancel_button = QtWidgets.QPushButton("Abbrechen")
+        self.prev_button = QtWidgets.QPushButton("◀")
+        self.next_button = QtWidgets.QPushButton("▶")
 
-        for btn in (self.buy_button, self.cancel_button):
+        for btn in (self.prev_button, self.next_button):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
-            btn.setMinimumHeight(80)
+            btn.setFixedSize(80, 40)
+        self.prev_button.clicked.connect(self.prev_page)
+        self.next_button.clicked.connect(self.next_page)
 
         bottom = layout.rowCount()
-        layout.addWidget(self.buy_button, bottom, 0)
-        layout.addWidget(self.cancel_button, bottom, 1)
+        layout.addWidget(self.prev_button, bottom, 0)
+        layout.addWidget(self.next_button, bottom, 1)
         self.admin_button = QtWidgets.QPushButton("Admin")
         f = self.admin_button.font()
         f.setPointSize(12)
@@ -198,8 +205,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_button.clicked.connect(self._open_admin)
         layout.addWidget(self.admin_button, bottom, 2, alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
         layout.setRowStretch(bottom, 0)
-        self.buy_button.hide()
-        self.cancel_button.hide()
+        self.prev_button.setEnabled(self.current_page > 1)
+        self.next_button.setEnabled(self.current_page < self.page_count)
 
     def show_start_page(self):
         self.stack.setCurrentWidget(self.start_page)
@@ -325,4 +332,14 @@ class MainWindow(QtWidgets.QMainWindow):
             QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://localhost:8000"))
         else:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Falscher PIN")
+
+    def next_page(self) -> None:
+        if self.current_page < self.page_count:
+            self.current_page += 1
+            self._rebuild_start_page()
+
+    def prev_page(self) -> None:
+        if self.current_page > 1:
+            self.current_page -= 1
+            self._rebuild_start_page()
 
