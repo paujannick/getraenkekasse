@@ -180,6 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         database.init_db()
+        database.clear_exit_flag()
         self.setWindowTitle("Getränkekasse")
         self.resize(800, 480)
         self.central = QtWidgets.QWidget()

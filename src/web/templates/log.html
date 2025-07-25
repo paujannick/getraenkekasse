@@ -12,7 +12,7 @@
 </tr>
 {% endfor %}
 </table>
-<form method="post" action="{{ url_for('log_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
+<form method="post" action="{{ url_for('transactions_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
     <button type="submit">Log löschen</button>
 </form>
 
@@ -27,4 +27,7 @@
 </tr>
 {% endfor %}
 </table>
+<form method="post" action="{{ url_for('restocks_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
+    <button type="submit">Log löschen</button>
+</form>
 {% endblock %}
