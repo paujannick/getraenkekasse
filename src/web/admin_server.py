@@ -136,12 +136,12 @@ def create_app() -> Flask:
 
     @app.route('/drinks')
     @login_required
-    def drinks():
+    def drinks(error: Optional[str] = None):
         conn = database.get_connection()
         cur = conn.execute('SELECT * FROM drinks ORDER BY name')
         items = cur.fetchall()
         conn.close()
-        return render_template('drinks.html', drinks=items)
+        return render_template('drinks.html', drinks=items, error=error)
 
     @app.route('/drinks/add', methods=['POST'])
     @login_required
@@ -163,6 +163,13 @@ def create_app() -> Flask:
         if name and price_euro is not None:
             price = int(price_euro * 100)
             conn = database.get_connection()
+            count = conn.execute('SELECT COUNT(*) FROM drinks WHERE page=?', (page,)).fetchone()[0]
+            if count >= 9:
+                cur = conn.execute('SELECT * FROM drinks ORDER BY name')
+                items = cur.fetchall()
+                conn.close()
+                return render_template('drinks.html', drinks=items,
+                                       error='Maximal 9 Getränke pro Seite erlaubt')
             conn.execute(
                 'INSERT INTO drinks (name, price, stock, min_stock, page, image) VALUES (?, ?, ?, ?, ?, ?)',
                 (name, price, stock or 0, min_stock or 0, page, image_path))
@@ -218,6 +225,15 @@ def create_app() -> Flask:
                 dest = image_dir / image_file.filename
                 image_file.save(dest)
                 image_path = str(dest)
+            cur = conn.execute('SELECT page FROM drinks WHERE id=?', (drink_id,))
+            old_page = cur.fetchone()['page']
+            count = conn.execute('SELECT COUNT(*) FROM drinks WHERE page=?', (page,)).fetchone()[0]
+            if count >= 9 and page != old_page:
+                cur = conn.execute('SELECT * FROM drinks WHERE id=?', (drink_id,))
+                item = cur.fetchone()
+                conn.close()
+                return render_template('drink_edit.html', drink=item,
+                                       error='Maximal 9 Getränke pro Seite erlaubt')
             conn.execute(
                 'UPDATE drinks SET name=?, price=?, stock=?, min_stock=?, page=?, image=? WHERE id=?',
                 (name, int(price_euro * 100), stock or 0, min_stock or 0, page, image_path, drink_id))
@@ -228,7 +244,7 @@ def create_app() -> Flask:
         cur = conn.execute('SELECT * FROM drinks WHERE id=?', (drink_id,))
         item = cur.fetchone()
         conn.close()
-        return render_template('drink_edit.html', drink=item)
+        return render_template('drink_edit.html', drink=item, error=None)
 
     @app.route('/users')
     @login_required
@@ -277,6 +293,15 @@ def create_app() -> Flask:
     def topup_log():
         items = models.get_topup_log()
         return render_template('topup_log.html', items=items)
+
+    @app.route('/topup_log/delete/<int:entry_id>', methods=['POST'])
+    @login_required
+    def topup_log_delete(entry_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM topups WHERE id=?', (entry_id,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('topup_log'))
 
     @app.route('/topup_log/clear', methods=['POST'])
     @login_required
@@ -364,7 +389,7 @@ def create_app() -> Flask:
     def log():
         conn = database.get_connection()
         cur = conn.execute(
-            'SELECT t.timestamp, u.name as user_name, d.name as drink_name, t.quantity '
+            'SELECT t.id, t.timestamp, u.name as user_name, d.name as drink_name, t.quantity '
             'FROM transactions t '
             'JOIN users u ON u.id = t.user_id '
             'JOIN drinks d ON d.id = t.drink_id '
@@ -381,6 +406,24 @@ def create_app() -> Flask:
         conn.execute('DELETE FROM transactions')
         conn.execute('DELETE FROM restocks')
         conn.execute('DELETE FROM topups')
+        conn.commit()
+        conn.close()
+        return redirect(url_for('log'))
+
+    @app.route('/transaction/delete/<int:tx_id>', methods=['POST'])
+    @login_required
+    def transaction_delete(tx_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM transactions WHERE id=?', (tx_id,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('log'))
+
+    @app.route('/restock/delete/<int:restock_id>', methods=['POST'])
+    @login_required
+    def restock_delete(restock_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM restocks WHERE id=?', (restock_id,))
         conn.commit()
         conn.close()
         return redirect(url_for('log'))
