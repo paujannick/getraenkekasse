@@ -146,6 +146,36 @@ class PinDialog(QtWidgets.QDialog):
         return self.edit.text()
 
 
+class AdminPage(QtWidgets.QWidget):
+    """Simple admin page showing low stock items and quit option."""
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None):
+        super().__init__(parent)
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.table = QtWidgets.QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["Getränk", "Bestand", "Min"])
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        layout.addWidget(self.table)
+
+        btn_layout = QtWidgets.QHBoxLayout()
+        self.back_btn = QtWidgets.QPushButton("Zurück")
+        self.quit_btn = QtWidgets.QPushButton("Beenden")
+        btn_layout.addWidget(self.back_btn)
+        btn_layout.addStretch(1)
+        btn_layout.addWidget(self.quit_btn)
+        layout.addLayout(btn_layout)
+
+    def reload(self) -> None:
+        drinks = models.get_drinks_below_min()
+        self.table.setRowCount(len(drinks))
+        for row, drink in enumerate(drinks):
+            self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(drink.name))
+            self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(drink.stock)))
+            self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(drink.min_stock)))
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -186,6 +216,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.info_label.setFont(font)
         self.stack.addWidget(self.info_label)
 
+        self.admin_page = AdminPage(self)
+        self.admin_page.back_btn.clicked.connect(self.show_start_page)
+        self.admin_page.quit_btn.clicked.connect(self._quit)
+        self.stack.addWidget(self.admin_page)
+
         self.show_start_page()
 
     def _populate_start_page(self) -> None:
@@ -199,7 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         rows = (len(drinks) + 2) // 3
         for row in range(rows):
-            layout.setRowStretch(row, 1)
+            layout.setRowStretch(row, 0)
 
         for idx, drink in enumerate(drinks):
             button = QtWidgets.QPushButton()
@@ -230,7 +265,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.next_button.clicked.connect(self.next_page)
 
 
-        bottom = rows
+        spacer_row = rows
+        bottom = rows + 1
+        layout.setRowStretch(spacer_row, 1)
         layout.addWidget(self.prev_button, bottom, 0, alignment=QtCore.Qt.AlignBottom)
         layout.addWidget(self.next_button, bottom, 1, alignment=QtCore.Qt.AlignBottom)
 
@@ -243,8 +280,6 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.admin_button, bottom, 2,
                          alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
         layout.setRowStretch(bottom, 0)
-
-        layout.setRowStretch(bottom + 1, 1)
 
         self.prev_button.setEnabled(self.current_page > 1)
         self.next_button.setEnabled(self.current_page < self.page_count)
@@ -365,9 +400,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
         if dialog.pin == models.get_admin_pin():
-            QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://localhost:8000"))
+            self.admin_page.reload()
+            self.stack.setCurrentWidget(self.admin_page)
         else:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Falscher PIN")
+
+    def _quit(self) -> None:
+        database.set_exit_flag()
+        QtWidgets.QApplication.quit()
 
     def next_page(self) -> None:
         if self.current_page < self.page_count:
