@@ -353,11 +353,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._rebuild_start_page()
 
     def _rebuild_start_page(self) -> None:
-        for i in reversed(range(self.start_layout.count())):
-            item = self.start_layout.takeAt(i)
+        layout = self.start_layout
+        for i in reversed(range(layout.count())):
+            item = layout.takeAt(i)
             widget = item.widget()
             if widget:
                 widget.deleteLater()
+        for r in range(layout.rowCount()):
+            layout.setRowStretch(r, 0)
         self._populate_start_page()
 
     def _handle_topup(self) -> None:

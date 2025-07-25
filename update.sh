@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Always operate relative to script location
+cd "$(dirname "$0")"
+
 # Pull latest changes if repository has remote
 if git config --get remote.origin.url > /dev/null 2>&1; then
   git pull --ff-only
@@ -17,6 +20,7 @@ if [ ! -d venv ]; then
   python3 -m venv venv --system-site-packages
 fi
 source venv/bin/activate
+pip install --upgrade pip setuptools wheel
 pip install --upgrade -r requirements.txt
 
 # Create any new database tables without touching existing data
