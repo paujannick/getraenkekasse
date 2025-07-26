@@ -184,14 +184,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Getränkekasse")
         self.resize(800, 480)
         self.central = QtWidgets.QWidget()
+        self.central.setObjectName("central_widget")
         self.setCentralWidget(self.central)
 
         logo_path = Path(__file__).resolve().parent.parent / 'data' / 'background.png'
         if logo_path.exists():
             self.central.setStyleSheet(
+                "#central_widget{"
                 f"background-image: url('{logo_path}');"
                 "background-repeat: no-repeat;"
                 "background-position: center;"
+                "}"
             )
 
         self.stack = QtWidgets.QStackedLayout(self.central)
@@ -257,11 +260,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_button = QtWidgets.QPushButton("◀")
         self.next_button = QtWidgets.QPushButton("▶")
 
+        nav_size = QtCore.QSize(int(80 * 4 / 3), int(40 * 4 / 3))
         for btn in (self.prev_button, self.next_button):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
-            btn.setFixedSize(80, 40)
+            btn.setFixedSize(nav_size)
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
 
@@ -276,7 +280,7 @@ class MainWindow(QtWidgets.QMainWindow):
         f = self.admin_button.font()
         f.setPointSize(12)
         self.admin_button.setFont(f)
-        self.admin_button.setFixedSize(80, 40)
+        self.admin_button.setFixedSize(nav_size)
         self.admin_button.clicked.connect(self._open_admin)
         layout.addWidget(self.admin_button, bottom, 2,
                          alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
