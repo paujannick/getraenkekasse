@@ -20,6 +20,7 @@
 </table>
 <h2>Neu</h2>
 <form method="post" action="{{ url_for('user_add') }}">
+    {{ csrf_token() }}
     <input type="text" name="name" placeholder="Name">
 
     <input type="text" name="uid" id="uid_new" placeholder="UID">
@@ -31,6 +32,7 @@
 <h2>Guthaben aufladen</h2>
 <p>Für eine komfortable Ansicht siehe <a href="{{ url_for('topup') }}">Aufladen</a>.</p>
 <form method="post" action="{{ url_for('users_topup') }}">
+    {{ csrf_token() }}
     <input type="text" name="uid" id="uid_topup" placeholder="UID">
     <button type="button" onclick="readUid('uid_topup')">UID lesen</button>
     <span id="name_topup"></span>

@@ -3,12 +3,19 @@ from __future__ import annotations
 from functools import wraps
 from pathlib import Path
 from typing import Optional
+import os
+import secrets
 import sqlite3
 
 from .. import admin_auth
 
+from dotenv import load_dotenv
 from flask import Flask, redirect, render_template, request, session, url_for
 from flask import jsonify, make_response
+from flask_wtf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.utils import secure_filename
 import csv
 import io
 
@@ -17,8 +24,11 @@ from .. import database, models
 
 
 def create_app() -> Flask:
+    load_dotenv()
     app = Flask(__name__)
-    app.secret_key = 'change-me'
+    app.secret_key = os.getenv("SECRET_KEY") or secrets.token_hex(32)
+    CSRFProtect(app)
+    limiter = Limiter(app, key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
 
     def login_required(func):
         @wraps(func)
@@ -118,6 +128,7 @@ def create_app() -> Flask:
 
 
     @app.route('/login', methods=['GET', 'POST'])
+    @limiter.limit("5 per minute")
     def login():
         error: Optional[str] = None
         if request.method == 'POST':
@@ -156,9 +167,12 @@ def create_app() -> Flask:
         if image_file and image_file.filename:
             image_dir = Path(__file__).resolve().parent.parent / 'data' / 'images'
             image_dir.mkdir(parents=True, exist_ok=True)
-            dest = image_dir / image_file.filename
-            image_file.save(dest)
-            image_path = str(dest)
+            fname = secure_filename(image_file.filename)
+            ext = Path(fname).suffix.lower()
+            if ext in {'.png', '.jpg', '.jpeg', '.gif'}:
+                dest = image_dir / fname
+                image_file.save(dest)
+                image_path = str(dest)
 
         if name and price_euro is not None:
             price = int(price_euro * 100)
@@ -222,9 +236,12 @@ def create_app() -> Flask:
             if image_file and image_file.filename:
                 image_dir = Path(__file__).resolve().parent.parent / 'data' / 'images'
                 image_dir.mkdir(parents=True, exist_ok=True)
-                dest = image_dir / image_file.filename
-                image_file.save(dest)
-                image_path = str(dest)
+                fname = secure_filename(image_file.filename)
+                ext = Path(fname).suffix.lower()
+                if ext in {'.png', '.jpg', '.jpeg', '.gif'}:
+                    dest = image_dir / fname
+                    image_file.save(dest)
+                    image_path = str(dest)
             cur = conn.execute('SELECT page FROM drinks WHERE id=?', (drink_id,))
             old_page = cur.fetchone()['page']
             count = conn.execute('SELECT COUNT(*) FROM drinks WHERE page=?', (page,)).fetchone()[0]
