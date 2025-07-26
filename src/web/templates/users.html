@@ -49,6 +49,10 @@ function updateName() {
 document.getElementById('uid_topup').addEventListener('change', updateName);
 function readUid(targetId) {
     fetch('{{ url_for('read_uid') }}').then(r => r.json()).then(data => {
+        if(data.error){
+            alert(data.error);
+            return;
+        }
         var el = document.getElementById(targetId);
         el.value = data.uid;
         if(targetId === 'uid_topup') updateName();

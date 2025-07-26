@@ -25,7 +25,13 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
             QtWidgets.QMessageBox.warning(None, "RFID", "RFID-Reader nicht verfügbar")
         return None
 
-    reader = MFRC522()
+    try:
+        reader = MFRC522()
+    except Exception as e:  # pragma: no cover - hardware might be missing
+        print(f"RFID-Reader nicht verfügbar: {e}")
+        if show_dialog:
+            QtWidgets.QMessageBox.warning(None, "RFID", "RFID-Reader nicht verfügbar")
+        return None
     led.indicate_waiting()
 
     app = QtWidgets.QApplication.instance()
