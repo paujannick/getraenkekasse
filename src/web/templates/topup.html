@@ -2,6 +2,7 @@
 {% block content %}
 <h1>Guthaben aufladen</h1>
 <form method="post" action="{{ url_for('topup_submit') }}">
+    {{ csrf_token() }}
     <label>UID scannen:<br>
         <input type="text" name="uid" id="uid_scan" onchange="updateName()">
         <button type="button" onclick="readUid('uid_scan')">UID lesen</button>

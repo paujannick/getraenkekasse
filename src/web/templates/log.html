@@ -11,6 +11,7 @@
 <td>{{ r['quantity'] }}</td>
 <td>
     <form method="post" action="{{ url_for('transaction_delete', tx_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
+        {{ csrf_token() }}
         <button type="submit">Löschen</button>
     </form>
 </td>
@@ -18,6 +19,7 @@
 {% endfor %}
 </table>
 <form method="post" action="{{ url_for('transactions_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
+    {{ csrf_token() }}
     <button type="submit">Log löschen</button>
 </form>
 
@@ -32,6 +34,7 @@
 <td>{{ r['quantity'] }}</td>
 <td>
     <form method="post" action="{{ url_for('restock_delete', restock_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
+        {{ csrf_token() }}
         <button type="submit">Löschen</button>
     </form>
 </td>
@@ -39,6 +42,7 @@
 {% endfor %}
 </table>
 <form method="post" action="{{ url_for('restocks_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
+    {{ csrf_token() }}
     <button type="submit">Log löschen</button>
 </form>
 {% endblock %}

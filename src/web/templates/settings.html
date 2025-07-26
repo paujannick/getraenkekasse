@@ -2,6 +2,7 @@
 {% block content %}
 <h1>Einstellungen</h1>
 <form method="post">
+    {{ csrf_token() }}
     <label>Überziehungslimit in Euro:<br>
         <input type="number" step="0.01" name="overdraft" value="{{ overdraft_limit/100 }}">
     </label><br>
