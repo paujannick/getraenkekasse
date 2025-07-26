@@ -10,7 +10,6 @@
 <td>{{ (r['amount']/100)|round(2) }} €</td>
 <td>
     <form method="post" action="{{ url_for('topup_delete', topup_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
-        {{ csrf_token() }}
         <button type="submit">Löschen</button>
     </form>
 </td>
@@ -18,7 +17,6 @@
 {% endfor %}
 </table>
 <form method="post" action="{{ url_for('topup_log_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
-    {{ csrf_token() }}
     <button type="submit">Log löschen</button>
 </form>
 {% endblock %}

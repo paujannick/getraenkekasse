@@ -242,21 +242,8 @@ class MainWindow(QtWidgets.QMainWindow):
             button.setText(f"{drink.name}\n{drink.price/100:.2f} €")
             button.setFont(font)
             if drink.image:
-                pixmap = QtGui.QPixmap(drink.image)
-                tint = None
-                if drink.stock < 0:
-                    tint = QtGui.QColor(255, 0, 0, 100)
-                elif drink.stock < drink.min_stock:
-                    tint = QtGui.QColor(255, 255, 0, 100)
-                if tint is not None:
-                    colored = QtGui.QPixmap(pixmap.size())
-                    colored.fill(QtCore.Qt.transparent)
-                    painter = QtGui.QPainter(colored)
-                    painter.drawPixmap(0, 0, pixmap)
-                    painter.fillRect(colored.rect(), tint)
-                    painter.end()
-                    pixmap = colored
-                button.setIcon(QtGui.QIcon(pixmap))
+                button.setIcon(QtGui.QIcon(drink.image))
+
                 button.setIconSize(QtCore.QSize(120, 120))
             button.setMinimumSize(220, 140)
 

@@ -38,8 +38,6 @@ zuverlässiger ohne AUTH-Fehler.
    ./venv/bin/python -m src.web.admin_server
    ```
    Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
-   Setze zuvor eine Umgebungsvariable `SECRET_KEY` oder lege eine `.env`-Datei mit
-   `SECRET_KEY=<zufallswert>` an, damit Sitzungsdaten sicher signiert werden.
    Das Passwort kann im Web-Admin unter "Passwort" geändert werden. Es wird
    verschlüsselt in `data/admin_pw.txt` gespeichert.
 
