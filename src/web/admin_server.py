@@ -33,7 +33,9 @@ def create_app() -> Flask:
     @login_required
     def read_uid():
         uid = models.rfid_read_for_web()
-        return jsonify({'uid': uid or ''})
+        if uid is None:
+            return jsonify({'uid': '', 'error': 'RFID-Reader nicht verfügbar'})
+        return jsonify({'uid': uid})
 
     @app.route('/user_name')
     @login_required

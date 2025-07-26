@@ -11,6 +11,10 @@
 <script>
 function readUid(targetId) {
     fetch('{{ url_for('read_uid') }}').then(r => r.json()).then(data => {
+        if(data.error){
+            alert(data.error);
+            return;
+        }
         document.getElementById(targetId).value = data.uid;
     });
 }
