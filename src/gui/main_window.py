@@ -246,15 +246,14 @@ class MainWindow(QtWidgets.QMainWindow):
             button.setFont(font)
             if drink.image:
                 button.setIcon(QtGui.QIcon(drink.image))
-
-                button.setIconSize(QtCore.QSize(120, 120))
+                button.setIconSize(QtCore.QSize(100, 100))
             button.setMinimumSize(220, 120)
 
-            style = 'background-color:#eee;'
+            style = 'QPushButton { background-color: #eee; }'
             if drink.stock < 0:
-                style = 'background-color:#f00; color:#888;'
+                style = 'QPushButton { background-color: #f00; color: #888; }'
             elif drink.stock < drink.min_stock:
-                style = 'background-color:#ff0;'
+                style = 'QPushButton { background-color: #ff0; }'
             button.setStyleSheet(style)
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
