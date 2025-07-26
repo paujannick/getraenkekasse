@@ -252,9 +252,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             style = ""
             if drink.stock < 0:
-                style = "background-color: red; color: gray;"
+                style = "color: red;"
             elif drink.stock < drink.min_stock:
-                style = "background-color: yellow;"
+                style = "color: orange;"
 
             button.setStyleSheet(style)
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
