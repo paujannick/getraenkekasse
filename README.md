@@ -45,7 +45,7 @@ zuverlässiger ohne AUTH-Fehler.
 
 Die GUI zeigt optional ein DRK-Logo im Hintergrund an. Lege dazu eine Bilddatei unter `data/background.png` ab. Ist diese Datei nicht vorhanden, wird kein Hintergrundbild angezeigt.
 
-Die Startseite zeigt maximal neun Getränke je Seite an. Über Pfeiltasten am unteren Rand lässt sich zwischen zwei Seiten wechseln. In den Getränkeeinstellungen kann mit dem neuen Feld "Seite" festgelegt werden, auf welcher Seite ein Artikel erscheint. Unterschreitet ein Getränk seinen Mindestbestand, wird der zugehörige Button in der GUI gelb hinterlegt.
+Die Startseite zeigt maximal neun Getränke je Seite an. Über Pfeiltasten am unteren Rand lässt sich zwischen zwei Seiten wechseln. In den Getränkeeinstellungen kann mit dem neuen Feld "Seite" festgelegt werden, auf welcher Seite ein Artikel erscheint. Unterschreitet ein Getränk seinen Mindestbestand, wird der zugehörige Button in der GUI gelb hinterlegt. Fällt der Lagerbestand unter 0, erscheint der Button deutlich rot und der Text wird ausgegraut.
 
 Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
 Über die Einstellungen lässt sich zudem eine spezielle Aufladekarte definieren.
