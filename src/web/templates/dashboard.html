@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Dashboard</h1>
+<table>
+<tr>
+<th>Monat</th>
+<th>Einzahlungen</th>
+<th>Barkäufe Anzahl</th>
+<th>Barkäufe €</th>
+<th>Kartenkäufe Anzahl</th>
+<th>Kartenkäufe €</th>
+</tr>
+{% for r in stats %}
+<tr>
+<td>{{ r.month }}</td>
+<td>{{ (r.topup/100)|round(2) }} €</td>
+<td>{{ r.cash_count }}</td>
+<td>{{ (r.cash_value/100)|round(2) }} €</td>
+<td>{{ r.card_count }}</td>
+<td>{{ (r.card_value/100)|round(2) }} €</td>
+</tr>
+{% endfor %}
+</table>
+<p>Jahressumme Einzahlungen: {{ (totals.topup/100)|round(2) }} €</p>
+<p>Jahressumme Barkäufe: {{ totals.cash_count }} Stück / {{ (totals.cash_value/100)|round(2) }} €</p>
+<p>Jahressumme Kartenkäufe: {{ totals.card_count }} Stück / {{ (totals.card_value/100)|round(2) }} €</p>
+<p>Gesamt: {{ (totals.all_value/100)|round(2) }} €</p>
+<a href="{{ url_for('dashboard_receipt') }}" target="_blank">Quittung drucken</a>
+{% endblock %}
