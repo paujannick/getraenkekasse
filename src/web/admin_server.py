@@ -14,7 +14,7 @@ from flask import Flask, redirect, render_template, request, session, url_for
 from flask import jsonify, make_response
 from flask_wtf import CSRFProtect
 from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask_limiter.util import remote_address
 from werkzeug.utils import secure_filename
 import csv
 import io
@@ -28,7 +28,8 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = os.getenv("SECRET_KEY") or secrets.token_hex(32)
     CSRFProtect(app)
-    limiter = Limiter(app, key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
+    limiter = Limiter(key_func=remote_address, default_limits=["200 per day", "50 per hour"])
+    limiter.init_app(app)
 
     def login_required(func):
         @wraps(func)
