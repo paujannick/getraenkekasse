@@ -248,9 +248,9 @@ class MainWindow(QtWidgets.QMainWindow):
             button.setMinimumSize(220, 140)
 
             if drink.stock < 0:
-                button.setStyleSheet('background-color:#fdd;')
+                button.setStyleSheet('background-color:#f00; color:#888;')
             elif drink.stock < drink.min_stock:
-                button.setStyleSheet('background-color:#ffd;')
+                button.setStyleSheet('background-color:#ff0;')
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
             layout.addWidget(button, r, c)
