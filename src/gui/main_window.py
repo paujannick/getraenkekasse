@@ -252,7 +252,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             style = ""
             if drink.stock < 0:
-                style = "color: gray;"
+                style = "color: red;"
             elif drink.stock < drink.min_stock:
                 style = "color: orange;"
 
