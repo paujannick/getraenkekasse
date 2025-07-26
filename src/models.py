@@ -4,7 +4,6 @@ import sqlite3
 
 from .database import get_connection, get_setting, set_setting
 
-from . import rfid
 
 # Maximum number of transactions to keep in the log
 MAX_TRANSACTIONS = 10000
@@ -293,6 +292,8 @@ def get_drinks_below_min(conn: Optional[sqlite3.Connection] = None) -> list[Drin
 
 def rfid_read_for_web() -> Optional[str]:
     """Read a UID for the web interface using the normal reader dialog."""
+    from . import rfid
+
     return rfid.read_uid()
 
 
