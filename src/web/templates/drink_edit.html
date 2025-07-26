@@ -3,6 +3,7 @@
 <h1>Getränk bearbeiten</h1>
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 <form method="post" enctype="multipart/form-data">
+    {{ csrf_token() }}
     <label>Name:<br><input type="text" name="name" value="{{ drink['name'] }}"></label><br>
     <label>Preis in Euro:<br><input type="number" step="0.01" name="price" value="{{ (drink['price']/100)|round(2) }}"></label><br>
     <label>Lagerbestand:<br><input type="number" name="stock" value="{{ drink['stock'] }}"></label><br>

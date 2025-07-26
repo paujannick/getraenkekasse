@@ -2,6 +2,7 @@
 {% block content %}
 <h1>Benutzer bearbeiten</h1>
 <form method="post">
+    {{ csrf_token() }}
     <label>Name:<br><input type="text" name="name" value="{{ user['name'] }}"></label><br>
     <label>UID:<br><input type="text" name="uid" id="uid_edit" value="{{ user['rfid_uid'] }}"></label>
     <button type="button" onclick="readUid('uid_edit')">UID lesen</button><br>
