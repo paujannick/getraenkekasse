@@ -4,12 +4,10 @@
 <p>Willkommen!</p>
 
 <form method="post" action="{{ url_for('refresh') }}">
-    {{ csrf_token() }}
     <button type="submit">GUI aktualisieren</button>
 </form>
 
 <form method="post" action="{{ url_for('stop') }}" onsubmit="return confirm('Anwendung wirklich beenden?');">
-    {{ csrf_token() }}
     <button type="submit">Beenden</button>
 </form>
 

@@ -8,7 +8,6 @@
 <tr><td>{{ f }}</td>
 <td>
 <form method="post" action="{{ url_for('file_logs_delete', name=f) }}" onsubmit="return confirm('Log wirklich löschen?');">
-{{ csrf_token() }}
 <button type="submit">Löschen</button>
 </form>
 </td></tr>

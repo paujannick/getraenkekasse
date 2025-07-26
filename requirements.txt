@@ -5,7 +5,3 @@ mfrc522
 rpi_ws281x
 adafruit-circuitpython-neopixel
 pyserial>=3.0
-python-dotenv
-Flask-WTF
-Flask-Limiter
-bcrypt

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import bcrypt
+import hashlib
 
 import os
 
@@ -8,11 +8,9 @@ from pathlib import Path
 
 ADMIN_PW_FILE = Path(__file__).resolve().parent.parent / 'data' / 'admin_pw.txt'
 
-DEFAULT_HASH = bcrypt.hashpw(b'admin', bcrypt.gensalt())
-
 
 def _default_hash() -> str:
-    return DEFAULT_HASH.decode()
+    return hashlib.sha256('admin'.encode()).hexdigest()
 
 
 def get_password_hash() -> str:
@@ -22,15 +20,14 @@ def get_password_hash() -> str:
 
 
 def verify_password(password: str) -> bool:
-    hashed = get_password_hash().encode()
-    return bcrypt.checkpw(password.encode(), hashed)
+    return hashlib.sha256(password.encode()).hexdigest() == get_password_hash()
 
 
 def set_password(password: str) -> None:
     ADMIN_PW_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     tmp_path = ADMIN_PW_FILE.with_suffix('.tmp')
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    hashed = hashlib.sha256(password.encode()).hexdigest()
     with open(tmp_path, 'w', encoding='utf-8') as fh:
         fh.write(hashed)
         fh.flush()
