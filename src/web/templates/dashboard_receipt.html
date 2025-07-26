@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Jahresübersicht</h1>
+<table>
+<tr>
+<th>Monat</th>
+<th>Einzahlungen</th>
+<th>Barkäufe</th>
+<th>Kartenkäufe</th>
+</tr>
+{% for r in stats %}
+<tr>
+<td>{{ r.month }}</td>
+<td>{{ (r.topup/100)|round(2) }} €</td>
+<td>{{ r.cash_count }} / {{ (r.cash_value/100)|round(2) }} €</td>
+<td>{{ r.card_count }} / {{ (r.card_value/100)|round(2) }} €</td>
+</tr>
+{% endfor %}
+</table>
+<p>Jahressumme Einzahlungen: {{ (totals.topup/100)|round(2) }} €</p>
+<p>Jahressumme Barkäufe: {{ totals.cash_count }} Stück / {{ (totals.cash_value/100)|round(2) }} €</p>
+<p>Jahressumme Kartenkäufe: {{ totals.card_count }} Stück / {{ (totals.card_value/100)|round(2) }} €</p>
+<p>Gesamt: {{ (totals.all_value/100)|round(2) }} €</p>
+<script>window.print();</script>
+{% endblock %}

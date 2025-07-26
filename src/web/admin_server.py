@@ -57,6 +57,19 @@ def create_app() -> Flask:
         return render_template('index.html', to_buy=to_buy)
 
 
+    @app.route('/dashboard')
+    @login_required
+    def dashboard():
+        stats, totals = models.get_monthly_stats()
+        return render_template('dashboard.html', stats=stats, totals=totals)
+
+    @app.route('/dashboard/receipt')
+    @login_required
+    def dashboard_receipt():
+        stats, totals = models.get_monthly_stats()
+        return render_template('dashboard_receipt.html', stats=stats, totals=totals)
+
+
     @app.route('/refresh', methods=['POST'])
     @login_required
     def refresh():

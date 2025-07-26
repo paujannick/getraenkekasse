@@ -295,3 +295,91 @@ def rfid_read_for_web() -> Optional[str]:
     """Read a UID for the web interface using the normal reader dialog."""
     return rfid.read_uid()
 
+
+def _month_list(months: int) -> list[str]:
+    """Return a list of year-month strings for the last ``months`` months."""
+    from datetime import date
+
+    today = date.today()
+    res: list[str] = []
+    y = today.year
+    m = today.month
+    for _ in range(months):
+        res.append(f"{y:04d}-{m:02d}")
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    return list(reversed(res))
+
+
+def get_monthly_stats(months: int = 12) -> tuple[list[dict[str, int]], dict[str, int]]:
+    """Return statistics for the last ``months`` months."""
+    if months <= 0:
+        return [], {}
+
+    month_strings = _month_list(months)
+    start = month_strings[0] + "-01"
+
+    conn = get_connection()
+    try:
+        topup_rows = conn.execute(
+            "SELECT strftime('%Y-%m', timestamp) AS ym, "
+            "SUM(amount) AS total FROM topups WHERE timestamp >= ? "
+            "GROUP BY ym",
+            (start,),
+        ).fetchall()
+        topups = {row["ym"]: row["total"] for row in topup_rows}
+
+        cash_rows = conn.execute(
+            "SELECT strftime('%Y-%m', t.timestamp) AS ym, "
+            "SUM(t.quantity) AS cnt, "
+            "SUM(t.quantity * d.price) AS val "
+            "FROM transactions t "
+            "JOIN drinks d ON d.id = t.drink_id "
+            "JOIN users u ON u.id = t.user_id "
+            "WHERE u.name='BARZAHLUNG' AND t.timestamp >= ? "
+            "GROUP BY ym",
+            (start,),
+        ).fetchall()
+        cash = {row["ym"]: {"cnt": row["cnt"], "val": row["val"]} for row in cash_rows}
+
+        card_rows = conn.execute(
+            "SELECT strftime('%Y-%m', t.timestamp) AS ym, "
+            "SUM(t.quantity) AS cnt, "
+            "SUM(t.quantity * d.price) AS val "
+            "FROM transactions t "
+            "JOIN drinks d ON d.id = t.drink_id "
+            "JOIN users u ON u.id = t.user_id "
+            "WHERE u.name!='BARZAHLUNG' AND t.timestamp >= ? "
+            "GROUP BY ym",
+            (start,),
+        ).fetchall()
+        card = {row["ym"]: {"cnt": row["cnt"], "val": row["val"]} for row in card_rows}
+
+        stats: list[dict[str, int]] = []
+        totals = {
+            "topup": 0,
+            "cash_count": 0,
+            "cash_value": 0,
+            "card_count": 0,
+            "card_value": 0,
+        }
+        for ym in month_strings:
+            row = {
+                "month": ym,
+                "topup": int(topups.get(ym, 0) or 0),
+                "cash_count": int(cash.get(ym, {}).get("cnt", 0) or 0),
+                "cash_value": int(cash.get(ym, {}).get("val", 0) or 0),
+                "card_count": int(card.get(ym, {}).get("cnt", 0) or 0),
+                "card_value": int(card.get(ym, {}).get("val", 0) or 0),
+            }
+            for k in ("topup", "cash_count", "cash_value", "card_count", "card_value"):
+                totals[k] += row[k]
+            stats.append(row)
+
+        totals["all_value"] = totals["topup"] + totals["cash_value"] + totals["card_value"]
+        return stats, totals
+    finally:
+        conn.close()
+
