@@ -250,22 +250,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 button.setIconSize(QtCore.QSize(120, 120))
             button.setMinimumSize(220, 120)
 
-            bg_color = '#eee'
-            text_color: str | None = None
+            style = ""
             if drink.stock < 0:
-                bg_color = '#f00'
-                text_color = '#888'
+                style = "color: gray;"
             elif drink.stock < drink.min_stock:
-                bg_color = '#ff0'
+                style = "color: orange;"
 
-            # Set palette colors to ensure the button background is displayed
-            pal = button.palette()
-            pal.setColor(QtGui.QPalette.Button, QtGui.QColor(bg_color))
-            if text_color is not None:
-                pal.setColor(QtGui.QPalette.ButtonText, QtGui.QColor(text_color))
-            button.setAutoFillBackground(True)
-            button.setPalette(pal)
-            button.update()
+            button.setStyleSheet(style)
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
             layout.addWidget(button, r, c)
