@@ -248,12 +248,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 button.setIcon(QtGui.QIcon(drink.image))
 
                 button.setIconSize(QtCore.QSize(120, 120))
-            button.setMinimumSize(220, 140)
+            button.setMinimumSize(220, 120)
 
+            style = 'background-color:#eee;'
             if drink.stock < 0:
-                button.setStyleSheet('background-color:#f00; color:#888;')
+                style = 'background-color:#f00; color:#888;'
             elif drink.stock < drink.min_stock:
-                button.setStyleSheet('background-color:#ff0;')
+                style = 'background-color:#ff0;'
+            button.setStyleSheet(style)
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx, 3)
             layout.addWidget(button, r, c)
@@ -272,7 +274,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         spacer_row = rows
         bottom = rows + 1
-        layout.setRowStretch(spacer_row, 1)
+        layout.setRowStretch(spacer_row, 0)
         layout.addWidget(self.prev_button, bottom, 0, alignment=QtCore.Qt.AlignBottom)
         layout.addWidget(self.next_button, bottom, 1, alignment=QtCore.Qt.AlignBottom)
 
