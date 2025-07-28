@@ -312,12 +312,12 @@ def create_app() -> Flask:
         count = conn.execute('SELECT COUNT(*) FROM topups').fetchone()[0]
         pages = max((count + PER_PAGE - 1) // PER_PAGE, 1)
         offset = (page - 1) * PER_PAGE
-        cur = conn.execute(
+        query = (
             'SELECT t.id, t.timestamp, u.name as user_name, t.amount '
             'FROM topups t JOIN users u ON u.id = t.user_id '
-            'ORDER BY t.timestamp DESC LIMIT ? OFFSET ?',
-            (PER_PAGE, offset),
+            f'ORDER BY t.timestamp DESC LIMIT {PER_PAGE} OFFSET {int(offset)}'
         )
+        cur = conn.execute(query)
         items = cur.fetchall()
         conn.close()
         return render_template('topup_log.html', items=items, page=page, pages=pages)
@@ -423,25 +423,25 @@ def create_app() -> Flask:
         tx_count = conn.execute('SELECT COUNT(*) FROM transactions').fetchone()[0]
         tx_pages = max((tx_count + PER_PAGE - 1) // PER_PAGE, 1)
         tx_offset = (tx_page - 1) * PER_PAGE
-        cur = conn.execute(
+        query_tx = (
             'SELECT t.id, t.timestamp, u.name as user_name, d.name as drink_name, t.quantity '
             'FROM transactions t '
             'JOIN users u ON u.id = t.user_id '
             'JOIN drinks d ON d.id = t.drink_id '
-            'ORDER BY t.timestamp DESC LIMIT ? OFFSET ?',
-            (PER_PAGE, tx_offset),
+            f'ORDER BY t.timestamp DESC LIMIT {PER_PAGE} OFFSET {int(tx_offset)}'
         )
+        cur = conn.execute(query_tx)
         items = cur.fetchall()
 
         restock_count = conn.execute('SELECT COUNT(*) FROM restocks').fetchone()[0]
         restock_pages = max((restock_count + PER_PAGE - 1) // PER_PAGE, 1)
         restock_offset = (restock_page - 1) * PER_PAGE
-        restocks = conn.execute(
+        query_restock = (
             'SELECT r.id, r.timestamp, d.name as drink_name, r.quantity '
             'FROM restocks r JOIN drinks d ON d.id = r.drink_id '
-            'ORDER BY r.timestamp DESC LIMIT ? OFFSET ?',
-            (PER_PAGE, restock_offset),
-        ).fetchall()
+            f'ORDER BY r.timestamp DESC LIMIT {PER_PAGE} OFFSET {int(restock_offset)}'
+        )
+        restocks = conn.execute(query_restock).fetchall()
         conn.close()
         return render_template(
             'log.html',
