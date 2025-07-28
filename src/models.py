@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 import sqlite3
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from .database import get_connection, get_setting, set_setting
 
@@ -11,9 +12,12 @@ from . import rfid
 MAX_TRANSACTIONS = 10000
 
 
+LOCAL_TZ = ZoneInfo("Europe/Berlin")
+
+
 def _now() -> str:
     """Return the current local time as ISO string."""
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.now(LOCAL_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_overdraft_limit(conn: Optional[sqlite3.Connection] = None) -> int:
