@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 import sqlite3
+from datetime import datetime
 
 from .database import get_connection, get_setting, set_setting
 
@@ -8,6 +9,11 @@ from . import rfid
 
 # Maximum number of transactions to keep in the log
 MAX_TRANSACTIONS = 10000
+
+
+def _now() -> str:
+    """Return the current local time as ISO string."""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_overdraft_limit(conn: Optional[sqlite3.Connection] = None) -> int:
@@ -102,8 +108,10 @@ def add_transaction(user_id: int, drink_id: int, quantity: int) -> None:
     try:
         with get_connection() as conn:
             conn.execute(
-                'INSERT INTO transactions (user_id, drink_id, quantity) VALUES (?, ?, ?)',
-                (user_id, drink_id, quantity))
+                'INSERT INTO transactions (user_id, drink_id, quantity, timestamp) '
+                'VALUES (?, ?, ?, ?)',
+                (user_id, drink_id, quantity, _now()),
+            )
             conn.execute(
                 'DELETE FROM transactions WHERE id NOT IN ('
                 'SELECT id FROM transactions ORDER BY id DESC LIMIT ?)',
@@ -159,8 +167,9 @@ def log_restock(drink_id: int, quantity: int) -> None:
     try:
         with get_connection() as conn:
             conn.execute(
-                'INSERT INTO restocks (drink_id, quantity) VALUES (?, ?)',
-                (drink_id, quantity),
+                'INSERT INTO restocks (drink_id, quantity, timestamp) '
+                'VALUES (?, ?, ?)',
+                (drink_id, quantity, _now()),
             )
             conn.commit()
     except sqlite3.Error as e:  # pragma: no cover - DB failure
@@ -189,8 +198,9 @@ def add_topup(user_id: int, amount: int) -> None:
     try:
         with get_connection() as conn:
             conn.execute(
-                'INSERT INTO topups (user_id, amount) VALUES (?, ?)',
-                (user_id, amount),
+                'INSERT INTO topups (user_id, amount, timestamp) '
+                'VALUES (?, ?, ?)',
+                (user_id, amount, _now()),
             )
             conn.execute(
                 'DELETE FROM topups WHERE id NOT IN ('
