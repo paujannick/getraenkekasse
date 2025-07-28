@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Aufladungen</h1>
+<div class="pagination">
+{% if page > 1 %}
+<a href="{{ url_for('topup_log', page=page-1) }}">&laquo; Zurück</a>
+{% endif %}
+<span>Seite {{ page }} / {{ pages }}</span>
+{% if page < pages %}
+<a href="{{ url_for('topup_log', page=page+1) }}">Weiter &raquo;</a>
+{% endif %}
+</div>
 <table>
 <tr><th>Zeitpunkt</th><th>Benutzer</th><th>Betrag</th><th>Aktion</th></tr>
 {% for r in items %}
@@ -16,6 +25,15 @@
 </tr>
 {% endfor %}
 </table>
+<div class="pagination">
+{% if page > 1 %}
+<a href="{{ url_for('topup_log', page=page-1) }}">&laquo; Zurück</a>
+{% endif %}
+<span>Seite {{ page }} / {{ pages }}</span>
+{% if page < pages %}
+<a href="{{ url_for('topup_log', page=page+1) }}">Weiter &raquo;</a>
+{% endif %}
+</div>
 <form method="post" action="{{ url_for('topup_log_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
     <button type="submit">Log löschen</button>
 </form>
