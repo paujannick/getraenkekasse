@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Transaktionen</h1>
+<div class="pagination">
+{% if tx_page > 1 %}
+<a href="{{ url_for('log', tx_page=tx_page-1, restock_page=restock_page) }}">&laquo; Zurück</a>
+{% endif %}
+<span>Seite {{ tx_page }} / {{ tx_pages }}</span>
+{% if tx_page < tx_pages %}
+<a href="{{ url_for('log', tx_page=tx_page+1, restock_page=restock_page) }}">Weiter &raquo;</a>
+{% endif %}
+</div>
 <table>
 <tr><th>Zeitpunkt</th><th>Benutzer</th><th>Getränk</th><th>Menge</th><th>Aktion</th></tr>
 {% for r in items %}
@@ -17,12 +26,30 @@
 </tr>
 {% endfor %}
 </table>
+<div class="pagination">
+{% if tx_page > 1 %}
+<a href="{{ url_for('log', tx_page=tx_page-1, restock_page=restock_page) }}">&laquo; Zurück</a>
+{% endif %}
+<span>Seite {{ tx_page }} / {{ tx_pages }}</span>
+{% if tx_page < tx_pages %}
+<a href="{{ url_for('log', tx_page=tx_page+1, restock_page=restock_page) }}">Weiter &raquo;</a>
+{% endif %}
+</div>
 <form method="post" action="{{ url_for('transactions_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
     <button type="submit">Log löschen</button>
 </form>
 
 
 <h2>Auffüllungen</h2>
+<div class="pagination">
+{% if restock_page > 1 %}
+<a href="{{ url_for('log', tx_page=tx_page, restock_page=restock_page-1) }}">&laquo; Zurück</a>
+{% endif %}
+<span>Seite {{ restock_page }} / {{ restock_pages }}</span>
+{% if restock_page < restock_pages %}
+<a href="{{ url_for('log', tx_page=tx_page, restock_page=restock_page+1) }}">Weiter &raquo;</a>
+{% endif %}
+</div>
 <table>
 <tr><th>Zeitpunkt</th><th>Getränk</th><th>Menge</th><th>Aktion</th></tr>
 {% for r in restocks %}
@@ -38,6 +65,15 @@
 </tr>
 {% endfor %}
 </table>
+<div class="pagination">
+{% if restock_page > 1 %}
+<a href="{{ url_for('log', tx_page=tx_page, restock_page=restock_page-1) }}">&laquo; Zurück</a>
+{% endif %}
+<span>Seite {{ restock_page }} / {{ restock_pages }}</span>
+{% if restock_page < restock_pages %}
+<a href="{{ url_for('log', tx_page=tx_page, restock_page=restock_page+1) }}">Weiter &raquo;</a>
+{% endif %}
+</div>
 <form method="post" action="{{ url_for('restocks_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
     <button type="submit">Log löschen</button>
 </form>

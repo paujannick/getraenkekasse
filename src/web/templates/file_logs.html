@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Programmlogs</h1>
+<div class="pagination">
+{% if page > 1 %}
+<a href="{{ url_for('file_logs', page=page-1) }}">&laquo; Zurück</a>
+{% endif %}
+<span>Seite {{ page }} / {{ pages }}</span>
+{% if page < pages %}
+<a href="{{ url_for('file_logs', page=page+1) }}">Weiter &raquo;</a>
+{% endif %}
+</div>
 {% if files %}
 <table>
 <tr><th>Datei</th><th>Aktion</th></tr>
@@ -13,6 +22,15 @@
 </td></tr>
 {% endfor %}
 </table>
+<div class="pagination">
+{% if page > 1 %}
+<a href="{{ url_for('file_logs', page=page-1) }}">&laquo; Zurück</a>
+{% endif %}
+<span>Seite {{ page }} / {{ pages }}</span>
+{% if page < pages %}
+<a href="{{ url_for('file_logs', page=page+1) }}">Weiter &raquo;</a>
+{% endif %}
+</div>
 {% else %}
 <p>Keine Logs vorhanden.</p>
 {% endif %}
