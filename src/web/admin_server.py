@@ -19,6 +19,7 @@ from .. import database, models
 def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = 'change-me'
+    PER_PAGE = 25
 
     def login_required(func):
         @wraps(func)
@@ -306,8 +307,20 @@ def create_app() -> Flask:
     @app.route('/topup_log')
     @login_required
     def topup_log():
-        items = models.get_topup_log()
-        return render_template('topup_log.html', items=items)
+        page = request.args.get('page', default=1, type=int)
+        conn = database.get_connection()
+        count = conn.execute('SELECT COUNT(*) FROM topups').fetchone()[0]
+        pages = max((count + PER_PAGE - 1) // PER_PAGE, 1)
+        offset = (page - 1) * PER_PAGE
+        query = (
+            'SELECT t.id, t.timestamp, u.name as user_name, t.amount '
+            'FROM topups t JOIN users u ON u.id = t.user_id '
+            f'ORDER BY t.timestamp DESC LIMIT {PER_PAGE} OFFSET {int(offset)}'
+        )
+        cur = conn.execute(query)
+        items = cur.fetchall()
+        conn.close()
+        return render_template('topup_log.html', items=items, page=page, pages=pages)
 
 
     @app.route('/topup_log/clear', methods=['POST'])
@@ -403,17 +416,42 @@ def create_app() -> Flask:
     @app.route('/log')
     @login_required
     def log():
+        tx_page = request.args.get('tx_page', default=1, type=int)
+        restock_page = request.args.get('restock_page', default=1, type=int)
+
         conn = database.get_connection()
-        cur = conn.execute(
+        tx_count = conn.execute('SELECT COUNT(*) FROM transactions').fetchone()[0]
+        tx_pages = max((tx_count + PER_PAGE - 1) // PER_PAGE, 1)
+        tx_offset = (tx_page - 1) * PER_PAGE
+        query_tx = (
             'SELECT t.id, t.timestamp, u.name as user_name, d.name as drink_name, t.quantity '
             'FROM transactions t '
             'JOIN users u ON u.id = t.user_id '
             'JOIN drinks d ON d.id = t.drink_id '
-            'ORDER BY t.timestamp DESC LIMIT 100')
+            f'ORDER BY t.timestamp DESC LIMIT {PER_PAGE} OFFSET {int(tx_offset)}'
+        )
+        cur = conn.execute(query_tx)
         items = cur.fetchall()
-        restocks = models.get_restock_log(100)
+
+        restock_count = conn.execute('SELECT COUNT(*) FROM restocks').fetchone()[0]
+        restock_pages = max((restock_count + PER_PAGE - 1) // PER_PAGE, 1)
+        restock_offset = (restock_page - 1) * PER_PAGE
+        query_restock = (
+            'SELECT r.id, r.timestamp, d.name as drink_name, r.quantity '
+            'FROM restocks r JOIN drinks d ON d.id = r.drink_id '
+            f'ORDER BY r.timestamp DESC LIMIT {PER_PAGE} OFFSET {int(restock_offset)}'
+        )
+        restocks = conn.execute(query_restock).fetchall()
         conn.close()
-        return render_template('log.html', items=items, restocks=restocks)
+        return render_template(
+            'log.html',
+            items=items,
+            restocks=restocks,
+            tx_page=tx_page,
+            tx_pages=tx_pages,
+            restock_page=restock_page,
+            restock_pages=restock_pages,
+        )
 
     @app.route('/log/transactions_clear', methods=['POST'])
     @login_required
@@ -578,11 +616,21 @@ def create_app() -> Flask:
     @app.route('/file_logs')
     @login_required
     def file_logs():
+        page = request.args.get('page', default=1, type=int)
         log_dir = Path(__file__).resolve().parents[1] / 'logs'
-        files = []
+        files: list[Path] = []
         if log_dir.exists():
-            files = sorted(log_dir.glob('log_*.txt'))
-        return render_template('file_logs.html', files=[f.name for f in files])
+            files = sorted(log_dir.glob('log_*.txt'), reverse=True)
+        total = len(files)
+        pages = max((total + PER_PAGE - 1) // PER_PAGE, 1)
+        start = (page - 1) * PER_PAGE
+        files = files[start : start + PER_PAGE]
+        return render_template(
+            'file_logs.html',
+            files=[f.name for f in files],
+            page=page,
+            pages=pages,
+        )
 
     @app.route('/file_logs/delete/<name>', methods=['POST'])
     @login_required
