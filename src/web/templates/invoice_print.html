@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Rechnung für {{ user['name'] }}</h1>
+<table>
+<tr><th>Zeit</th><th>Artikel</th><th>Menge</th><th>Preis</th><th>Summe</th></tr>
+{% for i in items %}
+<tr>
+<td>{{ i['timestamp'] }}</td>
+<td>{{ i['name'] }}</td>
+<td>{{ i['quantity'] }}</td>
+<td>{{ (i['price']/100)|round(2) }} €</td>
+<td>{{ (i['quantity']*i['price']/100)|round(2) }} €</td>
+</tr>
+{% endfor %}
+</table>
+<p><strong>Gesamt:</strong> {{ (total/100)|round(2) }} €</p>
+{% endblock %}

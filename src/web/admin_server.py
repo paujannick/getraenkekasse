@@ -266,16 +266,25 @@ def create_app() -> Flask:
     @login_required
     def users(error: Optional[str] = None):
         conn = database.get_connection()
-        cur = conn.execute('SELECT * FROM users ORDER BY name')
+        cur = conn.execute('SELECT * FROM users WHERE is_invoice=0 ORDER BY name')
         items = cur.fetchall()
         conn.close()
         return render_template('users.html', users=items, error=error)
+
+    @app.route('/invoice_users')
+    @login_required
+    def invoice_users(error: Optional[str] = None):
+        conn = database.get_connection()
+        cur = conn.execute('SELECT * FROM users WHERE is_invoice=1 ORDER BY name')
+        items = cur.fetchall()
+        conn.close()
+        return render_template('invoice_users.html', users=items, error=error)
 
     @app.route('/topup')
     @login_required
     def topup():
         conn = database.get_connection()
-        cur = conn.execute('SELECT id, name FROM users ORDER BY name')
+        cur = conn.execute('SELECT id, name FROM users WHERE is_invoice=0 ORDER BY name')
         items = cur.fetchall()
         conn.close()
         return render_template('topup.html', users=items)
@@ -361,11 +370,37 @@ def create_app() -> Flask:
                 conn.close()
         if error:
             conn = database.get_connection()
-            cur = conn.execute('SELECT * FROM users ORDER BY name')
+            cur = conn.execute('SELECT * FROM users WHERE is_invoice=0 ORDER BY name')
             items = cur.fetchall()
             conn.close()
             return render_template('users.html', users=items, error=error)
         return redirect(url_for('users'))
+
+    @app.route('/invoice_users/add', methods=['POST'])
+    @login_required
+    def invoice_user_add():
+        name = request.form.get('name')
+        uid = request.form.get('uid')
+        error: Optional[str] = None
+        if name and uid:
+            conn = database.get_connection()
+            try:
+                conn.execute(
+                    'INSERT INTO users (name, rfid_uid, balance, is_invoice, active) VALUES (?, ?, 0, 1, 1)',
+                    (name, uid),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                error = 'RFID-UID bereits vergeben'
+            finally:
+                conn.close()
+        if error:
+            conn = database.get_connection()
+            cur = conn.execute('SELECT * FROM users WHERE is_invoice=1 ORDER BY name')
+            items = cur.fetchall()
+            conn.close()
+            return render_template('invoice_users.html', users=items, error=error)
+        return redirect(url_for('invoice_users'))
 
 
     @app.route('/users/topup', methods=['POST'])
@@ -394,6 +429,36 @@ def create_app() -> Flask:
         conn.close()
         return redirect(url_for('users'))
 
+    @app.route('/invoice_users/delete/<int:user_id>')
+    @login_required
+    def invoice_user_delete(user_id: int):
+        conn = database.get_connection()
+        conn.execute('DELETE FROM users WHERE id = ? AND is_invoice=1', (user_id,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('invoice_users'))
+
+    @app.route('/invoice_users/print/<int:user_id>')
+    @login_required
+    def invoice_user_print(user_id: int):
+        conn = database.get_connection()
+        user = conn.execute(
+            'SELECT * FROM users WHERE id=? AND is_invoice=1', (user_id,)
+        ).fetchone()
+        if not user:
+            conn.close()
+            return redirect(url_for('invoice_users'))
+        cur = conn.execute(
+            'SELECT t.timestamp, d.name, t.quantity, d.price '
+            'FROM transactions t JOIN drinks d ON d.id = t.drink_id '
+            'WHERE t.user_id=? ORDER BY t.timestamp',
+            (user_id,),
+        )
+        items = cur.fetchall()
+        conn.close()
+        total = sum(r['quantity'] * r['price'] for r in items)
+        return render_template('invoice_print.html', user=user, items=items, total=total)
+
     @app.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
     @login_required
     def user_edit(user_id: int):
@@ -402,12 +467,22 @@ def create_app() -> Flask:
             name = request.form.get('name')
             uid = request.form.get('uid')
             balance_euro = request.form.get('balance', type=float)
+            is_invoice = 1 if request.form.get('is_invoice') else 0
+            active = 1 if request.form.get('active') else 0
             conn.execute(
-                'UPDATE users SET name=?, rfid_uid=?, balance=? WHERE id=?',
-                (name, uid, int(balance_euro * 100) if balance_euro is not None else 0, user_id))
+                'UPDATE users SET name=?, rfid_uid=?, balance=?, is_invoice=?, active=? WHERE id=?',
+                (
+                    name,
+                    uid,
+                    int(balance_euro * 100) if balance_euro is not None else 0,
+                    is_invoice,
+                    active,
+                    user_id,
+                ),
+            )
             conn.commit()
             conn.close()
-            return redirect(url_for('users'))
+            return redirect(url_for('invoice_users' if is_invoice else 'users'))
         cur = conn.execute('SELECT * FROM users WHERE id=?', (user_id,))
         item = cur.fetchone()
         conn.close()

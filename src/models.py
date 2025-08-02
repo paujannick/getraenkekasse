@@ -60,6 +60,8 @@ class User:
     name: str
     rfid_uid: str
     balance: int  # in cents
+    is_invoice: int = 0
+    active: int = 1
 
 
 @dataclass
@@ -78,7 +80,9 @@ class Drink:
 def get_user_by_uid(uid: str) -> Optional[User]:
     try:
         with get_connection() as conn:
-            cur = conn.execute('SELECT * FROM users WHERE rfid_uid = ?', (uid,))
+            cur = conn.execute(
+                'SELECT * FROM users WHERE rfid_uid = ? AND active = 1', (uid,)
+            )
             row = cur.fetchone()
         if row:
             return User(**row)
@@ -91,14 +95,18 @@ def get_user_by_uid(uid: str) -> Optional[User]:
 def update_balance(user_id: int, diff: int) -> bool:
     try:
         with get_connection() as conn:
-            cur = conn.execute('SELECT balance FROM users WHERE id = ?', (user_id,))
+            cur = conn.execute(
+                'SELECT balance, is_invoice, active FROM users WHERE id = ?',
+                (user_id,),
+            )
             row = cur.fetchone()
-            if not row:
+            if not row or row['active'] == 0:
                 return False
             new_balance = row['balance'] + diff
-            limit = get_overdraft_limit(conn)
-            if new_balance < -limit:
-                return False
+            if row['is_invoice'] == 0:
+                limit = get_overdraft_limit(conn)
+                if new_balance < -limit:
+                    return False
             conn.execute('UPDATE users SET balance = ? WHERE id = ?', (new_balance, user_id))
             conn.commit()
         return True
