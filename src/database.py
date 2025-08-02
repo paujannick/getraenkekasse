@@ -15,7 +15,9 @@ _SCHEMA = {
         'id INTEGER PRIMARY KEY AUTOINCREMENT, '
         'name TEXT NOT NULL, '
         'rfid_uid TEXT UNIQUE, '
-        'balance INTEGER NOT NULL DEFAULT 0'
+        'balance INTEGER NOT NULL DEFAULT 0, '
+        'is_invoice INTEGER NOT NULL DEFAULT 0, '
+        'active INTEGER NOT NULL DEFAULT 1'
         ')'
     ),
     'drinks': (
@@ -123,6 +125,18 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE drinks ADD COLUMN page INTEGER NOT NULL DEFAULT 1"
         )
+
+    cur = conn.execute("PRAGMA table_info(users)")
+    cols = [row[1] for row in cur.fetchall()]
+    if "is_invoice" not in cols:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN is_invoice INTEGER NOT NULL DEFAULT 0"
+        )
+    if "active" not in cols:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1"
+        )
+
     cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='admin_pin'")
     if cur.fetchone()[0] == 0:
         conn.execute("INSERT INTO config(key, value) VALUES ('admin_pin', '1234')")

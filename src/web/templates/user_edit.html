@@ -5,9 +5,11 @@
     <label>Name:<br><input type="text" name="name" value="{{ user['name'] }}"></label><br>
     <label>UID:<br><input type="text" name="uid" id="uid_edit" value="{{ user['rfid_uid'] }}"></label>
     <button type="button" onclick="readUid('uid_edit')">UID lesen</button><br>
-    <label>Guthaben in Euro:<br><input type="number" step="0.01" name="balance" value="{{ (user['balance']/100)|round(2) }}"></label><br>
-    <button type="submit">Speichern</button>
-</form>
+      <label>Guthaben in Euro:<br><input type="number" step="0.01" name="balance" value="{{ (user['balance']/100)|round(2) }}"></label><br>
+        <label><input type="checkbox" name="is_invoice" value="1" {% if user['is_invoice'] %}checked{% endif %}> Rechnungskarte</label><br>
+      <label><input type="checkbox" name="active" value="1" {% if user['active'] %}checked{% endif %}> Aktiv</label><br>
+      <button type="submit">Speichern</button>
+  </form>
 <script>
 function readUid(targetId) {
     fetch('{{ url_for('read_uid') }}').then(r => r.json()).then(data => {
