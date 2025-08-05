@@ -232,13 +232,20 @@ class MainWindow(QtWidgets.QMainWindow):
         conn = database.get_connection()
 
         self.page_count = models.get_max_page(conn)
-        drinks = models.get_drinks(conn, limit=9, page=self.current_page)
+        drinks = models.get_drinks(conn, limit=8, page=self.current_page)
         font = QtGui.QFont()
         font.setPointSize(16)
 
-        rows = (len(drinks) + 2) // 3
+        rows = ((len(drinks) + 1) + 2) // 3
         for row in range(rows):
             layout.setRowStretch(row, 0)
+
+        balance_btn = QtWidgets.QPushButton("Guthaben\nabfragen")
+        balance_btn.setFont(font)
+        balance_btn.setMinimumSize(220, 120)
+        balance_btn.setStyleSheet("background-color: #87cefa;")
+        balance_btn.clicked.connect(self._check_balance)
+        layout.addWidget(balance_btn, 0, 0)
 
         for idx, drink in enumerate(drinks):
             button = QtWidgets.QPushButton()
@@ -246,7 +253,6 @@ class MainWindow(QtWidgets.QMainWindow):
             button.setFont(font)
             if drink.image:
                 button.setIcon(QtGui.QIcon(drink.image))
-
                 button.setIconSize(QtCore.QSize(120, 120))
             button.setMinimumSize(220, 120)
 
@@ -258,7 +264,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             button.setStyleSheet(style)
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
-            r, c = divmod(idx, 3)
+            r, c = divmod(idx + 1, 3)
             layout.addWidget(button, r, c)
         self.prev_button = QtWidgets.QPushButton("◀")
         self.next_button = QtWidgets.QPushButton("▶")
@@ -294,6 +300,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def show_start_page(self):
         self.stack.setCurrentWidget(self.start_page)
+
+    def _check_balance(self) -> None:
+        self.info_label.setText("Bitte Karte auflegen…")
+        self.stack.setCurrentWidget(self.info_label)
+        uid = rfid.read_uid(show_dialog=False)
+        if not uid:
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
+            self.show_start_page()
+            return
+        user = models.get_user_by_uid(uid)
+        if not user:
+            led.indicate_error()
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+            self.show_start_page()
+            return
+        led.indicate_success()
+        self.info_label.setText(
+            f"{user.name}\nGuthaben: {user.balance/100:.2f} €"
+        )
+        self.stack.setCurrentWidget(self.info_label)
+        QtCore.QTimer.singleShot(3000, self.show_start_page)
 
     def on_drink_selected(self, drink: models.Drink) -> None:
         dialog = QuantityDialog(self)
