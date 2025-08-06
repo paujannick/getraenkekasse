@@ -1,4 +1,6 @@
 import sqlite3
+import shutil
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -16,9 +18,10 @@ _SCHEMA = {
         'name TEXT NOT NULL, '
         'rfid_uid TEXT UNIQUE, '
         'balance INTEGER NOT NULL DEFAULT 0, '
-        'is_invoice INTEGER NOT NULL DEFAULT 0, '
+        'is_event INTEGER NOT NULL DEFAULT 0, '
         'active INTEGER NOT NULL DEFAULT 1, '
-        'show_on_payment INTEGER NOT NULL DEFAULT 0'
+        'show_on_payment INTEGER NOT NULL DEFAULT 0, '
+        'is_admin INTEGER NOT NULL DEFAULT 0'
         ')'
     ),
     'drinks': (
@@ -129,10 +132,13 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
 
     cur = conn.execute("PRAGMA table_info(users)")
     cols = [row[1] for row in cur.fetchall()]
-    if "is_invoice" not in cols:
-        conn.execute(
-            "ALTER TABLE users ADD COLUMN is_invoice INTEGER NOT NULL DEFAULT 0"
-        )
+    if "is_event" not in cols:
+        if "is_invoice" in cols:
+            conn.execute("ALTER TABLE users RENAME COLUMN is_invoice TO is_event")
+        else:
+            conn.execute(
+                "ALTER TABLE users ADD COLUMN is_event INTEGER NOT NULL DEFAULT 0"
+            )
     if "active" not in cols:
         conn.execute(
             "ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1"
@@ -140,6 +146,10 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
     if "show_on_payment" not in cols:
         conn.execute(
             "ALTER TABLE users ADD COLUMN show_on_payment INTEGER NOT NULL DEFAULT 0"
+        )
+    if "is_admin" not in cols:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0"
         )
 
     cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='admin_pin'")
@@ -161,9 +171,6 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     upgrade_schema(conn)
     cursor.execute(
         "INSERT OR IGNORE INTO config (key, value) VALUES ('overdraft_limit', '0')"
-    )
-    cursor.execute(
-        "INSERT OR IGNORE INTO config (key, value) VALUES ('topup_uid', '')"
     )
     conn.commit()
     add_sample_data(conn)
@@ -225,3 +232,32 @@ def set_setting(key: str, value: str, conn: Optional[sqlite3.Connection] = None)
     finally:
         if own and conn is not None:
             conn.close()
+
+
+def backup_database(limit: int = 10) -> Path:
+    """Create a timestamped backup and keep only the newest ``limit`` files."""
+    if not DB_PATH.exists():
+        raise FileNotFoundError("Database file does not exist")
+    DB_PATH.parent.mkdir(exist_ok=True)
+    ts = time.time_ns()
+    backup = DB_PATH.with_name(f"{DB_PATH.name}.bak.{ts}")
+    shutil.copy(DB_PATH, backup)
+    backups = sorted(
+        DB_PATH.parent.glob(f"{DB_PATH.name}.bak.*"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    for old in backups[limit:]:
+        try:
+            old.unlink()
+        except FileNotFoundError:
+            pass
+    return backup
+
+
+def restore_database(backup_path: Path) -> None:
+    """Restore the database from ``backup_path``."""
+    if not backup_path.exists():
+        raise FileNotFoundError(f"Backup {backup_path} does not exist")
+    DB_PATH.parent.mkdir(exist_ok=True)
+    shutil.copy(backup_path, DB_PATH)

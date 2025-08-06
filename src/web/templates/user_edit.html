@@ -6,10 +6,11 @@
     <label>UID:<br><input type="text" name="uid" id="uid_edit" value="{{ user['rfid_uid'] }}"></label>
     <button type="button" onclick="readUid('uid_edit')">UID lesen</button><br>
       <label>Guthaben in Euro:<br><input type="number" step="0.01" name="balance" value="{{ (user['balance']/100)|round(2) }}"></label><br>
-        <label><input type="checkbox" name="is_invoice" value="1" {% if user['is_invoice'] %}checked{% endif %}> Rechnungskarte</label><br>
-        {% if user['is_invoice'] %}
+        <label><input type="checkbox" name="is_event" value="1" {% if user['is_event'] %}checked{% endif %}> Veranstaltungskarte</label><br>
+        {% if user['is_event'] %}
         <label><input type="checkbox" name="show_on_payment" value="1" {% if user['show_on_payment'] %}checked{% endif %}> Auf Zahlungsmethoden anzeigen</label><br>
         {% endif %}
+        <label><input type="checkbox" name="is_admin" value="1" {% if user['is_admin'] %}checked{% endif %}> Adminzugang</label><br>
       <label><input type="checkbox" name="active" value="1" {% if user['active'] %}checked{% endif %}> Aktiv</label><br>
       <button type="submit">Speichern</button>
   </form>
