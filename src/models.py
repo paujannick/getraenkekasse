@@ -62,6 +62,7 @@ class User:
     balance: int  # in cents
     is_invoice: int = 0
     active: int = 1
+    show_on_payment: int = 0
 
 
 @dataclass
@@ -90,6 +91,34 @@ def get_user_by_uid(uid: str) -> Optional[User]:
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen des Benutzers: {e}")
         return None
+
+
+def get_user(user_id: int) -> Optional[User]:
+    """Return a user by their database id."""
+    try:
+        with get_connection() as conn:
+            cur = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+            row = cur.fetchone()
+        if row:
+            return User(**row)
+        return None
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Lesen des Benutzers: {e}")
+        return None
+
+
+def get_invoice_payment_users() -> list[User]:
+    """Return active invoice users that should show as payment method."""
+    try:
+        with get_connection() as conn:
+            cur = conn.execute(
+                'SELECT * FROM users WHERE is_invoice=1 AND show_on_payment=1 AND active=1 ORDER BY name'
+            )
+            rows = cur.fetchall()
+        return [User(**row) for row in rows]
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Lesen der Rechnungskarten: {e}")
+        return []
 
 
 def update_balance(user_id: int, diff: int) -> bool:

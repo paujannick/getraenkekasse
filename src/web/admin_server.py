@@ -381,13 +381,14 @@ def create_app() -> Flask:
     def invoice_user_add():
         name = request.form.get('name')
         uid = request.form.get('uid')
+        show_on_payment = 1 if request.form.get('show_on_payment') else 0
         error: Optional[str] = None
         if name and uid:
             conn = database.get_connection()
             try:
                 conn.execute(
-                    'INSERT INTO users (name, rfid_uid, balance, is_invoice, active) VALUES (?, ?, 0, 1, 1)',
-                    (name, uid),
+                    'INSERT INTO users (name, rfid_uid, balance, is_invoice, active, show_on_payment) VALUES (?, ?, 0, 1, 1, ?)',
+                    (name, uid, show_on_payment),
                 )
                 conn.commit()
             except sqlite3.IntegrityError:
@@ -469,14 +470,16 @@ def create_app() -> Flask:
             balance_euro = request.form.get('balance', type=float)
             is_invoice = 1 if request.form.get('is_invoice') else 0
             active = 1 if request.form.get('active') else 0
+            show_on_payment = 1 if request.form.get('show_on_payment') and is_invoice else 0
             conn.execute(
-                'UPDATE users SET name=?, rfid_uid=?, balance=?, is_invoice=?, active=? WHERE id=?',
+                'UPDATE users SET name=?, rfid_uid=?, balance=?, is_invoice=?, active=?, show_on_payment=? WHERE id=?',
                 (
                     name,
                     uid,
                     int(balance_euro * 100) if balance_euro is not None else 0,
                     is_invoice,
                     active,
+                    show_on_payment,
                     user_id,
                 ),
             )

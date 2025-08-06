@@ -17,7 +17,8 @@ _SCHEMA = {
         'rfid_uid TEXT UNIQUE, '
         'balance INTEGER NOT NULL DEFAULT 0, '
         'is_invoice INTEGER NOT NULL DEFAULT 0, '
-        'active INTEGER NOT NULL DEFAULT 1'
+        'active INTEGER NOT NULL DEFAULT 1, '
+        'show_on_payment INTEGER NOT NULL DEFAULT 0'
         ')'
     ),
     'drinks': (
@@ -135,6 +136,10 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
     if "active" not in cols:
         conn.execute(
             "ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1"
+        )
+    if "show_on_payment" not in cols:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN show_on_payment INTEGER NOT NULL DEFAULT 0"
         )
 
     cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='admin_pin'")

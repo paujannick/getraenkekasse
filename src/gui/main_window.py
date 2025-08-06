@@ -17,6 +17,7 @@ class QuantityDialog(QtWidgets.QDialog):
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         self.setWindowTitle("Menge wählen")
+        self.setWindowState(QtCore.Qt.WindowFullScreen)
         self.quantity = 1
         layout = QtWidgets.QVBoxLayout(self)
 
@@ -47,10 +48,20 @@ class QuantityDialog(QtWidgets.QDialog):
         self.cash_btn = QtWidgets.QPushButton("Barzahlung")
         self.btnBox.addButton(self.cash_btn, QtWidgets.QDialogButtonBox.ActionRole)
         self.cash_btn.clicked.connect(self.cash)
+
+        ok_btn = self.btnBox.button(QtWidgets.QDialogButtonBox.Ok)
+        if ok_btn is not None:
+            ok_btn.setText("Chipzahlung")
+
+        self._invoice_user_id: int | None = None
+        for user in models.get_invoice_payment_users():
+            btn = QtWidgets.QPushButton(user.name)
+            self.btnBox.addButton(btn, QtWidgets.QDialogButtonBox.ActionRole)
+            btn.clicked.connect(lambda _, uid=user.id: self.invoice(uid))
+
         self.btnBox.accepted.connect(self.accept)
         self.btnBox.rejected.connect(self.reject)
-        for btn in [self.cash_btn, self.btnBox.button(QtWidgets.QDialogButtonBox.Ok),
-                    self.btnBox.button(QtWidgets.QDialogButtonBox.Cancel)]:
+        for btn in self.btnBox.buttons():
             if btn is not None:
                 f = btn.font()
                 f.setPointSize(16)
@@ -76,9 +87,17 @@ class QuantityDialog(QtWidgets.QDialog):
         self._cash = True
         self.accept()
 
+    def invoice(self, uid: int) -> None:
+        self._invoice_user_id = uid
+        self.accept()
+
     @property
     def is_cash(self) -> bool:
         return self._cash
+
+    @property
+    def invoice_user_id(self) -> int | None:
+        return self._invoice_user_id
 
 
 class TopupDialog(QtWidgets.QDialog):
@@ -338,6 +357,28 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             self.stack.setCurrentWidget(self.info_label)
             QtCore.QTimer.singleShot(2000, self.show_start_page)
+            return
+        if dialog.invoice_user_id is not None:
+            user = models.get_user(dialog.invoice_user_id)
+            if not user:
+                QtWidgets.QMessageBox.warning(self, "Fehler", "Benutzer nicht gefunden")
+                self.show_start_page()
+                return
+            total_price = drink.price * quantity
+            if not models.update_balance(user.id, -total_price):
+                QtWidgets.QMessageBox.information(
+                    self, "Guthaben", "Limit überschritten - bitte Guthaben aufladen"
+                )
+                self.show_start_page()
+                return
+            models.update_drink_stock(drink.id, -quantity)
+            models.add_transaction(user.id, drink.id, quantity)
+            led.indicate_success()
+            self.info_label.setText(
+                f"Danke {user.name}!\nRechnung wird verbucht."
+            )
+            self.stack.setCurrentWidget(self.info_label)
+            QtCore.QTimer.singleShot(4000, self.show_start_page)
             return
         self.info_label.setText("Bitte Karte auflegen…")
         self.stack.setCurrentWidget(self.info_label)
