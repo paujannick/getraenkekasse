@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd "$(dirname "$0")"
 echo "----------------------------------------"
 echo "Starte Getränkekassen-System..."
 echo "----------------------------------------"
