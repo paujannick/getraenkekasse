@@ -21,53 +21,58 @@ class QuantityDialog(QtWidgets.QDialog):
         self.quantity = 1
         layout = QtWidgets.QVBoxLayout(self)
 
-        self.label = QtWidgets.QLabel(str(self.quantity))
-        self.label.setAlignment(QtCore.Qt.AlignCenter)
-        font = self.label.font()
-        font.setPointSize(20)
-        self.label.setFont(font)
-        layout.addWidget(self.label)
-
-        btn_layout = QtWidgets.QHBoxLayout()
+        qty_layout = QtWidgets.QHBoxLayout()
         self.minus_btn = QtWidgets.QPushButton("-")
         self.plus_btn = QtWidgets.QPushButton("+")
         for b in (self.minus_btn, self.plus_btn):
-            b.setFixedSize(80, 80)
+            b.setFixedSize(100, 100)
             f = b.font()
-            f.setPointSize(24)
+            f.setPointSize(32)
             b.setFont(f)
-        btn_layout.addWidget(self.minus_btn)
-        btn_layout.addWidget(self.plus_btn)
-        layout.addLayout(btn_layout)
+        self.label = QtWidgets.QLabel(str(self.quantity))
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        font = self.label.font()
+        font.setPointSize(40)
+        self.label.setFont(font)
+        qty_layout.addWidget(self.minus_btn)
+        qty_layout.addWidget(self.label)
+        qty_layout.addWidget(self.plus_btn)
+        layout.addLayout(qty_layout)
 
         self.minus_btn.clicked.connect(self.dec)
         self.plus_btn.clicked.connect(self.inc)
 
-        btns = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-        self.btnBox = QtWidgets.QDialogButtonBox(btns)
-        self.cash_btn = QtWidgets.QPushButton("Barzahlung")
-        self.btnBox.addButton(self.cash_btn, QtWidgets.QDialogButtonBox.ActionRole)
+        grid = QtWidgets.QGridLayout()
+        self.cash_btn = QtWidgets.QPushButton("Bar")
         self.cash_btn.clicked.connect(self.cash)
-
-        ok_btn = self.btnBox.button(QtWidgets.QDialogButtonBox.Ok)
-        if ok_btn is not None:
-            ok_btn.setText("Chipzahlung")
+        self.chip_btn = QtWidgets.QPushButton("Chip")
+        self.chip_btn.clicked.connect(self.accept)
+        buttons = [self.cash_btn, self.chip_btn]
 
         self._invoice_user_id: int | None = None
         for user in models.get_invoice_payment_users():
             btn = QtWidgets.QPushButton(user.name)
-            self.btnBox.addButton(btn, QtWidgets.QDialogButtonBox.ActionRole)
             btn.clicked.connect(lambda _, uid=user.id: self.invoice(uid))
+            buttons.append(btn)
 
-        self.btnBox.accepted.connect(self.accept)
-        self.btnBox.rejected.connect(self.reject)
-        for btn in self.btnBox.buttons():
-            if btn is not None:
-                f = btn.font()
-                f.setPointSize(16)
-                btn.setFont(f)
-                btn.setMinimumHeight(60)
-        layout.addWidget(self.btnBox)
+        for i, btn in enumerate(buttons):
+            r, c = divmod(i, 2)
+            f = btn.font()
+            f.setPointSize(18)
+            btn.setFont(f)
+            btn.setMinimumHeight(80)
+            grid.addWidget(btn, r, c)
+
+        layout.addLayout(grid)
+
+        cancel_btn = QtWidgets.QPushButton("Abbrechen")
+        f = cancel_btn.font()
+        f.setPointSize(16)
+        cancel_btn.setFont(f)
+        cancel_btn.setMinimumHeight(60)
+        cancel_btn.clicked.connect(self.reject)
+        layout.addWidget(cancel_btn)
+
         self._cash = False
 
     def inc(self) -> None:
