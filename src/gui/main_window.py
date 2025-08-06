@@ -47,6 +47,7 @@ class QuantityDialog(QtWidgets.QDialog):
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         font = self.label.font()
         font.setPointSize(40)
+        font.setBold(True)
         self.label.setFont(font)
         self.label.setMinimumWidth(200)
         qty_layout.addWidget(self.minus_btn)
@@ -64,10 +65,10 @@ class QuantityDialog(QtWidgets.QDialog):
         self.chip_btn.clicked.connect(self.accept)
         buttons = [self.cash_btn, self.chip_btn]
 
-        self._invoice_user_id: int | None = None
-        for user in models.get_invoice_payment_users():
+        self._event_user_id: int | None = None
+        for user in models.get_event_payment_users():
             btn = QtWidgets.QPushButton(user.name)
-            btn.clicked.connect(lambda _, uid=user.id: self.invoice(uid))
+            btn.clicked.connect(lambda _, uid=user.id: self.event(uid))
             buttons.append(btn)
 
         for i, btn in enumerate(buttons):
@@ -107,8 +108,8 @@ class QuantityDialog(QtWidgets.QDialog):
         self._cash = True
         self.accept()
 
-    def invoice(self, uid: int) -> None:
-        self._invoice_user_id = uid
+    def event(self, uid: int) -> None:
+        self._event_user_id = uid
         self.accept()
 
     @property
@@ -116,77 +117,12 @@ class QuantityDialog(QtWidgets.QDialog):
         return self._cash
 
     @property
-    def invoice_user_id(self) -> int | None:
-        return self._invoice_user_id
+    def event_user_id(self) -> int | None:
+        return self._event_user_id
 
 
-class TopupDialog(QtWidgets.QDialog):
-    """Dialog to choose a top-up amount."""
-
-    def __init__(self, parent: QtWidgets.QWidget | None = None):
-        super().__init__(parent)
-        self.setWindowTitle("Betrag wählen")
-        layout = QtWidgets.QVBoxLayout(self)
-        self.combo = QtWidgets.QComboBox()
-        for val in (5, 10, 20, 50):
-            self.combo.addItem(f"{val} €", val)
-        layout.addWidget(self.combo)
-
-        btns = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-        self.btnBox = QtWidgets.QDialogButtonBox(btns)
-        self.btnBox.accepted.connect(self.accept)
-        self.btnBox.rejected.connect(self.reject)
-        for role in (QtWidgets.QDialogButtonBox.Ok, QtWidgets.QDialogButtonBox.Cancel):
-            btn = self.btnBox.button(role)
-            if btn is not None:
-                f = btn.font()
-                f.setPointSize(16)
-                btn.setFont(f)
-                btn.setMinimumHeight(60)
-        layout.addWidget(self.btnBox)
-
-    @property
-    def amount(self) -> int:
-        return int(self.combo.currentData())
-
-
-class PinDialog(QtWidgets.QDialog):
-    """Numeric keypad dialog for entering the admin PIN."""
-
-    def __init__(self, parent: QtWidgets.QWidget | None = None):
-        super().__init__(parent)
-        self.setWindowTitle("PIN eingeben")
-        layout = QtWidgets.QVBoxLayout(self)
-        self.edit = QtWidgets.QLineEdit()
-        self.edit.setEchoMode(QtWidgets.QLineEdit.Password)
-        layout.addWidget(self.edit)
-
-        grid = QtWidgets.QGridLayout()
-        for i in range(9):
-            btn = QtWidgets.QPushButton(str(i + 1))
-            btn.setFixedSize(60, 60)
-            btn.clicked.connect(lambda _, d=i + 1: self.edit.insert(str(d)))
-            r, c = divmod(i, 3)
-            grid.addWidget(btn, r, c)
-        zero = QtWidgets.QPushButton("0")
-        zero.setFixedSize(60, 60)
-        zero.clicked.connect(lambda: self.edit.insert("0"))
-        grid.addWidget(zero, 3, 1)
-        layout.addLayout(grid)
-
-        btns = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
-        box = QtWidgets.QDialogButtonBox(btns)
-        box.accepted.connect(self.accept)
-        box.rejected.connect(self.reject)
-        layout.addWidget(box)
-
-    @property
-    def pin(self) -> str:
-        return self.edit.text()
-
-
-class AdminPage(QtWidgets.QWidget):
-    """Simple admin page showing low stock items and quit option."""
+class StockPage(QtWidgets.QWidget):
+    """Page showing drinks below minimum stock."""
 
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
@@ -198,13 +134,12 @@ class AdminPage(QtWidgets.QWidget):
         header.setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         layout.addWidget(self.table)
 
-        btn_layout = QtWidgets.QHBoxLayout()
         self.back_btn = QtWidgets.QPushButton("Zurück")
-        self.quit_btn = QtWidgets.QPushButton("Beenden")
-        btn_layout.addWidget(self.back_btn)
-        btn_layout.addStretch(1)
-        btn_layout.addWidget(self.quit_btn)
-        layout.addLayout(btn_layout)
+        f = self.back_btn.font()
+        f.setPointSize(16)
+        self.back_btn.setFont(f)
+        self.back_btn.setMinimumHeight(60)
+        layout.addWidget(self.back_btn)
 
     def reload(self) -> None:
         drinks = models.get_drinks_below_min()
@@ -213,6 +148,99 @@ class AdminPage(QtWidgets.QWidget):
             self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(drink.name))
             self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(drink.stock)))
             self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(drink.min_stock)))
+
+
+class AdminMenu(QtWidgets.QWidget):
+    """Main admin menu with navigation buttons."""
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None):
+        super().__init__(parent)
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.stock_btn = QtWidgets.QPushButton("Bestandswarnungen")
+        self.topup_btn = QtWidgets.QPushButton("Konten aufladen")
+        self.quit_btn = QtWidgets.QPushButton("Beenden")
+        self.back_btn = QtWidgets.QPushButton("Zurück")
+
+        for btn in (self.stock_btn, self.topup_btn, self.quit_btn, self.back_btn):
+            f = btn.font()
+            f.setPointSize(20)
+            btn.setFont(f)
+            btn.setMinimumHeight(80)
+            layout.addWidget(btn)
+
+        layout.addStretch(1)
+
+
+class TopupPage(QtWidgets.QWidget):
+    """Page to top up user accounts."""
+
+    def __init__(self, parent: "MainWindow"):
+        super().__init__(parent)
+        self._main = parent
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.prompt = QtWidgets.QLabel("Betrag wählen")
+        f = self.prompt.font()
+        f.setPointSize(24)
+        self.prompt.setFont(f)
+        self.prompt.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.prompt)
+
+        grid = QtWidgets.QGridLayout()
+        for i, amount in enumerate((5, 10, 20, 50)):
+            btn = QtWidgets.QPushButton(f"{amount} €")
+            f = btn.font()
+            f.setPointSize(24)
+            btn.setFont(f)
+            btn.setMinimumHeight(80)
+            btn.clicked.connect(lambda _, a=amount: self.start_topup(a))
+            r, c = divmod(i, 2)
+            grid.addWidget(btn, r, c)
+        layout.addLayout(grid)
+
+        self.back_btn = QtWidgets.QPushButton("Zurück")
+        f = self.back_btn.font()
+        f.setPointSize(16)
+        self.back_btn.setFont(f)
+        self.back_btn.setMinimumHeight(60)
+        layout.addWidget(self.back_btn)
+
+        self.info = QtWidgets.QLabel("", alignment=QtCore.Qt.AlignCenter)
+        f = self.info.font()
+        f.setPointSize(20)
+        self.info.setFont(f)
+        layout.addWidget(self.info)
+
+    def start_topup(self, amount: int) -> None:
+        self.info.setText("Bitte Zielkarte auflegen…")
+        QtWidgets.QApplication.processEvents()
+        uid = rfid.read_uid(show_dialog=False)
+        if not uid:
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
+            self.info.setText("")
+            return
+        user = models.get_user_by_uid(uid)
+        if not user:
+            led.indicate_error()
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+            self.info.setText("")
+            return
+        old_balance = user.balance
+        if not models.update_balance(user.id, amount * 100):
+            led.indicate_error()
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Aufladen fehlgeschlagen")
+            self.info.setText("")
+            return
+        models.add_topup(user.id, amount * 100)
+        new_user = models.get_user_by_uid(uid)
+        led.indicate_success()
+        msg = (
+            f"Aufgeladen!\nAltes Guthaben: {old_balance/100:.2f} €\n"
+            f"Neues Guthaben: {new_user.balance/100:.2f} €"
+        )
+        self.info.setText(msg)
+        QtCore.QTimer.singleShot(3000, self._main.show_admin_menu)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -259,10 +287,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.info_label.setFont(font)
         self.stack.addWidget(self.info_label)
 
-        self.admin_page = AdminPage(self)
-        self.admin_page.back_btn.clicked.connect(self.show_start_page)
-        self.admin_page.quit_btn.clicked.connect(self._quit)
-        self.stack.addWidget(self.admin_page)
+        self.admin_menu = AdminMenu(self)
+        self.admin_menu.stock_btn.clicked.connect(self.show_stock_page)
+        self.admin_menu.topup_btn.clicked.connect(self.show_topup_page)
+        self.admin_menu.quit_btn.clicked.connect(self._quit)
+        self.admin_menu.back_btn.clicked.connect(self.show_start_page)
+        self.stack.addWidget(self.admin_menu)
+
+        self.stock_page = StockPage(self)
+        self.stock_page.back_btn.clicked.connect(self.show_admin_menu)
+        self.stack.addWidget(self.stock_page)
+
+        self.topup_page = TopupPage(self)
+        self.topup_page.back_btn.clicked.connect(self.show_admin_menu)
+        self.stack.addWidget(self.topup_page)
 
         self.show_start_page()
 
@@ -340,6 +378,17 @@ class MainWindow(QtWidgets.QMainWindow):
     def show_start_page(self):
         self.stack.setCurrentWidget(self.start_page)
 
+    def show_admin_menu(self) -> None:
+        self.stack.setCurrentWidget(self.admin_menu)
+
+    def show_stock_page(self) -> None:
+        self.stock_page.reload()
+        self.stack.setCurrentWidget(self.stock_page)
+
+    def show_topup_page(self) -> None:
+        self.topup_page.info.setText("")
+        self.stack.setCurrentWidget(self.topup_page)
+
     def _check_balance(self) -> None:
         self.info_label.setText("Bitte Karte auflegen…")
         self.stack.setCurrentWidget(self.info_label)
@@ -378,8 +427,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.stack.setCurrentWidget(self.info_label)
             QtCore.QTimer.singleShot(2000, self.show_start_page)
             return
-        if dialog.invoice_user_id is not None:
-            user = models.get_user(dialog.invoice_user_id)
+        if dialog.event_user_id is not None:
+            user = models.get_user(dialog.event_user_id)
             if not user:
                 QtWidgets.QMessageBox.warning(self, "Fehler", "Benutzer nicht gefunden")
                 self.show_start_page()
@@ -395,7 +444,7 @@ class MainWindow(QtWidgets.QMainWindow):
             models.add_transaction(user.id, drink.id, quantity)
             led.indicate_success()
             self.info_label.setText(
-                f"Danke {user.name}!\nRechnung wird verbucht."
+                f"Danke {user.name}!\nVeranstaltung wird verbucht."
             )
             self.stack.setCurrentWidget(self.info_label)
             QtCore.QTimer.singleShot(4000, self.show_start_page)
@@ -406,10 +455,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if not uid:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
             self.show_start_page()
-            return
-        topup_uid = models.get_topup_uid()
-        if topup_uid and uid == topup_uid:
-            self._handle_topup()
             return
         user = models.get_user_by_uid(uid)
         if not user:
@@ -459,13 +504,8 @@ class MainWindow(QtWidgets.QMainWindow):
             layout.setRowStretch(r, 0)
         self._populate_start_page()
 
-    def _handle_topup(self) -> None:
-        dialog = TopupDialog(self)
-        if dialog.exec_() != QtWidgets.QDialog.Accepted:
-            self.show_start_page()
-            return
-        amount = dialog.amount
-        self.info_label.setText("Bitte Zielkarte auflegen…")
+    def _open_admin(self) -> None:
+        self.info_label.setText("Bitte Admin-Karte auflegen…")
         self.stack.setCurrentWidget(self.info_label)
         uid = rfid.read_uid(show_dialog=False)
         if not uid:
@@ -473,36 +513,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show_start_page()
             return
         user = models.get_user_by_uid(uid)
-        if not user:
+        if not user or not user.is_admin:
             led.indicate_error()
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Kein Zugang")
             self.show_start_page()
             return
-        old_balance = user.balance
-        if not models.update_balance(user.id, amount * 100):
-            led.indicate_error()
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Aufladen fehlgeschlagen")
-            self.show_start_page()
-            return
-        new_user = models.get_user_by_uid(uid)
         led.indicate_success()
-        msg = (
-            f"Aufgeladen!\nAltes Guthaben: {old_balance/100:.2f} €\n"
-            f"Neues Guthaben: {new_user.balance/100:.2f} €"
-        )
-        self.info_label.setText(msg)
-        QtCore.QTimer.singleShot(3000, self.show_start_page)
-        self.stack.setCurrentWidget(self.info_label)
-
-    def _open_admin(self) -> None:
-        dialog = PinDialog(self)
-        if dialog.exec_() != QtWidgets.QDialog.Accepted:
-            return
-        if dialog.pin == models.get_admin_pin():
-            self.admin_page.reload()
-            self.stack.setCurrentWidget(self.admin_page)
-        else:
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Falscher PIN")
+        self.show_admin_menu()
 
     def _quit(self) -> None:
         database.set_exit_flag()

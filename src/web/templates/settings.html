@@ -5,24 +5,9 @@
     <label>Überziehungslimit in Euro:<br>
         <input type="number" step="0.01" name="overdraft" value="{{ overdraft_limit/100 }}">
     </label><br>
-    <label>UID der Aufladekarte:<br>
-        <input type="text" name="topup_uid" id="topup_uid" value="{{ topup_uid }}">
-    </label>
-    <button type="button" onclick="readUid('topup_uid')">UID lesen</button><br>
     <label>Admin-PIN:<br>
         <input type="text" name="admin_pin" value="{{ admin_pin }}">
     </label><br>
     <button type="submit">Speichern</button>
 </form>
-<script>
-function readUid(targetId){
-    fetch('{{ url_for('read_uid') }}').then(r=>r.json()).then(data=>{
-        if(data.error){
-            alert(data.error);
-            return;
-        }
-        document.getElementById(targetId).value = data.uid;
-    });
-}
-</script>
 {% endblock %}

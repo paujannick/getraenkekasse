@@ -33,16 +33,6 @@ def set_overdraft_limit(limit_cents: int, conn: Optional[sqlite3.Connection] = N
     set_setting('overdraft_limit', str(int(limit_cents)), conn)
 
 
-def get_topup_uid(conn: Optional[sqlite3.Connection] = None) -> str | None:
-    """Return the UID configured as top-up card."""
-    return get_setting('topup_uid', conn)
-
-
-def set_topup_uid(uid: str, conn: Optional[sqlite3.Connection] = None) -> None:
-    """Store the UID of the special top-up card."""
-    set_setting('topup_uid', uid, conn)
-
-
 def get_admin_pin(conn: Optional[sqlite3.Connection] = None) -> str:
     """Return the admin PIN used for the GUI."""
     return get_setting('admin_pin', conn) or '1234'
@@ -60,9 +50,10 @@ class User:
     name: str
     rfid_uid: str
     balance: int  # in cents
-    is_invoice: int = 0
+    is_event: int = 0
     active: int = 1
     show_on_payment: int = 0
+    is_admin: int = 0
 
 
 @dataclass
@@ -107,17 +98,17 @@ def get_user(user_id: int) -> Optional[User]:
         return None
 
 
-def get_invoice_payment_users() -> list[User]:
-    """Return active invoice users that should show as payment method."""
+def get_event_payment_users() -> list[User]:
+    """Return active event users that should show as payment method."""
     try:
         with get_connection() as conn:
             cur = conn.execute(
-                'SELECT * FROM users WHERE is_invoice=1 AND show_on_payment=1 AND active=1 ORDER BY name'
+                'SELECT * FROM users WHERE is_event=1 AND show_on_payment=1 AND active=1 ORDER BY name'
             )
             rows = cur.fetchall()
         return [User(**row) for row in rows]
     except sqlite3.Error as e:  # pragma: no cover
-        print(f"Fehler beim Lesen der Rechnungskarten: {e}")
+        print(f"Fehler beim Lesen der Veranstaltungskarten: {e}")
         return []
 
 
@@ -125,14 +116,14 @@ def update_balance(user_id: int, diff: int) -> bool:
     try:
         with get_connection() as conn:
             cur = conn.execute(
-                'SELECT balance, is_invoice, active FROM users WHERE id = ?',
+                'SELECT balance, is_event, active FROM users WHERE id = ?',
                 (user_id,),
             )
             row = cur.fetchone()
             if not row or row['active'] == 0:
                 return False
             new_balance = row['balance'] + diff
-            if row['is_invoice'] == 0:
+            if row['is_event'] == 0:
                 limit = get_overdraft_limit(conn)
                 if new_balance < -limit:
                     return False

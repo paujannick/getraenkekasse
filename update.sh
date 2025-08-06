@@ -12,7 +12,10 @@ fi
 # Backup existing database
 DB_PATH="data/getraenkekasse.db"
 if [ -f "$DB_PATH" ]; then
-  cp "$DB_PATH" "$DB_PATH.bak.$(date +%s)"
+  python3 - <<'PY'
+import src.database as d
+d.backup_database()
+PY
 fi
 
 # Create venv if missing and install requirements
