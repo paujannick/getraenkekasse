@@ -14,12 +14,26 @@ class QuantityDialog(QtWidgets.QDialog):
     """Dialog zum Wählen der Menge über +/--Buttons."""
 
 
-    def __init__(self, parent: QtWidgets.QWidget | None = None):
+    def __init__(self, drink: models.Drink, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
+        self.drink = drink
         self.setWindowTitle("Menge wählen")
         self.setWindowState(QtCore.Qt.WindowFullScreen)
         self.quantity = 1
         layout = QtWidgets.QVBoxLayout(self)
+
+        if drink.image:
+            self.setStyleSheet(
+                f"QDialog {{background-image: url({drink.image}); "
+                "background-position: center; background-repeat: no-repeat;}}"
+            )
+
+        self.product_label = QtWidgets.QLabel(drink.name)
+        f = self.product_label.font()
+        f.setPointSize(24)
+        self.product_label.setFont(f)
+        self.product_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.product_label)
 
         qty_layout = QtWidgets.QHBoxLayout()
         self.minus_btn = QtWidgets.QPushButton("-")
@@ -29,11 +43,12 @@ class QuantityDialog(QtWidgets.QDialog):
             f = b.font()
             f.setPointSize(32)
             b.setFont(f)
-        self.label = QtWidgets.QLabel(str(self.quantity))
+        self.label = QtWidgets.QLabel(f"{self.quantity} Stück")
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         font = self.label.font()
         font.setPointSize(40)
         self.label.setFont(font)
+        self.label.setMinimumWidth(200)
         qty_layout.addWidget(self.minus_btn)
         qty_layout.addWidget(self.label)
         qty_layout.addWidget(self.plus_btn)
@@ -78,12 +93,12 @@ class QuantityDialog(QtWidgets.QDialog):
     def inc(self) -> None:
         if self.quantity < 10:
             self.quantity += 1
-            self.label.setText(str(self.quantity))
+            self.label.setText(f"{self.quantity} Stück")
 
     def dec(self) -> None:
         if self.quantity > 1:
             self.quantity -= 1
-            self.label.setText(str(self.quantity))
+            self.label.setText(f"{self.quantity} Stück")
 
     def accept(self) -> None:
         super().accept()
@@ -347,7 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtCore.QTimer.singleShot(3000, self.show_start_page)
 
     def on_drink_selected(self, drink: models.Drink) -> None:
-        dialog = QuantityDialog(self)
+        dialog = QuantityDialog(drink, self)
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
         quantity = dialog.quantity
