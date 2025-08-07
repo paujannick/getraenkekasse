@@ -227,7 +227,7 @@ class AdminMenu(QtWidgets.QWidget):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
-            btn.setMinimumHeight(80)
+            btn.setMinimumHeight(60)
             layout.addWidget(btn)
 
         self.reload_web_qr()
@@ -415,7 +415,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_button = QtWidgets.QPushButton("◀")
         self.next_button = QtWidgets.QPushButton("▶")
 
-        nav_size = QtCore.QSize(int(80 * 4 / 3), int(40 * 4 / 3))
+        nav_size = QtCore.QSize(80, 40)
         for btn in (self.prev_button, self.next_button):
             f = btn.font()
             f.setPointSize(20)
@@ -427,7 +427,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         spacer_row = rows
         bottom = rows + 1
-        layout.setRowStretch(spacer_row, 0)
+        layout.setRowStretch(spacer_row, 1)
         layout.addWidget(self.prev_button, bottom, 0, alignment=QtCore.Qt.AlignBottom)
         layout.addWidget(self.next_button, bottom, 1, alignment=QtCore.Qt.AlignBottom)
 
