@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
+from pathlib import Path
+import platform
 
 from .. import database
 from .. import models
@@ -17,6 +19,11 @@ class AdminWindow(QtWidgets.QWidget):
         self._setup_users_tab()
         self._setup_drinks_tab()
         self._setup_log_tab()
+        self._setup_status_tab()
+        self.web_qr_button = QtWidgets.QPushButton()
+        self.web_qr_button.clicked.connect(self.show_web_qr)
+        layout.addWidget(self.web_qr_button)
+        self.reload_web_qr()
 
     def _setup_users_tab(self):
         widget = QtWidgets.QWidget()
@@ -71,3 +78,47 @@ class AdminWindow(QtWidgets.QWidget):
             self.log_list.addItem(
                 f"{row['timestamp']} - {row['user_name']} kaufte {row['quantity']} x {row['drink_name']}" )
         conn.close()
+
+    def _setup_status_tab(self):
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(widget)
+        self.tabs.addTab(widget, "Status")
+        self.status_label = QtWidgets.QLabel()
+        layout.addWidget(self.status_label)
+        self.reload_status()
+
+    def reload_status(self):
+        conn = database.get_connection()
+        users = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+        drinks = conn.execute('SELECT COUNT(*) FROM drinks').fetchone()[0]
+        conn.close()
+        system = platform.platform()
+        self.status_label.setText(
+            f"Nutzer: {users}\nGetränke: {drinks}\nSystem: {system}")
+
+    def reload_web_qr(self):
+        data_dir = Path(__file__).resolve().parent.parent / 'data'
+        path = data_dir / 'web_qr.png'
+        if path.exists():
+            pixmap = QtGui.QPixmap(str(path))
+            self.web_qr_button.setIcon(QtGui.QIcon(pixmap))
+            self.web_qr_button.setIconSize(pixmap.size())
+            self.web_qr_button.setText("")
+        else:
+            self.web_qr_button.setIcon(QtGui.QIcon())
+            self.web_qr_button.setText("Web")
+
+    def show_web_qr(self):
+        data_dir = Path(__file__).resolve().parent.parent / 'data'
+        path = data_dir / 'web_qr.png'
+        if not path.exists():
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Kein QR-Code vorhanden.")
+            return
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle("Webinterface QR-Code")
+        pixmap = QtGui.QPixmap(str(path))
+        label = QtWidgets.QLabel()
+        label.setPixmap(pixmap)
+        layout = QtWidgets.QVBoxLayout(dlg)
+        layout.addWidget(label)
+        dlg.exec_()
