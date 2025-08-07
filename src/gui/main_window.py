@@ -501,7 +501,7 @@ class MainWindow(QtWidgets.QMainWindow):
             models.add_transaction(user.id, drink.id, quantity)
             led.indicate_success()
             self.info_label.setText(
-                f"Danke {user.name}!\nVeranstaltung wird verbucht."
+                f"Danke {user.name}!\nKauf wird verbucht."
             )
             self.stack.setCurrentWidget(self.info_label)
             QtCore.QTimer.singleShot(4000, self.show_start_page)
