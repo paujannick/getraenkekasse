@@ -20,9 +20,10 @@ class AdminWindow(QtWidgets.QWidget):
         self._setup_drinks_tab()
         self._setup_log_tab()
         self._setup_status_tab()
-        self.web_button = QtWidgets.QPushButton("Webinterface")
-        self.web_button.clicked.connect(self.show_web_qr)
-        layout.addWidget(self.web_button)
+        self.web_qr_button = QtWidgets.QPushButton()
+        self.web_qr_button.clicked.connect(self.show_web_qr)
+        layout.addWidget(self.web_qr_button)
+        self.reload_web_qr()
 
     def _setup_users_tab(self):
         widget = QtWidgets.QWidget()
@@ -94,6 +95,18 @@ class AdminWindow(QtWidgets.QWidget):
         system = platform.platform()
         self.status_label.setText(
             f"Nutzer: {users}\nGetränke: {drinks}\nSystem: {system}")
+
+    def reload_web_qr(self):
+        data_dir = Path(__file__).resolve().parent.parent / 'data'
+        path = data_dir / 'web_qr.png'
+        if path.exists():
+            pixmap = QtGui.QPixmap(str(path))
+            self.web_qr_button.setIcon(QtGui.QIcon(pixmap))
+            self.web_qr_button.setIconSize(pixmap.size())
+            self.web_qr_button.setText("")
+        else:
+            self.web_qr_button.setIcon(QtGui.QIcon())
+            self.web_qr_button.setText("Web")
 
     def show_web_qr(self):
         data_dir = Path(__file__).resolve().parent.parent / 'data'
