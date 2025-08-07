@@ -495,6 +495,11 @@ class MainWindow(QtWidgets.QMainWindow):
         label.setPixmap(scaled)
         layout = QtWidgets.QVBoxLayout(dlg)
         layout.addWidget(label)
+        def close(_event):
+            dlg.accept()
+
+        label.mousePressEvent = close
+        dlg.mousePressEvent = close
         dlg.exec_()
 
     def _check_balance(self) -> None:
@@ -629,8 +634,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.show_admin_menu()
 
     def _quit(self) -> None:
-        database.set_exit_flag()
-        QtWidgets.QApplication.quit()
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Beenden",
+            "Wirklich beenden?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+        if reply == QtWidgets.QMessageBox.Yes:
+            database.set_exit_flag()
+            QtWidgets.QApplication.quit()
 
     def next_page(self) -> None:
         if self.current_page < self.page_count:
