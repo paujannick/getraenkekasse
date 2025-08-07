@@ -40,6 +40,8 @@ zuverlässiger ohne AUTH-Fehler.
    Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
    Das Passwort kann im Web-Admin unter "Passwort" geändert werden. Es wird
    verschlüsselt in `data/admin_pw.txt` gespeichert.
+   Zusätzlich lässt sich unter "Einstellungen" ein Admin-PIN festlegen, der in
+   der GUI als Alternative zur Admin-RFID-Karte verwendet werden kann.
 
    Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
 

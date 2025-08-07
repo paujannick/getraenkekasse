@@ -122,6 +122,62 @@ class QuantityDialog(QtWidgets.QDialog):
         return self._event_user_id
 
 
+class PinDialog(QtWidgets.QDialog):
+    """Dialog to enter the admin PIN via on-screen buttons."""
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Admin-PIN")
+        self.setWindowState(QtCore.Qt.WindowFullScreen)
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.edit = QtWidgets.QLineEdit(alignment=QtCore.Qt.AlignCenter)
+        font = self.edit.font()
+        font.setPointSize(24)
+        self.edit.setFont(font)
+        self.edit.setEchoMode(QtWidgets.QLineEdit.Password)
+        layout.addWidget(self.edit)
+
+        grid = QtWidgets.QGridLayout()
+        buttons = [
+            ('1', 0, 0), ('2', 0, 1), ('3', 0, 2),
+            ('4', 1, 0), ('5', 1, 1), ('6', 1, 2),
+            ('7', 2, 0), ('8', 2, 1), ('9', 2, 2),
+            ('←', 3, 0), ('0', 3, 1), ('C', 3, 2),
+        ]
+        for text, r, c in buttons:
+            btn = QtWidgets.QPushButton(text)
+            f = btn.font()
+            f.setPointSize(24)
+            btn.setFont(f)
+            btn.setMinimumSize(100, 80)
+            grid.addWidget(btn, r, c)
+            if text.isdigit():
+                btn.clicked.connect(lambda _, t=text: self.edit.insert(t))
+            elif text == '←':
+                btn.clicked.connect(lambda _=None: self.edit.backspace())
+            else:  # 'C'
+                btn.clicked.connect(self.edit.clear)
+        layout.addLayout(grid)
+
+        btn_layout = QtWidgets.QHBoxLayout()
+        ok_btn = QtWidgets.QPushButton("OK")
+        cancel_btn = QtWidgets.QPushButton("Abbrechen")
+        for btn in (ok_btn, cancel_btn):
+            f = btn.font()
+            f.setPointSize(20)
+            btn.setFont(f)
+            btn.setMinimumHeight(60)
+            btn_layout.addWidget(btn)
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn.clicked.connect(self.reject)
+        layout.addLayout(btn_layout)
+
+    @property
+    def pin(self) -> str:
+        return self.edit.text()
+
+
 class StockPage(QtWidgets.QWidget):
     """Page showing drinks below minimum stock."""
 
@@ -509,16 +565,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.info_label.setText("Bitte Admin-Karte auflegen…")
         self.stack.setCurrentWidget(self.info_label)
         uid = rfid.read_uid(show_dialog=False)
-        if not uid:
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
-            self.show_start_page()
-            return
-        user = models.get_user_by_uid(uid)
-        if not user or not user.is_admin:
-            led.indicate_error()
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Kein Zugang")
-            self.show_start_page()
-            return
+        user = models.get_user_by_uid(uid) if uid else None
+        if not (user and user.is_admin):
+            pin_dialog = PinDialog(self)
+            if pin_dialog.exec_() != QtWidgets.QDialog.Accepted or \
+                    pin_dialog.pin != models.get_admin_pin():
+                led.indicate_error()
+                QtWidgets.QMessageBox.warning(self, "Fehler", "Kein Zugang")
+                self.show_start_page()
+                return
         led.indicate_success()
         self.show_admin_menu()
 
