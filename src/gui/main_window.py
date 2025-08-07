@@ -68,7 +68,7 @@ class QuantityDialog(QtWidgets.QDialog):
         self._event_user_id: int | None = None
         for user in models.get_event_payment_users():
             btn = QtWidgets.QPushButton(user.name)
-            btn.clicked.connect(lambda _, uid=user.id: self.event(uid))
+            btn.clicked.connect(lambda _, uid=user.id: self._select_event_user(uid))
             buttons.append(btn)
 
         for i, btn in enumerate(buttons):
@@ -108,7 +108,8 @@ class QuantityDialog(QtWidgets.QDialog):
         self._cash = True
         self.accept()
 
-    def event(self, uid: int) -> None:
+    def _select_event_user(self, uid: int) -> None:
+        """Store the selected event user's id and close the dialog."""
         self._event_user_id = uid
         self.accept()
 
