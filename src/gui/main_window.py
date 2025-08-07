@@ -227,7 +227,7 @@ class AdminMenu(QtWidgets.QWidget):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
-            btn.setMinimumHeight(80)
+            btn.setMinimumHeight(60)
             layout.addWidget(btn)
 
         self.reload_web_qr()
@@ -235,16 +235,8 @@ class AdminMenu(QtWidgets.QWidget):
         layout.addStretch(1)
 
     def reload_web_qr(self) -> None:
-        data_dir = Path(__file__).resolve().parent.parent / 'data'
-        path = data_dir / 'web_qr.png'
-        if path.exists():
-            pixmap = QtGui.QPixmap(str(path))
-            self.web_btn.setIcon(QtGui.QIcon(pixmap))
-            self.web_btn.setIconSize(pixmap.size())
-            self.web_btn.setText("")
-        else:
-            self.web_btn.setIcon(QtGui.QIcon())
-            self.web_btn.setText("Webinterface")
+        self.web_btn.setIcon(QtGui.QIcon())
+        self.web_btn.setText("Webinterface")
 
 
 class TopupPage(QtWidgets.QWidget):
@@ -423,7 +415,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_button = QtWidgets.QPushButton("◀")
         self.next_button = QtWidgets.QPushButton("▶")
 
-        nav_size = QtCore.QSize(int(80 * 4 / 3), int(40 * 4 / 3))
+        nav_size = QtCore.QSize(80, 40)
         for btn in (self.prev_button, self.next_button):
             f = btn.font()
             f.setPointSize(20)
@@ -435,7 +427,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         spacer_row = rows
         bottom = rows + 1
-        layout.setRowStretch(spacer_row, 0)
+        layout.setRowStretch(spacer_row, 1)
         layout.addWidget(self.prev_button, bottom, 0, alignment=QtCore.Qt.AlignBottom)
         layout.addWidget(self.next_button, bottom, 1, alignment=QtCore.Qt.AlignBottom)
 
@@ -471,9 +463,19 @@ class MainWindow(QtWidgets.QMainWindow):
         conn = database.get_connection()
         users = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
         drinks = conn.execute('SELECT COUNT(*) FROM drinks').fetchone()[0]
+        transactions = conn.execute('SELECT COUNT(*) FROM transactions').fetchone()[0]
         conn.close()
         system = platform.platform()
-        msg = f"Nutzer: {users}\nGetränke: {drinks}\nSystem: {system}"
+        python = platform.python_version()
+        db_path = database.DB_PATH
+        msg = (
+            f"Nutzer: {users}\n"
+            f"Getränke: {drinks}\n"
+            f"Transaktionen: {transactions}\n"
+            f"Datenbank: {db_path}\n"
+            f"System: {system}\n"
+            f"Python: {python}"
+        )
         QtWidgets.QMessageBox.information(self, "Status", msg)
 
     def show_web_qr(self) -> None:
@@ -484,11 +486,20 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         dlg = QtWidgets.QDialog(self)
         dlg.setWindowTitle("Webinterface QR-Code")
+        dlg.setWindowState(QtCore.Qt.WindowFullScreen)
         pixmap = QtGui.QPixmap(str(path))
-        label = QtWidgets.QLabel()
-        label.setPixmap(pixmap)
+        screen_size = QtWidgets.QApplication.primaryScreen().availableSize()
+        scaled = pixmap.scaled(screen_size, QtCore.Qt.KeepAspectRatio,
+                               QtCore.Qt.SmoothTransformation)
+        label = QtWidgets.QLabel(alignment=QtCore.Qt.AlignCenter)
+        label.setPixmap(scaled)
         layout = QtWidgets.QVBoxLayout(dlg)
         layout.addWidget(label)
+        def close(_event):
+            dlg.accept()
+
+        label.mousePressEvent = close
+        dlg.mousePressEvent = close
         dlg.exec_()
 
     def _check_balance(self) -> None:
@@ -623,8 +634,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.show_admin_menu()
 
     def _quit(self) -> None:
-        database.set_exit_flag()
-        QtWidgets.QApplication.quit()
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Beenden",
+            "Wirklich beenden?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+        if reply == QtWidgets.QMessageBox.Yes:
+            database.set_exit_flag()
+            QtWidgets.QApplication.quit()
 
     def next_page(self) -> None:
         if self.current_page < self.page_count:
