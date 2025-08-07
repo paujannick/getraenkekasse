@@ -91,22 +91,23 @@ class AdminWindow(QtWidgets.QWidget):
         conn = database.get_connection()
         users = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
         drinks = conn.execute('SELECT COUNT(*) FROM drinks').fetchone()[0]
+        transactions = conn.execute('SELECT COUNT(*) FROM transactions').fetchone()[0]
         conn.close()
         system = platform.platform()
+        python = platform.python_version()
+        db_path = database.DB_PATH
         self.status_label.setText(
-            f"Nutzer: {users}\nGetränke: {drinks}\nSystem: {system}")
+            f"Nutzer: {users}\n"
+            f"Getränke: {drinks}\n"
+            f"Transaktionen: {transactions}\n"
+            f"Datenbank: {db_path}\n"
+            f"System: {system}\n"
+            f"Python: {python}"
+        )
 
     def reload_web_qr(self):
-        data_dir = Path(__file__).resolve().parent.parent / 'data'
-        path = data_dir / 'web_qr.png'
-        if path.exists():
-            pixmap = QtGui.QPixmap(str(path))
-            self.web_qr_button.setIcon(QtGui.QIcon(pixmap))
-            self.web_qr_button.setIconSize(pixmap.size())
-            self.web_qr_button.setText("")
-        else:
-            self.web_qr_button.setIcon(QtGui.QIcon())
-            self.web_qr_button.setText("Web")
+        self.web_qr_button.setIcon(QtGui.QIcon())
+        self.web_qr_button.setText("Webinterface")
 
     def show_web_qr(self):
         data_dir = Path(__file__).resolve().parent.parent / 'data'
@@ -116,9 +117,13 @@ class AdminWindow(QtWidgets.QWidget):
             return
         dlg = QtWidgets.QDialog(self)
         dlg.setWindowTitle("Webinterface QR-Code")
+        dlg.setWindowState(QtCore.Qt.WindowFullScreen)
         pixmap = QtGui.QPixmap(str(path))
-        label = QtWidgets.QLabel()
-        label.setPixmap(pixmap)
+        screen_size = QtWidgets.QApplication.primaryScreen().availableSize()
+        scaled = pixmap.scaled(screen_size, QtCore.Qt.KeepAspectRatio,
+                               QtCore.Qt.SmoothTransformation)
+        label = QtWidgets.QLabel(alignment=QtCore.Qt.AlignCenter)
+        label.setPixmap(scaled)
         layout = QtWidgets.QVBoxLayout(dlg)
         layout.addWidget(label)
         dlg.exec_()
