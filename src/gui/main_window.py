@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import platform
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from .. import database
@@ -216,17 +217,34 @@ class AdminMenu(QtWidgets.QWidget):
 
         self.stock_btn = QtWidgets.QPushButton("Bestandswarnungen")
         self.topup_btn = QtWidgets.QPushButton("Konten aufladen")
+        self.status_btn = QtWidgets.QPushButton("Status")
+        self.web_btn = QtWidgets.QPushButton()
         self.quit_btn = QtWidgets.QPushButton("Beenden")
         self.back_btn = QtWidgets.QPushButton("Zurück")
 
-        for btn in (self.stock_btn, self.topup_btn, self.quit_btn, self.back_btn):
+        for btn in (self.stock_btn, self.topup_btn, self.status_btn, self.web_btn,
+                    self.quit_btn, self.back_btn):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
             btn.setMinimumHeight(80)
             layout.addWidget(btn)
 
+        self.reload_web_qr()
+
         layout.addStretch(1)
+
+    def reload_web_qr(self) -> None:
+        data_dir = Path(__file__).resolve().parent.parent / 'data'
+        path = data_dir / 'web_qr.png'
+        if path.exists():
+            pixmap = QtGui.QPixmap(str(path))
+            self.web_btn.setIcon(QtGui.QIcon(pixmap))
+            self.web_btn.setIconSize(pixmap.size())
+            self.web_btn.setText("")
+        else:
+            self.web_btn.setIcon(QtGui.QIcon())
+            self.web_btn.setText("Webinterface")
 
 
 class TopupPage(QtWidgets.QWidget):
@@ -347,6 +365,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_menu = AdminMenu(self)
         self.admin_menu.stock_btn.clicked.connect(self.show_stock_page)
         self.admin_menu.topup_btn.clicked.connect(self.show_topup_page)
+        self.admin_menu.status_btn.clicked.connect(self.show_status)
+        self.admin_menu.web_btn.clicked.connect(self.show_web_qr)
         self.admin_menu.quit_btn.clicked.connect(self._quit)
         self.admin_menu.back_btn.clicked.connect(self.show_start_page)
         self.stack.addWidget(self.admin_menu)
@@ -436,6 +456,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.setCurrentWidget(self.start_page)
 
     def show_admin_menu(self) -> None:
+        self.admin_menu.reload_web_qr()
         self.stack.setCurrentWidget(self.admin_menu)
 
     def show_stock_page(self) -> None:
@@ -445,6 +466,30 @@ class MainWindow(QtWidgets.QMainWindow):
     def show_topup_page(self) -> None:
         self.topup_page.info.setText("")
         self.stack.setCurrentWidget(self.topup_page)
+
+    def show_status(self) -> None:
+        conn = database.get_connection()
+        users = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+        drinks = conn.execute('SELECT COUNT(*) FROM drinks').fetchone()[0]
+        conn.close()
+        system = platform.platform()
+        msg = f"Nutzer: {users}\nGetränke: {drinks}\nSystem: {system}"
+        QtWidgets.QMessageBox.information(self, "Status", msg)
+
+    def show_web_qr(self) -> None:
+        data_dir = Path(__file__).resolve().parent.parent / 'data'
+        path = data_dir / 'web_qr.png'
+        if not path.exists():
+            QtWidgets.QMessageBox.warning(self, "Fehler", "Kein QR-Code vorhanden.")
+            return
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle("Webinterface QR-Code")
+        pixmap = QtGui.QPixmap(str(path))
+        label = QtWidgets.QLabel()
+        label.setPixmap(pixmap)
+        layout = QtWidgets.QVBoxLayout(dlg)
+        layout.addWidget(label)
+        dlg.exec_()
 
     def _check_balance(self) -> None:
         self.info_label.setText("Bitte Karte auflegen…")
