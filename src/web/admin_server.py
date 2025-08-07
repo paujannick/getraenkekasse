@@ -7,7 +7,7 @@ import sqlite3
 
 from .. import admin_auth
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, redirect, render_template, request, session, url_for, send_file
 from flask import jsonify, make_response
 import csv
 import io
@@ -114,6 +114,7 @@ def create_app() -> Flask:
         conn = database.get_connection()
         current_limit = models.get_overdraft_limit(conn)
         current_pin = models.get_admin_pin(conn)
+        qr_path = Path(__file__).resolve().parent.parent / 'data' / 'web_qr.png'
         if request.method == 'POST':
             val = request.form.get('overdraft', type=float)
             if val is not None:
@@ -121,11 +122,25 @@ def create_app() -> Flask:
             pin_val = request.form.get('admin_pin')
             if pin_val is not None:
                 models.set_admin_pin(pin_val, conn)
+            qr_file = request.files.get('qr_code')
+            if qr_file and qr_file.filename:
+                data_dir = qr_path.parent
+                data_dir.mkdir(parents=True, exist_ok=True)
+                qr_file.save(qr_path)
             conn.close()
             return redirect(url_for('settings'))
         conn.close()
         return render_template('settings.html', overdraft_limit=current_limit,
-                               admin_pin=current_pin)
+                               admin_pin=current_pin,
+                               qr_code_exists=qr_path.exists())
+
+    @app.route('/web_qr.png')
+    @login_required
+    def web_qr_png():
+        path = Path(__file__).resolve().parent.parent / 'data' / 'web_qr.png'
+        if path.exists():
+            return send_file(path)
+        return ('', 404)
 
 
     @app.route('/login', methods=['GET', 'POST'])

@@ -1,13 +1,19 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Einstellungen</h1>
-<form method="post">
+<form method="post" enctype="multipart/form-data">
     <label>Überziehungslimit in Euro:<br>
         <input type="number" step="0.01" name="overdraft" value="{{ overdraft_limit/100 }}">
     </label><br>
     <label>Admin-PIN:<br>
         <input type="text" name="admin_pin" value="{{ admin_pin }}">
     </label><br>
+    <label>Webinterface QR-Code:<br>
+        <input type="file" name="qr_code" accept="image/png">
+    </label><br>
+    {% if qr_code_exists %}
+    <img src="{{ url_for('web_qr_png') }}" alt="QR-Code" style="max-width:200px;"><br>
+    {% endif %}
     <button type="submit">Speichern</button>
 </form>
 {% endblock %}
