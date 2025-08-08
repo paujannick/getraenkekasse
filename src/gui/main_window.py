@@ -217,13 +217,21 @@ class AdminMenu(QtWidgets.QWidget):
 
         self.stock_btn = QtWidgets.QPushButton("Bestandswarnungen")
         self.topup_btn = QtWidgets.QPushButton("Konten aufladen")
+        self.event_cards_btn = QtWidgets.QPushButton("Veranstaltungskarten")
         self.status_btn = QtWidgets.QPushButton("Status")
         self.web_btn = QtWidgets.QPushButton()
         self.quit_btn = QtWidgets.QPushButton("Beenden")
         self.back_btn = QtWidgets.QPushButton("Zurück")
 
-        for btn in (self.stock_btn, self.topup_btn, self.status_btn, self.web_btn,
-                    self.quit_btn, self.back_btn):
+        for btn in (
+            self.stock_btn,
+            self.topup_btn,
+            self.event_cards_btn,
+            self.status_btn,
+            self.web_btn,
+            self.quit_btn,
+            self.back_btn,
+        ):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
@@ -310,6 +318,71 @@ class TopupPage(QtWidgets.QWidget):
         QtCore.QTimer.singleShot(3000, self._main.show_admin_menu)
 
 
+class EventCardPage(QtWidgets.QWidget):
+    """Page to enable/disable event cards and their visibility."""
+
+    def __init__(self, parent: "MainWindow"):
+        super().__init__(parent)
+        self._main = parent
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.grid = QtWidgets.QGridLayout()
+        self.grid.setColumnStretch(0, 1)
+        layout.addLayout(self.grid)
+
+        btn_layout = QtWidgets.QHBoxLayout()
+        self.save_btn = QtWidgets.QPushButton("Speichern")
+        self.back_btn = QtWidgets.QPushButton("Zurück")
+        for btn in (self.save_btn, self.back_btn):
+            f = btn.font()
+            f.setPointSize(16)
+            btn.setFont(f)
+            btn.setMinimumHeight(60)
+            btn_layout.addWidget(btn)
+        layout.addLayout(btn_layout)
+
+        self.save_btn.clicked.connect(self.save)
+        self.back_btn.clicked.connect(self._main.show_admin_menu)
+        self._rows: list[tuple[int, QtWidgets.QCheckBox, QtWidgets.QCheckBox]] = []
+
+    def reload(self) -> None:
+        while self.grid.count():
+            item = self.grid.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        conn = database.get_connection()
+        cur = conn.execute(
+            'SELECT id, name, active, show_on_payment FROM users WHERE is_event=1 ORDER BY name'
+        )
+        self._rows.clear()
+        for row, user in enumerate(cur.fetchall()):
+            label = QtWidgets.QLabel(user['name'])
+            active_box = QtWidgets.QCheckBox("Aktiv")
+            active_box.setChecked(bool(user['active']))
+            show_box = QtWidgets.QCheckBox("Anzeigen")
+            show_box.setChecked(bool(user['show_on_payment']))
+            self.grid.addWidget(label, row, 0)
+            self.grid.addWidget(active_box, row, 1)
+            self.grid.addWidget(show_box, row, 2)
+            self._rows.append((user['id'], active_box, show_box))
+        conn.close()
+
+    def save(self) -> None:
+        conn = database.get_connection()
+        for uid, active_box, show_box in self._rows:
+            active = 1 if active_box.isChecked() else 0
+            show = 1 if show_box.isChecked() else 0
+            conn.execute(
+                'UPDATE users SET active=?, show_on_payment=? WHERE id=? AND is_event=1',
+                (active, show, uid),
+            )
+        conn.commit()
+        conn.close()
+        self._main.show_admin_menu()
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -357,6 +430,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_menu = AdminMenu(self)
         self.admin_menu.stock_btn.clicked.connect(self.show_stock_page)
         self.admin_menu.topup_btn.clicked.connect(self.show_topup_page)
+        self.admin_menu.event_cards_btn.clicked.connect(self.show_event_cards_page)
         self.admin_menu.status_btn.clicked.connect(self.show_status)
         self.admin_menu.web_btn.clicked.connect(self.show_web_qr)
         self.admin_menu.quit_btn.clicked.connect(self._quit)
@@ -370,6 +444,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.topup_page = TopupPage(self)
         self.topup_page.back_btn.clicked.connect(self.show_admin_menu)
         self.stack.addWidget(self.topup_page)
+
+        self.event_card_page = EventCardPage(self)
+        self.stack.addWidget(self.event_card_page)
 
         self.show_start_page()
 
@@ -458,6 +535,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def show_topup_page(self) -> None:
         self.topup_page.info.setText("")
         self.stack.setCurrentWidget(self.topup_page)
+
+    def show_event_cards_page(self) -> None:
+        self.event_card_page.reload()
+        self.stack.setCurrentWidget(self.event_card_page)
 
     def show_status(self) -> None:
         conn = database.get_connection()
