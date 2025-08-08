@@ -357,14 +357,17 @@ class EventCardPage(QtWidgets.QWidget):
         self._rows: list[tuple[int, QtWidgets.QCheckBox, QtWidgets.QCheckBox]] = []
 
     def reload(self) -> None:
-        self.table.setRowCount(0)                
-        widget.deleteLater()
+        self.table.setRowCount(0)
+
+        for _, active_box, show_box in self._rows:
+            active_box.deleteLater()
+            show_box.deleteLater()
+        self._rows.clear()
 
         conn = database.get_connection()
         cur = conn.execute(
             'SELECT id, name, active, show_on_payment FROM users WHERE is_event=1 ORDER BY name'
         )
-        self._rows.clear()
         for user in cur.fetchall():
             row = self.table.rowCount()
             self.table.insertRow(row)
