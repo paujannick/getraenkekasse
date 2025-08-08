@@ -357,7 +357,8 @@ class EventCardPage(QtWidgets.QWidget):
         self._rows: list[tuple[int, QtWidgets.QCheckBox, QtWidgets.QCheckBox]] = []
 
     def reload(self) -> None:
-        self.table.setRowCount(0)                widget.deleteLater()
+        self.table.setRowCount(0)                
+        widget.deleteLater()
 
         conn = database.get_connection()
         cur = conn.execute(
