@@ -217,13 +217,21 @@ class AdminMenu(QtWidgets.QWidget):
 
         self.stock_btn = QtWidgets.QPushButton("Bestandswarnungen")
         self.topup_btn = QtWidgets.QPushButton("Konten aufladen")
+        self.event_cards_btn = QtWidgets.QPushButton("Veranstaltungskarten")
         self.status_btn = QtWidgets.QPushButton("Status")
         self.web_btn = QtWidgets.QPushButton()
         self.quit_btn = QtWidgets.QPushButton("Beenden")
         self.back_btn = QtWidgets.QPushButton("Zurück")
 
-        for btn in (self.stock_btn, self.topup_btn, self.status_btn, self.web_btn,
-                    self.quit_btn, self.back_btn):
+        for btn in (
+            self.stock_btn,
+            self.topup_btn,
+            self.event_cards_btn,
+            self.status_btn,
+            self.web_btn,
+            self.quit_btn,
+            self.back_btn,
+        ):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
@@ -310,6 +318,92 @@ class TopupPage(QtWidgets.QWidget):
         QtCore.QTimer.singleShot(3000, self._main.show_admin_menu)
 
 
+class EventCardPage(QtWidgets.QWidget):
+    """Page to enable/disable event cards and their visibility."""
+
+    def __init__(self, parent: "MainWindow"):
+        super().__init__(parent)
+        self._main = parent
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.table = QtWidgets.QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["Karte", "Aktiv", "Anzeigen"])
+        f = self.table.font()
+        f.setPointSize(16)
+        self.table.setFont(f)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        self.table.setFocusPolicy(QtCore.Qt.NoFocus)
+        layout.addWidget(self.table)
+
+        btn_layout = QtWidgets.QHBoxLayout()
+        self.save_btn = QtWidgets.QPushButton("Speichern")
+        self.back_btn = QtWidgets.QPushButton("Zurück")
+        for btn in (self.save_btn, self.back_btn):
+            f = btn.font()
+            f.setPointSize(16)
+            btn.setFont(f)
+            btn.setMinimumHeight(60)
+            btn_layout.addWidget(btn)
+        layout.addLayout(btn_layout)
+
+        self.save_btn.clicked.connect(self.save)
+        self.back_btn.clicked.connect(self._main.show_admin_menu)
+        self._rows: list[tuple[int, QtWidgets.QCheckBox, QtWidgets.QCheckBox]] = []
+
+    def reload(self) -> None:
+        self.table.setRowCount(0)
+
+        conn = database.get_connection()
+        cur = conn.execute(
+            'SELECT id, name, active, show_on_payment FROM users WHERE is_event=1 ORDER BY name'
+        )
+        self._rows.clear()
+        for user in cur.fetchall():
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+
+            name_item = QtWidgets.QTableWidgetItem(user['name'])
+            name_item.setFlags(name_item.flags() & ~QtCore.Qt.ItemIsEditable)
+            self.table.setItem(row, 0, name_item)
+
+            style = (
+                "QCheckBox{margin-left:auto; margin-right:auto;}"
+                "QCheckBox::indicator{width:40px;height:40px;}"
+            )
+            active_box = QtWidgets.QCheckBox()
+            active_box.setChecked(bool(user['active']))
+            active_box.setStyleSheet(style)
+            self.table.setCellWidget(row, 1, active_box)
+
+            show_box = QtWidgets.QCheckBox()
+            show_box.setChecked(bool(user['show_on_payment']))
+            show_box.setStyleSheet(style)
+            self.table.setCellWidget(row, 2, show_box)
+
+            self.table.setRowHeight(row, 50)
+            self._rows.append((user['id'], active_box, show_box))
+        conn.close()
+
+    def save(self) -> None:
+        conn = database.get_connection()
+        for uid, active_box, show_box in self._rows:
+            active = 1 if active_box.isChecked() else 0
+            show = 1 if show_box.isChecked() else 0
+            conn.execute(
+                'UPDATE users SET active=?, show_on_payment=? WHERE id=? AND is_event=1',
+                (active, show, uid),
+            )
+        conn.commit()
+        conn.close()
+        self._main.show_admin_menu()
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -357,6 +451,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_menu = AdminMenu(self)
         self.admin_menu.stock_btn.clicked.connect(self.show_stock_page)
         self.admin_menu.topup_btn.clicked.connect(self.show_topup_page)
+        self.admin_menu.event_cards_btn.clicked.connect(self.show_event_cards_page)
         self.admin_menu.status_btn.clicked.connect(self.show_status)
         self.admin_menu.web_btn.clicked.connect(self.show_web_qr)
         self.admin_menu.quit_btn.clicked.connect(self._quit)
@@ -370,6 +465,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.topup_page = TopupPage(self)
         self.topup_page.back_btn.clicked.connect(self.show_admin_menu)
         self.stack.addWidget(self.topup_page)
+
+        self.event_card_page = EventCardPage(self)
+        self.stack.addWidget(self.event_card_page)
 
         self.show_start_page()
 
@@ -458,6 +556,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def show_topup_page(self) -> None:
         self.topup_page.info.setText("")
         self.stack.setCurrentWidget(self.topup_page)
+
+    def show_event_cards_page(self) -> None:
+        self.event_card_page.reload()
+        self.stack.setCurrentWidget(self.event_card_page)
 
     def show_status(self) -> None:
         conn = database.get_connection()
