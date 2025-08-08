@@ -326,9 +326,20 @@ class EventCardPage(QtWidgets.QWidget):
         self._main = parent
         layout = QtWidgets.QVBoxLayout(self)
 
-        self.grid = QtWidgets.QGridLayout()
-        self.grid.setColumnStretch(0, 1)
-        layout.addLayout(self.grid)
+        self.table = QtWidgets.QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["Karte", "Aktiv", "Anzeigen"])
+        f = self.table.font()
+        f.setPointSize(16)
+        self.table.setFont(f)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        self.table.setFocusPolicy(QtCore.Qt.NoFocus)
+        layout.addWidget(self.table)
 
         btn_layout = QtWidgets.QHBoxLayout()
         self.save_btn = QtWidgets.QPushButton("Speichern")
@@ -346,26 +357,36 @@ class EventCardPage(QtWidgets.QWidget):
         self._rows: list[tuple[int, QtWidgets.QCheckBox, QtWidgets.QCheckBox]] = []
 
     def reload(self) -> None:
-        while self.grid.count():
-            item = self.grid.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
+        self.table.setRowCount(0)                widget.deleteLater()
 
         conn = database.get_connection()
         cur = conn.execute(
             'SELECT id, name, active, show_on_payment FROM users WHERE is_event=1 ORDER BY name'
         )
         self._rows.clear()
-        for row, user in enumerate(cur.fetchall()):
-            label = QtWidgets.QLabel(user['name'])
-            active_box = QtWidgets.QCheckBox("Aktiv")
+        for user in cur.fetchall():
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+
+            name_item = QtWidgets.QTableWidgetItem(user['name'])
+            name_item.setFlags(name_item.flags() & ~QtCore.Qt.ItemIsEditable)
+            self.table.setItem(row, 0, name_item)
+
+            style = (
+                "QCheckBox{margin-left:auto; margin-right:auto;}"
+                "QCheckBox::indicator{width:40px;height:40px;}"
+            )
+            active_box = QtWidgets.QCheckBox()
             active_box.setChecked(bool(user['active']))
-            show_box = QtWidgets.QCheckBox("Anzeigen")
+            active_box.setStyleSheet(style)
+            self.table.setCellWidget(row, 1, active_box)
+
+            show_box = QtWidgets.QCheckBox()
             show_box.setChecked(bool(user['show_on_payment']))
-            self.grid.addWidget(label, row, 0)
-            self.grid.addWidget(active_box, row, 1)
-            self.grid.addWidget(show_box, row, 2)
+            show_box.setStyleSheet(style)
+            self.table.setCellWidget(row, 2, show_box)
+
+            self.table.setRowHeight(row, 50)
             self._rows.append((user['id'], active_box, show_box))
         conn.close()
 
