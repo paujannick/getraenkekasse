@@ -3,6 +3,9 @@
 <h1>Adminbereich</h1>
 <p>Willkommen!</p>
 
+<p>Guthaben aller Benutzer (ohne Veranstaltungskarten):
+   {{ (total_balance/100)|round(2) }} €</p>
+
 <form method="post" action="{{ url_for('refresh') }}">
     <button type="submit">GUI aktualisieren</button>
 </form>

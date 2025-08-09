@@ -56,8 +56,12 @@ def create_app() -> Flask:
             return redirect(url_for('login'))
         conn = database.get_connection()
         to_buy = models.get_drinks_below_min(conn)
+        row = conn.execute(
+            'SELECT COALESCE(SUM(balance), 0) AS total FROM users WHERE is_event=0'
+        ).fetchone()
+        total_balance = row['total'] if row else 0
         conn.close()
-        return render_template('index.html', to_buy=to_buy)
+        return render_template('index.html', to_buy=to_buy, total_balance=total_balance)
 
 
     @app.route('/dashboard')
