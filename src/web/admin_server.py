@@ -118,7 +118,10 @@ def create_app() -> Flask:
         conn = database.get_connection()
         current_limit = models.get_overdraft_limit(conn)
         current_pin = models.get_admin_pin(conn)
-        qr_path = Path(__file__).resolve().parent.parent / 'data' / 'web_qr.png'
+        data_dir = Path(__file__).resolve().parent.parent / 'data'
+        qr_path = data_dir / 'web_qr.png'
+        bg_path = data_dir / 'background.png'
+        thank_path = data_dir / 'background_thanks.png'
         if request.method == 'POST':
             val = request.form.get('overdraft', type=float)
             if val is not None:
@@ -128,20 +131,45 @@ def create_app() -> Flask:
                 models.set_admin_pin(pin_val, conn)
             qr_file = request.files.get('qr_code')
             if qr_file and qr_file.filename:
-                data_dir = qr_path.parent
                 data_dir.mkdir(parents=True, exist_ok=True)
                 qr_file.save(qr_path)
+            bg_file = request.files.get('background')
+            if bg_file and bg_file.filename:
+                data_dir.mkdir(parents=True, exist_ok=True)
+                bg_file.save(bg_path)
+            thank_file = request.files.get('thank_background')
+            if thank_file and thank_file.filename:
+                data_dir.mkdir(parents=True, exist_ok=True)
+                thank_file.save(thank_path)
             conn.close()
             return redirect(url_for('settings'))
         conn.close()
         return render_template('settings.html', overdraft_limit=current_limit,
                                admin_pin=current_pin,
-                               qr_code_exists=qr_path.exists())
+                               qr_code_exists=qr_path.exists(),
+                               background_exists=bg_path.exists(),
+                               thank_background_exists=thank_path.exists())
 
     @app.route('/web_qr.png')
     @login_required
     def web_qr_png():
         path = Path(__file__).resolve().parent.parent / 'data' / 'web_qr.png'
+        if path.exists():
+            return send_file(path)
+        return ('', 404)
+
+    @app.route('/background.png')
+    @login_required
+    def background_png():
+        path = Path(__file__).resolve().parent.parent / 'data' / 'background.png'
+        if path.exists():
+            return send_file(path)
+        return ('', 404)
+
+    @app.route('/thank_background.png')
+    @login_required
+    def thank_background_png():
+        path = Path(__file__).resolve().parent.parent / 'data' / 'background_thanks.png'
         if path.exists():
             return send_file(path)
         return ('', 404)

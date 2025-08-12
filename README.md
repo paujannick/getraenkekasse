@@ -45,7 +45,7 @@ zuverlässiger ohne AUTH-Fehler.
 
    Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
 
-Die GUI zeigt optional ein DRK-Logo im Hintergrund an. Lege dazu eine Bilddatei unter `data/background.png` ab. Ist diese Datei nicht vorhanden, wird kein Hintergrundbild angezeigt.
+Die GUI zeigt optional Hintergrundbilder. Über den Web-Admin unter "Einstellungen" lassen sich Bilder für Start- und Dankesseite hochladen. Die Dateien werden als `data/background.png` bzw. `data/background_thanks.png` gespeichert. Ist eine Datei nicht vorhanden, wird kein Bild angezeigt.
 
 Die Startseite zeigt maximal neun Getränke je Seite an. Über Pfeiltasten am unteren Rand lässt sich zwischen zwei Seiten wechseln. In den Getränkeeinstellungen kann mit dem neuen Feld "Seite" festgelegt werden, auf welcher Seite ein Artikel erscheint. Unterschreitet ein Getränk seinen Mindestbestand, wird der zugehörige Button in der GUI gelb hinterlegt. Fällt der Lagerbestand unter 0, erscheint der Button deutlich rot und der Text wird ausgegraut.
 

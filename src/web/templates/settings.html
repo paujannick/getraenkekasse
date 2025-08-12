@@ -14,6 +14,18 @@
     {% if qr_code_exists %}
     <img src="{{ url_for('web_qr_png') }}" alt="QR-Code" style="max-width:200px;"><br>
     {% endif %}
+    <label>Hintergrundbild:<br>
+        <input type="file" name="background" accept="image/png">
+    </label><br>
+    {% if background_exists %}
+    <img src="{{ url_for('background_png') }}" alt="Hintergrund" style="max-width:200px;"><br>
+    {% endif %}
+    <label>Hintergrundbild Dankesseite:<br>
+        <input type="file" name="thank_background" accept="image/png">
+    </label><br>
+    {% if thank_background_exists %}
+    <img src="{{ url_for('thank_background_png') }}" alt="Danke-Hintergrund" style="max-width:200px;"><br>
+    {% endif %}
     <button type="submit">Speichern</button>
 </form>
 {% endblock %}
