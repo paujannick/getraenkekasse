@@ -419,15 +419,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.central.setObjectName("central_widget")
         self.setCentralWidget(self.central)
 
-        logo_path = Path(__file__).resolve().parent.parent / 'data' / 'background.png'
-        if logo_path.exists():
-            self.central.setStyleSheet(
-                "#central_widget{"
-                f"background-image: url('{logo_path}');"
-                "background-repeat: no-repeat;"
-                "background-position: center;"
-                "}"
-            )
+        data_dir = Path(__file__).resolve().parent.parent / 'data'
+        self._default_bg = data_dir / 'background.png'
+        self._thank_bg = data_dir / 'background_thanks.png'
+        self._apply_background(self._default_bg)
 
         self.stack = QtWidgets.QStackedLayout(self.central)
 
@@ -474,6 +469,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.addWidget(self.event_card_page)
 
         self.show_start_page()
+
+    def _apply_background(self, path: Path) -> None:
+        if path and path.exists():
+            self.central.setStyleSheet(
+                "#central_widget{"\
+                f"background-image: url('{path}');"\
+                "background-repeat: no-repeat;"\
+                "background-position: center;"\
+                "}"
+            )
+        else:
+            self.central.setStyleSheet("")
 
     def _populate_start_page(self) -> None:
         layout = self.start_layout
@@ -547,6 +554,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.next_button.setEnabled(self.current_page < self.page_count)
 
     def show_start_page(self):
+        self._apply_background(self._default_bg)
         self.stack.setCurrentWidget(self.start_page)
 
     def show_admin_menu(self) -> None:
@@ -662,6 +670,8 @@ class MainWindow(QtWidgets.QMainWindow):
             models.update_drink_stock(drink.id, -quantity)
             models.add_transaction(user.id, drink.id, quantity)
             led.indicate_success()
+            if self._thank_bg.exists():
+                self._apply_background(self._thank_bg)
             self.info_label.setText(
                 f"Danke {user.name}!\nKauf wird verbucht."
             )
@@ -691,6 +701,8 @@ class MainWindow(QtWidgets.QMainWindow):
         models.add_transaction(user.id, drink.id, quantity)
         new_user = models.get_user_by_uid(uid)
         led.indicate_success()
+        if self._thank_bg.exists():
+            self._apply_background(self._thank_bg)
         msg = (
             f"Danke {new_user.name}!\nAltes Guthaben: {old_balance/100:.2f} €\n"
             f"Neues Guthaben: {new_user.balance/100:.2f} €"
