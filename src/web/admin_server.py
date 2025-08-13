@@ -639,7 +639,8 @@ def create_app() -> Flask:
     def export_transactions_anonymized():
         conn = database.get_connection()
         cur = conn.execute(
-            'SELECT d.name as drink_name FROM transactions t '
+            'SELECT t.timestamp, d.name as drink_name, t.quantity '
+            'FROM transactions t '
             'JOIN drinks d ON d.id = t.drink_id '
             'ORDER BY t.timestamp DESC'
         )
@@ -647,9 +648,9 @@ def create_app() -> Flask:
         conn.close()
         out = io.StringIO()
         writer = csv.writer(out)
-        writer.writerow(['drink'])
+        writer.writerow(['timestamp', 'drink', 'quantity'])
         for r in rows:
-            writer.writerow([r['drink_name']])
+            writer.writerow([r['timestamp'], r['drink_name'], r['quantity']])
         resp = make_response(out.getvalue())
         resp.headers['Content-Type'] = 'text/csv'
         resp.headers['Content-Disposition'] = (
