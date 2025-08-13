@@ -634,6 +634,29 @@ def create_app() -> Flask:
         resp.headers['Content-Disposition'] = 'attachment; filename=transactions.csv'
         return resp
 
+    @app.route('/export/transactions_anonymized')
+    @login_required
+    def export_transactions_anonymized():
+        conn = database.get_connection()
+        cur = conn.execute(
+            'SELECT d.name as drink_name FROM transactions t '
+            'JOIN drinks d ON d.id = t.drink_id '
+            'ORDER BY t.timestamp DESC'
+        )
+        rows = cur.fetchall()
+        conn.close()
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['drink'])
+        for r in rows:
+            writer.writerow([r['drink_name']])
+        resp = make_response(out.getvalue())
+        resp.headers['Content-Type'] = 'text/csv'
+        resp.headers['Content-Disposition'] = (
+            'attachment; filename=transactions_anonymized.csv'
+        )
+        return resp
+
     @app.route('/export/inventory')
     @login_required
     def export_inventory():
