@@ -8,7 +8,8 @@
     <label>Chat ID:<br>
         <input type="text" name="chat_id" value="{{ chat_id }}">
     </label><br>
-    <button type="submit">Speichern</button>
+    <button type="submit" name="action" value="save">Speichern</button>
+    <button type="submit" name="action" value="publish">Publish</button>
 </form>
 {% if info %}<p class="info">{{ info }}</p>{% endif %}
 {% endblock %}

@@ -156,13 +156,19 @@ def create_app() -> Flask:
     def telegram():
         info: Optional[str] = None
         if request.method == 'POST':
-            token = request.form.get('token') or ''
-            chat_id = request.form.get('chat_id') or ''
-            models.set_telegram_token(token)
-            models.set_telegram_chat(chat_id)
-            notifier.reload_settings()
-            notifier.start()
-            info = 'Gespeichert'
+            action = request.form.get('action') or 'save'
+            if action == 'publish':
+                notifier.reload_settings()
+                notifier.send_status()
+                info = 'Status gesendet'
+            else:
+                token = request.form.get('token') or ''
+                chat_id = request.form.get('chat_id') or ''
+                models.set_telegram_token(token)
+                models.set_telegram_chat(chat_id)
+                notifier.reload_settings()
+                notifier.start()
+                info = 'Gespeichert'
         token = models.get_telegram_token()
         chat_id = models.get_telegram_chat()
         return render_template('telegram.html', token=token, chat_id=chat_id, info=info)
