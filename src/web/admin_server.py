@@ -14,6 +14,7 @@ import io
 
 
 from .. import database, models
+from ..telegram_bot import notifier
 
 
 def create_app() -> Flask:
@@ -149,6 +150,22 @@ def create_app() -> Flask:
                                qr_code_exists=qr_path.exists(),
                                background_exists=bg_path.exists(),
                                thank_background_exists=thank_path.exists())
+
+    @app.route('/telegram', methods=['GET', 'POST'])
+    @login_required
+    def telegram():
+        info: Optional[str] = None
+        if request.method == 'POST':
+            token = request.form.get('token') or ''
+            chat_id = request.form.get('chat_id') or ''
+            models.set_telegram_token(token)
+            models.set_telegram_chat(chat_id)
+            notifier.reload_settings()
+            notifier.start()
+            info = 'Gespeichert'
+        token = models.get_telegram_token()
+        chat_id = models.get_telegram_chat()
+        return render_template('telegram.html', token=token, chat_id=chat_id, info=info)
 
     @app.route('/web_qr.png')
     @login_required
@@ -787,6 +804,7 @@ def create_app() -> Flask:
             target.unlink()
         return redirect(url_for('file_logs'))
 
+    notifier.start()
     return app
 
 
