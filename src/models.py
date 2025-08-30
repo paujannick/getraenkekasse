@@ -43,6 +43,26 @@ def set_admin_pin(pin: str, conn: Optional[sqlite3.Connection] = None) -> None:
     set_setting('admin_pin', pin, conn)
 
 
+def get_telegram_token(conn: Optional[sqlite3.Connection] = None) -> str:
+    """Return the Telegram bot token."""
+    return get_setting('telegram_token', conn) or ''
+
+
+def set_telegram_token(token: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    """Store the Telegram bot token."""
+    set_setting('telegram_token', token, conn)
+
+
+def get_telegram_chat(conn: Optional[sqlite3.Connection] = None) -> str:
+    """Return the Telegram chat id for notifications."""
+    return get_setting('telegram_chat', conn) or ''
+
+
+def set_telegram_chat(chat_id: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    """Store the Telegram chat id."""
+    set_setting('telegram_chat', chat_id, conn)
+
+
 
 @dataclass
 class User:

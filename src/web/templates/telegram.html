@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Telegram Einstellungen</h1>
+<form method="post">
+    <label>Bot Token:<br>
+        <input type="text" name="token" value="{{ token }}">
+    </label><br>
+    <label>Chat ID:<br>
+        <input type="text" name="chat_id" value="{{ chat_id }}">
+    </label><br>
+    <button type="submit">Speichern</button>
+</form>
+{% if info %}<p class="info">{{ info }}</p>{% endif %}
+{% endblock %}
