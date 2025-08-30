@@ -2,6 +2,8 @@ import threading
 import time
 from pathlib import Path
 from typing import Optional
+import io
+import csv
 
 import requests
 
@@ -60,6 +62,49 @@ class TelegramNotifier:
         except Exception:
             pass
 
+    def _send_csv(self, filename: str, headers: list[str], rows: list[tuple]) -> None:
+        if not self._enabled():
+            return
+        try:
+            buf = io.StringIO()
+            writer = csv.writer(buf)
+            writer.writerow(headers)
+            for row in rows:
+                writer.writerow(row)
+            data = buf.getvalue().encode('utf-8')
+            requests.post(
+                self._api('sendDocument'),
+                data={'chat_id': self.chat_id},
+                files={'document': (filename, data)},
+            )
+        except Exception:
+            pass
+
+    def send_datafiles(self) -> None:
+        if not self._enabled():
+            return
+        try:
+            sales = models.get_transaction_log()
+            self._send_csv(
+                'sales.csv',
+                ['timestamp', 'drink', 'quantity'],
+                [(r['timestamp'], r['drink_name'], r['quantity']) for r in sales],
+            )
+            restocks = models.get_restock_log()
+            self._send_csv(
+                'restocks.csv',
+                ['timestamp', 'drink', 'quantity'],
+                [(r['timestamp'], r['drink_name'], r['quantity']) for r in restocks],
+            )
+            drinks = models.get_drinks()
+            self._send_csv(
+                'stock.csv',
+                ['drink', 'stock'],
+                [(d.name, d.stock) for d in drinks],
+            )
+        except Exception:
+            pass
+
     def build_status(self) -> str:
         drinks = models.get_drinks_below_min()
         stats, _ = models.get_monthly_stats(1)
@@ -87,6 +132,7 @@ class TelegramNotifier:
         text = self.build_status()
         self.send_message(text)
         self.send_logfile()
+        self.send_datafiles()
 
     # --- Polling loop ---------------------------------------------------------
     def _poll(self) -> None:

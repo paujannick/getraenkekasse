@@ -277,6 +277,25 @@ def get_topup_log() -> list[sqlite3.Row]:
         return []
 
 
+def get_transaction_log(limit: int | None = None) -> list[sqlite3.Row]:
+    """Return an anonymized list of sales transactions."""
+    try:
+        with get_connection() as conn:
+            query = (
+                "SELECT t.timestamp, d.name as drink_name, t.quantity "
+                "FROM transactions t "
+                "JOIN drinks d ON d.id = t.drink_id "
+                "ORDER BY t.timestamp DESC"
+            )
+            if limit is not None:
+                query += f" LIMIT {int(limit)}"
+            cur = conn.execute(query)
+            return cur.fetchall()
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Lesen der Verkäufe: {e}")
+        return []
+
+
 def get_drink_by_id(drink_id: int) -> Optional[Drink]:
     try:
         with get_connection() as conn:
