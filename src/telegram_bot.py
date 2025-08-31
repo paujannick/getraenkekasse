@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 import io
 import csv
+import calendar   # <--- hinzugefügt
 
 import requests
 
@@ -150,14 +151,17 @@ class TelegramNotifier:
                         msg = upd.get('message', {}).get('text', '')
                         if msg.strip() == '/status':
                             self.send_status()
-                # --- Monatsreport: nur am 1. des Monats um 13:00 ---
+
+                # --- Monatsreport: am letzten Tag des Monats um 13:00 ---
                 now = time.localtime()
                 month_tag = f"{now.tm_year:04d}-{now.tm_mon:02d}"
-                # Sende genau einmal pro Monat am 1. um 13:00 (Minute 0)
-                if now.tm_mday == 1 and now.tm_hour == 13 and now.tm_min == 0:
+                last_day = calendar.monthrange(now.tm_year, now.tm_mon)[1]
+
+                if now.tm_mday == last_day and now.tm_hour == 13 and now.tm_min == 0:
                     if month_tag != self.last_month:
                         self.last_month = month_tag
                         self.send_status()
+
             except Exception:
                 pass
             time.sleep(5)
