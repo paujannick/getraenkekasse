@@ -129,7 +129,10 @@ def get_event_payment_users() -> list[User]:
     try:
         with get_connection() as conn:
             cur = conn.execute(
-                'SELECT * FROM users WHERE is_event=1 AND show_on_payment=1 AND active=1 ORDER BY name'
+                'SELECT * FROM users WHERE is_event=1 AND show_on_payment=1 AND active=1 '
+                'AND (valid_from IS NULL OR valid_from <= DATE("now")) '
+                'AND (valid_until IS NULL OR valid_until >= DATE("now")) '
+                'ORDER BY name'
             )
             rows = cur.fetchall()
         return [User(**row) for row in rows]
@@ -142,7 +145,9 @@ def update_balance(user_id: int, diff: int) -> bool:
     try:
         with get_connection() as conn:
             cur = conn.execute(
-                'SELECT balance, is_event, active FROM users WHERE id = ?',
+                'SELECT balance, is_event, active FROM users WHERE id = ? '
+                'AND (valid_from IS NULL OR valid_from <= DATE("now")) '
+                'AND (valid_until IS NULL OR valid_until >= DATE("now"))',
                 (user_id,),
             )
             row = cur.fetchone()

@@ -557,17 +557,17 @@ def create_app() -> Flask:
             pdf.cell(40, 8, r['timestamp'][:10], 1)
             pdf.cell(70, 8, r['name'], 1)
             pdf.cell(20, 8, str(r['quantity']), 1, align='R')
-            pdf.cell(20, 8, f"{r['price']/100:.2f}", 1, align='R')
-            pdf.cell(20, 8, f"{r['quantity']*r['price']/100:.2f}", 1, align='R')
-            pdf.ln()
-        pdf.cell(150, 8, 'Gesamt', 1)
-        pdf.cell(20, 8, f"{total/100:.2f}", 1, align='R')
-        output = pdf.output(dest='S').encode('latin1')
-        return send_file(
-            io.BytesIO(output),
-            mimetype='application/pdf',
-            download_name=f'event_{user_id}.pdf',
-        )
+        pdf.cell(20, 8, f"{r['price']/100:.2f}", 1, align='R')
+        pdf.cell(20, 8, f"{r['quantity']*r['price']/100:.2f}", 1, align='R')
+        pdf.ln()
+    pdf.cell(150, 8, 'Gesamt', 1)
+    pdf.cell(20, 8, f"{total/100:.2f}", 1, align='R')
+    pdf_bytes = pdf.output()
+    return send_file(
+        io.BytesIO(pdf_bytes),
+        mimetype='application/pdf',
+        download_name=f'event_{user_id}.pdf',
+    )
 
     @app.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
     @login_required
