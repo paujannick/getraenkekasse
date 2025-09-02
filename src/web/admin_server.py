@@ -508,6 +508,12 @@ def create_app() -> Flask:
         conn.close()
         return redirect(url_for('event_cards'))
 
+    @app.route('/event_cards/reset/<int:user_id>', methods=['POST'])
+    @login_required
+    def event_card_reset(user_id: int):
+        models.reset_event_card(user_id)
+        return redirect(url_for('event_cards'))
+
     @app.route('/event_cards/print/<int:user_id>')
     @login_required
     def event_card_print(user_id: int):
@@ -557,17 +563,17 @@ def create_app() -> Flask:
             pdf.cell(40, 8, r['timestamp'][:10], 1)
             pdf.cell(70, 8, r['name'], 1)
             pdf.cell(20, 8, str(r['quantity']), 1, align='R')
-        pdf.cell(20, 8, f"{r['price']/100:.2f}", 1, align='R')
-        pdf.cell(20, 8, f"{r['quantity']*r['price']/100:.2f}", 1, align='R')
-        pdf.ln()
-    pdf.cell(150, 8, 'Gesamt', 1)
-    pdf.cell(20, 8, f"{total/100:.2f}", 1, align='R')
-    pdf_bytes = pdf.output()
-    return send_file(
-        io.BytesIO(pdf_bytes),
-        mimetype='application/pdf',
-        download_name=f'event_{user_id}.pdf',
-    )
+            pdf.cell(20, 8, f"{r['price']/100:.2f}", 1, align='R')
+            pdf.cell(20, 8, f"{r['quantity']*r['price']/100:.2f}", 1, align='R')
+            pdf.ln()
+        pdf.cell(150, 8, 'Gesamt', 1)
+        pdf.cell(20, 8, f"{total/100:.2f}", 1, align='R')
+        pdf_bytes = pdf.output()
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            download_name=f'event_{user_id}.pdf',
+        )
 
     @app.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
     @login_required

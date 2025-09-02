@@ -274,6 +274,21 @@ def add_topup(user_id: int, amount: int) -> None:
         print(f"Fehler beim Schreiben der Aufladung: {e}")
 
 
+def reset_event_card(user_id: int) -> None:
+    """Delete all transactions and validity dates for an event card."""
+    try:
+        with get_connection() as conn:
+            conn.execute('DELETE FROM transactions WHERE user_id=?', (user_id,))
+            conn.execute(
+                'UPDATE users SET balance=0, valid_from=NULL, valid_until=NULL '
+                'WHERE id=? AND is_event=1',
+                (user_id,),
+            )
+            conn.commit()
+    except sqlite3.Error as e:  # pragma: no cover - DB failure
+        print(f"Fehler beim Zurücksetzen der Veranstaltungskarte: {e}")
+
+
 def get_topup_log() -> list[sqlite3.Row]:
     try:
         with get_connection() as conn:
