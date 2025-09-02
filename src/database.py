@@ -159,8 +159,9 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
     if "valid_until" not in cols:
         conn.execute("ALTER TABLE users ADD COLUMN valid_until DATE")
     if "created_at" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN created_at DATETIME")
         conn.execute(
-            "ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+            "UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"
         )
 
     cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='admin_pin'")
