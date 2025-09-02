@@ -4,7 +4,7 @@
 {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
 <table>
 
-<tr><th>Name</th><th>UID</th><th>Guthaben</th><th colspan="2">Aktion</th></tr>
+<tr><th>Name</th><th>UID</th><th>Guthaben</th><th colspan="3">Aktion</th></tr>
 
 {% for u in users %}
 <tr>
@@ -12,7 +12,7 @@
 <td>{{ u['rfid_uid'] }}</td>
 
 <td>{{ (u['balance']/100)|round(2) }} €</td>
-
+<td><a href="{{ url_for('user_print', user_id=u['id']) }}" target="_blank">Druck</a></td>
 <td><a href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a></td>
 <td><a href="{{ url_for('user_delete', user_id=u['id']) }}" onclick="return confirm('Benutzer wirklich löschen?');">Löschen</a></td>
 </tr>

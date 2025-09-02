@@ -518,12 +518,21 @@ def create_app() -> Flask:
         if not user:
             conn.close()
             return redirect(url_for('event_cards'))
-        cur = conn.execute(
+        query = (
             'SELECT t.timestamp, d.name, t.quantity, d.price '
             'FROM transactions t JOIN drinks d ON d.id = t.drink_id '
-            'WHERE t.user_id=? ORDER BY t.timestamp',
-            (user_id,),
+            'WHERE t.user_id=? '
         )
+        params: list = [user_id]
+        if user['active'] and (user['valid_from'] or user['valid_until']):
+            if user['valid_from']:
+                query += 'AND DATE(t.timestamp) >= ? '
+                params.append(user['valid_from'])
+            if user['valid_until']:
+                query += 'AND DATE(t.timestamp) <= ? '
+                params.append(user['valid_until'])
+        query += 'ORDER BY t.timestamp'
+        cur = conn.execute(query, params)
         items = cur.fetchall()
         conn.close()
         total = sum(r['quantity'] * r['price'] for r in items)
@@ -558,6 +567,67 @@ def create_app() -> Flask:
             io.BytesIO(output),
             mimetype='application/pdf',
             download_name=f'event_{user_id}.pdf',
+        )
+
+    @app.route('/users/print/<int:user_id>')
+    @login_required
+    def user_print(user_id: int):
+        conn = database.get_connection()
+        user = conn.execute(
+            'SELECT * FROM users WHERE id=? AND is_event=0', (user_id,)
+        ).fetchone()
+        if not user:
+            conn.close()
+            return redirect(url_for('users'))
+        query = (
+            'SELECT t.timestamp, d.name, t.quantity, d.price '
+            'FROM transactions t JOIN drinks d ON d.id = t.drink_id '
+            'WHERE t.user_id=? '
+        )
+        params: list = [user_id]
+        if user['active'] and (user['valid_from'] or user['valid_until']):
+            if user['valid_from']:
+                query += 'AND DATE(t.timestamp) >= ? '
+                params.append(user['valid_from'])
+            if user['valid_until']:
+                query += 'AND DATE(t.timestamp) <= ? '
+                params.append(user['valid_until'])
+        query += 'ORDER BY t.timestamp'
+        cur = conn.execute(query, params)
+        items = cur.fetchall()
+        conn.close()
+        total = sum(r['quantity'] * r['price'] for r in items)
+
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font('Helvetica', size=12)
+        pdf.cell(0, 10, f'Name: {user["name"]}', ln=1)
+        if user['valid_from'] or user['valid_until']:
+            pdf.cell(0, 10, f'Gültig: {user["valid_from"] or ""} - {user["valid_until"] or ""}', ln=1)
+        if user['created_at']:
+            pdf.cell(0, 10, f'Erstellt am: {user["created_at"][:10]}', ln=1)
+        pdf.ln(4)
+        pdf.set_font('Helvetica', size=10)
+        pdf.cell(40, 8, 'Datum', 1)
+        pdf.cell(70, 8, 'Getränk', 1)
+        pdf.cell(20, 8, 'Anzahl', 1, align='R')
+        pdf.cell(20, 8, 'Preis', 1, align='R')
+        pdf.cell(20, 8, 'Summe', 1, align='R')
+        pdf.ln()
+        for r in items:
+            pdf.cell(40, 8, r['timestamp'][:10], 1)
+            pdf.cell(70, 8, r['name'], 1)
+            pdf.cell(20, 8, str(r['quantity']), 1, align='R')
+            pdf.cell(20, 8, f"{r['price']/100:.2f}", 1, align='R')
+            pdf.cell(20, 8, f"{r['quantity']*r['price']/100:.2f}", 1, align='R')
+            pdf.ln()
+        pdf.cell(150, 8, 'Gesamt', 1)
+        pdf.cell(20, 8, f"{total/100:.2f}", 1, align='R')
+        output = pdf.output(dest='S').encode('latin1')
+        return send_file(
+            io.BytesIO(output),
+            mimetype='application/pdf',
+            download_name=f'user_{user_id}.pdf',
         )
 
     @app.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
