@@ -21,7 +21,10 @@ _SCHEMA = {
         'is_event INTEGER NOT NULL DEFAULT 0, '
         'active INTEGER NOT NULL DEFAULT 1, '
         'show_on_payment INTEGER NOT NULL DEFAULT 0, '
-        'is_admin INTEGER NOT NULL DEFAULT 0'
+        'is_admin INTEGER NOT NULL DEFAULT 0, '
+        'valid_from DATE, '
+        'valid_until DATE, '
+        'created_at DATETIME DEFAULT CURRENT_TIMESTAMP'
         ')'
     ),
     'drinks': (
@@ -150,6 +153,14 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
     if "is_admin" not in cols:
         conn.execute(
             "ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0"
+        )
+    if "valid_from" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN valid_from DATE")
+    if "valid_until" not in cols:
+        conn.execute("ALTER TABLE users ADD COLUMN valid_until DATE")
+    if "created_at" not in cols:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
         )
 
     cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='admin_pin'")

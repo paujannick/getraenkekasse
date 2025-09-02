@@ -74,6 +74,9 @@ class User:
     active: int = 1
     show_on_payment: int = 0
     is_admin: int = 0
+    valid_from: Optional[str] = None
+    valid_until: Optional[str] = None
+    created_at: Optional[str] = None
 
 
 @dataclass
@@ -93,7 +96,10 @@ def get_user_by_uid(uid: str) -> Optional[User]:
     try:
         with get_connection() as conn:
             cur = conn.execute(
-                'SELECT * FROM users WHERE rfid_uid = ? AND active = 1', (uid,)
+                'SELECT * FROM users WHERE rfid_uid = ? AND active = 1 '
+                'AND (valid_from IS NULL OR valid_from <= DATE("now")) '
+                'AND (valid_until IS NULL OR valid_until >= DATE("now"))',
+                (uid,),
             )
             row = cur.fetchone()
         if row:

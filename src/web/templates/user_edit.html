@@ -3,10 +3,12 @@
 <h1>Benutzer bearbeiten</h1>
 <form method="post">
     <label>Name:<br><input type="text" name="name" value="{{ user['name'] }}"></label><br>
-    <label>UID:<br><input type="text" name="uid" id="uid_edit" value="{{ user['rfid_uid'] }}"></label>
-    <button type="button" onclick="readUid('uid_edit')">UID lesen</button><br>
-      <label>Guthaben in Euro:<br><input type="number" step="0.01" name="balance" value="{{ (user['balance']/100)|round(2) }}"></label><br>
-        <label><input type="checkbox" name="is_event" value="1" {% if user['is_event'] %}checked{% endif %}> Veranstaltungskarte</label><br>
+    <label>UID:<br><input type='text' name='uid' id='uid_edit' value='{{ user["rfid_uid"] }}'></label>
+    <button type='button' onclick="readUid('uid_edit')">UID lesen</button><br>
+      <label>Guthaben in Euro:<br><input type='number' step='0.01' name='balance' value='{{ (user["balance"]/100)|round(2) }}'></label><br>
+      <label>Gültig von:<br><input type='date' name='valid_from' value='{{ user["valid_from"][:10] if user["valid_from"] }}'></label><br>
+      <label>Gültig bis:<br><input type='date' name='valid_until' value='{{ user["valid_until"][:10] if user["valid_until"] }}'></label><br>
+        <label><input type='checkbox' name='is_event' value='1' {% if user['is_event'] %}checked{% endif %}> Veranstaltungskarte</label><br>
         {% if user['is_event'] %}
         <label><input type="checkbox" name="show_on_payment" value="1" {% if user['show_on_payment'] %}checked{% endif %}> Auf Zahlungsmethoden anzeigen</label><br>
         {% endif %}

@@ -3,12 +3,14 @@
 <h1>Veranstaltungskarten</h1>
 {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
 <table>
-<tr><th>Firma</th><th>UID</th><th>Guthaben</th><th>Aktiv</th><th>Zahlungsmethoden</th><th colspan="3">Aktion</th></tr>
+<tr><th>Firma</th><th>UID</th><th>Guthaben</th><th>Gültig von</th><th>Gültig bis</th><th>Aktiv</th><th>Zahlungsmethoden</th><th colspan="3">Aktion</th></tr>
 {% for u in users %}
 <tr>
 <td>{{ u['name'] }}</td>
 <td>{{ u['rfid_uid'] }}</td>
 <td>{{ (u['balance']/100)|round(2) }} €</td>
+<td>{{ u['valid_from'] or '' }}</td>
+<td>{{ u['valid_until'] or '' }}</td>
 <td>{{ 'ja' if u['active'] else 'nein' }}</td>
 <td>{{ 'ja' if u['show_on_payment'] else 'nein' }}</td>
 <td><a href="{{ url_for('event_card_print', user_id=u['id']) }}" target="_blank">Druck</a></td>
@@ -21,6 +23,8 @@
 <form method="post" action="{{ url_for('event_card_add') }}">
     <input type="text" name="name" placeholder="Firmenname">
     <input type="text" name="uid" id="uid_new" placeholder="UID">
+    <input type="date" name="valid_from" placeholder="Gültig von">
+    <input type="date" name="valid_until" placeholder="Gültig bis">
     <label><input type="checkbox" name="show_on_payment" value="1"> Auf Zahlungsmethoden anzeigen</label>
     <button type="button" onclick="readUid('uid_new')">UID lesen</button>
     <button type="submit">Hinzufügen</button>
