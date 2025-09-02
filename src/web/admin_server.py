@@ -11,6 +11,7 @@ from flask import Flask, redirect, render_template, request, session, url_for, s
 from flask import jsonify, make_response
 import csv
 import io
+from fpdf import FPDF
 
 
 from .. import database, models
@@ -447,13 +448,16 @@ def create_app() -> Flask:
         name = request.form.get('name')
         uid = request.form.get('uid')
         show_on_payment = 1 if request.form.get('show_on_payment') else 0
+        valid_from = request.form.get('valid_from') or None
+        valid_until = request.form.get('valid_until') or None
         error: Optional[str] = None
         if name and uid:
             conn = database.get_connection()
             try:
                 conn.execute(
-                    'INSERT INTO users (name, rfid_uid, balance, is_event, active, show_on_payment) VALUES (?, ?, 0, 1, 1, ?)',
-                    (name, uid, show_on_payment),
+                    'INSERT INTO users (name, rfid_uid, balance, is_event, active, show_on_payment, valid_from, valid_until) '
+                    'VALUES (?, ?, 0, 1, 1, ?, ?, ?)',
+                    (name, uid, show_on_payment, valid_from, valid_until),
                 )
                 conn.commit()
             except sqlite3.IntegrityError:
@@ -523,7 +527,38 @@ def create_app() -> Flask:
         items = cur.fetchall()
         conn.close()
         total = sum(r['quantity'] * r['price'] for r in items)
-        return render_template('event_print.html', user=user, items=items, total=total)
+
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font('Helvetica', size=12)
+        pdf.cell(0, 10, f'Firma: {user["name"]}', ln=1)
+        if user['valid_from'] or user['valid_until']:
+            pdf.cell(0, 10, f'Gültig: {user["valid_from"] or ""} - {user["valid_until"] or ""}', ln=1)
+        if user['created_at']:
+            pdf.cell(0, 10, f'Erstellt am: {user["created_at"][:10]}', ln=1)
+        pdf.ln(4)
+        pdf.set_font('Helvetica', size=10)
+        pdf.cell(40, 8, 'Datum', 1)
+        pdf.cell(70, 8, 'Getränk', 1)
+        pdf.cell(20, 8, 'Anzahl', 1, align='R')
+        pdf.cell(20, 8, 'Preis', 1, align='R')
+        pdf.cell(20, 8, 'Summe', 1, align='R')
+        pdf.ln()
+        for r in items:
+            pdf.cell(40, 8, r['timestamp'][:10], 1)
+            pdf.cell(70, 8, r['name'], 1)
+            pdf.cell(20, 8, str(r['quantity']), 1, align='R')
+            pdf.cell(20, 8, f"{r['price']/100:.2f}", 1, align='R')
+            pdf.cell(20, 8, f"{r['quantity']*r['price']/100:.2f}", 1, align='R')
+            pdf.ln()
+        pdf.cell(150, 8, 'Gesamt', 1)
+        pdf.cell(20, 8, f"{total/100:.2f}", 1, align='R')
+        output = pdf.output(dest='S').encode('latin1')
+        return send_file(
+            io.BytesIO(output),
+            mimetype='application/pdf',
+            download_name=f'event_{user_id}.pdf',
+        )
 
     @app.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
     @login_required
@@ -537,8 +572,10 @@ def create_app() -> Flask:
             is_admin = 1 if request.form.get('is_admin') else 0
             active = 1 if request.form.get('active') else 0
             show_on_payment = 1 if request.form.get('show_on_payment') and is_event else 0
+            valid_from = request.form.get('valid_from') or None
+            valid_until = request.form.get('valid_until') or None
             conn.execute(
-                'UPDATE users SET name=?, rfid_uid=?, balance=?, is_event=?, active=?, show_on_payment=?, is_admin=? WHERE id=?',
+                'UPDATE users SET name=?, rfid_uid=?, balance=?, is_event=?, active=?, show_on_payment=?, is_admin=?, valid_from=?, valid_until=? WHERE id=?',
                 (
                     name,
                     uid,
@@ -547,6 +584,8 @@ def create_app() -> Flask:
                     active,
                     show_on_payment,
                     is_admin,
+                    valid_from,
+                    valid_until,
                     user_id,
                 ),
             )
