@@ -13,7 +13,11 @@
 <td>{{ u['valid_until'] or '' }}</td>
 <td>{{ 'ja' if u['active'] else 'nein' }}</td>
 <td>{{ 'ja' if u['show_on_payment'] else 'nein' }}</td>
-<td><a href="{{ url_for('event_card_print', user_id=u['id']) }}" target="_blank">Druck</a></td>
+<td>
+    <form method="get" action="{{ url_for('event_card_print', user_id=u['id']) }}" target="_blank" style="display:inline">
+        <button type="submit">PDF</button>
+    </form>
+</td>
 <td><a href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a></td>
 <td><a href="{{ url_for('event_card_delete', user_id=u['id']) }}" onclick="return confirm('Benutzer wirklich löschen?');">Löschen</a></td>
 </tr>

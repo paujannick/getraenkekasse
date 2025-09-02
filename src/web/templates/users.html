@@ -12,7 +12,6 @@
 <td>{{ u['rfid_uid'] }}</td>
 
 <td>{{ (u['balance']/100)|round(2) }} €</td>
-
 <td><a href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a></td>
 <td><a href="{{ url_for('user_delete', user_id=u['id']) }}" onclick="return confirm('Benutzer wirklich löschen?');">Löschen</a></td>
 </tr>

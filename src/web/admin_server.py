@@ -448,8 +448,8 @@ def create_app() -> Flask:
         name = request.form.get('name')
         uid = request.form.get('uid')
         show_on_payment = 1 if request.form.get('show_on_payment') else 0
-        valid_from = request.form.get('valid_from') or None
-        valid_until = request.form.get('valid_until') or None
+        valid_from = (request.form.get('valid_from') or '').strip() or None
+        valid_until = (request.form.get('valid_until') or '').strip() or None
         error: Optional[str] = None
         if name and uid:
             conn = database.get_connection()
@@ -518,12 +518,21 @@ def create_app() -> Flask:
         if not user:
             conn.close()
             return redirect(url_for('event_cards'))
-        cur = conn.execute(
+        query = (
             'SELECT t.timestamp, d.name, t.quantity, d.price '
             'FROM transactions t JOIN drinks d ON d.id = t.drink_id '
-            'WHERE t.user_id=? ORDER BY t.timestamp',
-            (user_id,),
+            'WHERE t.user_id=? '
         )
+        params: list = [user_id]
+        if user['active'] and (user['valid_from'] or user['valid_until']):
+            if user['valid_from']:
+                query += 'AND DATE(t.timestamp) >= ? '
+                params.append(user['valid_from'])
+            if user['valid_until']:
+                query += 'AND DATE(t.timestamp) <= ? '
+                params.append(user['valid_until'])
+        query += 'ORDER BY t.timestamp'
+        cur = conn.execute(query, params)
         items = cur.fetchall()
         conn.close()
         total = sum(r['quantity'] * r['price'] for r in items)
@@ -572,8 +581,11 @@ def create_app() -> Flask:
             is_admin = 1 if request.form.get('is_admin') else 0
             active = 1 if request.form.get('active') else 0
             show_on_payment = 1 if request.form.get('show_on_payment') and is_event else 0
-            valid_from = request.form.get('valid_from') or None
-            valid_until = request.form.get('valid_until') or None
+            valid_from = (request.form.get('valid_from') or '').strip() or None
+            valid_until = (request.form.get('valid_until') or '').strip() or None
+            if not is_event:
+                valid_from = None
+                valid_until = None
             conn.execute(
                 'UPDATE users SET name=?, rfid_uid=?, balance=?, is_event=?, active=?, show_on_payment=?, is_admin=?, valid_from=?, valid_until=? WHERE id=?',
                 (
