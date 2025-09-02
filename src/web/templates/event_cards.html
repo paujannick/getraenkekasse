@@ -3,7 +3,7 @@
 <h1>Veranstaltungskarten</h1>
 {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
 <table>
-<tr><th>Firma</th><th>UID</th><th>Guthaben</th><th>Gültig von</th><th>Gültig bis</th><th>Aktiv</th><th>Zahlungsmethoden</th><th colspan="3">Aktion</th></tr>
+<tr><th>Firma</th><th>UID</th><th>Guthaben</th><th>Gültig von</th><th>Gültig bis</th><th>Aktiv</th><th>Zahlungsmethoden</th><th colspan="4">Aktion</th></tr>
 {% for u in users %}
 <tr>
 <td>{{ u['name'] }}</td>
@@ -19,6 +19,11 @@
     </form>
 </td>
 <td><a href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a></td>
+<td>
+    <form method="post" action="{{ url_for('event_card_reset', user_id=u['id']) }}" style="display:inline" onsubmit="return confirm('Karte wirklich zurücksetzen?');">
+        <button type="submit">Zurücksetzen</button>
+    </form>
+</td>
 <td><a href="{{ url_for('event_card_delete', user_id=u['id']) }}" onclick="return confirm('Benutzer wirklich löschen?');">Löschen</a></td>
 </tr>
 {% endfor %}
