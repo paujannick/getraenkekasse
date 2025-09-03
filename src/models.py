@@ -275,14 +275,13 @@ def add_topup(user_id: int, amount: int) -> None:
 
 
 def reset_event_card(user_id: int) -> None:
-    """Reset an event card without removing transaction logs."""
+    """Clear the validity dates of an event card."""
     try:
         with get_connection() as conn:
-            today = datetime.now(LOCAL_TZ).strftime("%Y-%m-%d")
             conn.execute(
-                'UPDATE users SET balance=0, valid_from=?, valid_until=NULL '
+                'UPDATE users SET valid_from=NULL, valid_until=NULL '
                 'WHERE id=? AND is_event=1',
-                (today, user_id),
+                (user_id,),
             )
             conn.commit()
     except sqlite3.Error as e:  # pragma: no cover - DB failure
