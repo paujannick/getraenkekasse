@@ -23,18 +23,21 @@ class QuantityDialog(QtWidgets.QDialog):
         self.quantity = 1
         layout = QtWidgets.QVBoxLayout(self)
 
-        if drink.image:
-            pixmap = QtGui.QPixmap(drink.image)
-        else:
-            pixmap = QtGui.QPixmap()
-
+        self.setObjectName("quantity_dialog")
+        pixmap = QtGui.QPixmap(drink.image) if drink.image else QtGui.QPixmap()
         if not pixmap.isNull():
-            image_label = QtWidgets.QLabel()
-            image_label.setPixmap(
-                pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            layout.setContentsMargins(40, 40, 40, 40)
+            image_path = Path(drink.image).as_posix()
+            # Keep the icon in the background so the layout of the payment buttons stays intact.
+            style = (
+                f"#quantity_dialog{{"
+                f"background-image: url('{image_path}');"
+                "background-repeat: no-repeat;"
+                "background-position: top right;"
+                "}}"
             )
-            image_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTop)
-            layout.addWidget(image_label, alignment=QtCore.Qt.AlignRight)
+            existing_style = self.styleSheet()
+            self.setStyleSheet(f"{existing_style}\n{style}" if existing_style else style)
 
         self.product_label = QtWidgets.QLabel(drink.name)
         f = self.product_label.font()
