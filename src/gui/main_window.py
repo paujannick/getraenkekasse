@@ -24,10 +24,17 @@ class QuantityDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(self)
 
         if drink.image:
-            self.setStyleSheet(
-                f"QDialog {{background-image: url({drink.image}); "
-                "background-position: center; background-repeat: no-repeat;}}"
+            pixmap = QtGui.QPixmap(drink.image)
+        else:
+            pixmap = QtGui.QPixmap()
+
+        if not pixmap.isNull():
+            image_label = QtWidgets.QLabel()
+            image_label.setPixmap(
+                pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
             )
+            image_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTop)
+            layout.addWidget(image_label, alignment=QtCore.Qt.AlignRight)
 
         self.product_label = QtWidgets.QLabel(drink.name)
         f = self.product_label.font()
