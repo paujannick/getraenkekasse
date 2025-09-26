@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import wraps
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 import sqlite3
 
 from .. import admin_auth
@@ -64,6 +65,111 @@ def create_app() -> Flask:
         total_balance = row['total'] if row else 0
         conn.close()
         return render_template('index.html', to_buy=to_buy, total_balance=total_balance)
+
+
+    @app.route('/dispatch')
+    @login_required
+    def dispatch():
+        """Render a demo dispatch dashboard with vehicles and incidents."""
+
+        vehicles = [
+            {
+                'id': 1,
+                'call_sign': 'Florian Musterstadt 1/46-1',
+                'type': 'HLF 20',
+                'status_code': 3,
+                'status_label': 'Status 3 – Einsatz übernommen',
+                'status_color': '#f39c12',
+                'location': 'Bahnstraße / Kreuzung Nord',
+                'crew': [
+                    {'role': 'GF', 'name': 'Hoffmann'},
+                    {'role': 'MA', 'name': 'Schulz'},
+                    {'role': 'MA', 'name': 'Berger'},
+                    {'role': 'Fahrer', 'name': 'Reuter'},
+                ],
+                'equipment': ['Hydraulik-Satz', 'Wärmebildkamera', 'Atemschutz 2x'],
+                'notes': 'Rüstzug A',
+                'incident': {
+                    'id': 'E-24-0178',
+                    'title': 'VU eingeklemmte Person',
+                    'category': 'Technische Hilfeleistung',
+                    'priority': 'Dringend',
+                    'address': 'Bahnstraße 12',
+                    'city': 'Musterstadt',
+                    'timestamp': '12.05.2024 14:07',
+                    'patients': 2,
+                    'reporting': 'Polizei',
+                    'leader': 'Zugführer Hoffmann',
+                    'notes': 'PKW gegen Baum, eine Person eingeklemmt. Hydraulik-Satz erforderlich.',
+                },
+            },
+            {
+                'id': 2,
+                'call_sign': 'Florian Musterstadt 1/83-1',
+                'type': 'RTW',
+                'status_code': 4,
+                'status_label': 'Status 4 – Am Einsatzort',
+                'status_color': '#e74c3c',
+                'location': 'Bahnstraße 10',
+                'crew': [
+                    {'role': 'NA', 'name': 'Dr. König'},
+                    {'role': 'RA', 'name': 'Lindner'},
+                ],
+                'equipment': ['Intubationsset', 'Corpuls 3', 'Notfallrucksack'],
+                'notes': 'NEF-Besatzung zugeladen',
+                'incident': {
+                    'id': 'E-24-0178',
+                    'title': 'VU eingeklemmte Person',
+                    'category': 'Technische Hilfeleistung',
+                    'priority': 'Dringend',
+                    'address': 'Bahnstraße 12',
+                    'city': 'Musterstadt',
+                    'timestamp': '12.05.2024 14:07',
+                    'patients': 2,
+                    'reporting': 'Polizei',
+                    'leader': 'LNA Berger',
+                    'notes': 'Eine Person kritisch, eine leicht verletzt. Sichtung läuft.',
+                },
+            },
+            {
+                'id': 3,
+                'call_sign': 'Florian Musterstadt 1/11-1',
+                'type': 'ELW 1',
+                'status_code': 1,
+                'status_label': 'Status 1 – Einsatzbereit auf Wache',
+                'status_color': '#2ecc71',
+                'location': 'Feuer- und Rettungswache 1',
+                'crew': [
+                    {'role': 'ZF', 'name': 'Meyer'},
+                    {'role': 'MA', 'name': 'Krüger'},
+                ],
+                'equipment': ['Lagekarte digital', 'Drohne', 'Führungsmittel'],
+                'notes': 'Führungsdienst',
+                'incident': None,
+            },
+            {
+                'id': 4,
+                'call_sign': 'Florian Musterstadt 1/19-1',
+                'type': 'TLF 4000',
+                'status_code': 6,
+                'status_label': 'Status 6 – Außer Dienst',
+                'status_color': '#7f8c8d',
+                'location': 'Werkstatt',
+                'crew': [],
+                'equipment': ['Schaummittel 500l', 'Wasserwerfer'],
+                'notes': 'Prüfung durch Werkstatt bis 15:00 Uhr',
+                'incident': None,
+            },
+        ]
+
+        incidents = [v['incident'] for v in vehicles if v['incident']]
+        last_update = datetime.now().strftime('%d.%m.%Y %H:%M Uhr')
+        return render_template(
+            'dispatch.html',
+            vehicles=vehicles,
+            incidents=incidents,
+            last_update=last_update,
+        )
 
 
     @app.route('/dashboard')
