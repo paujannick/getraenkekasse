@@ -1,0 +1,871 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dispatch-page">
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        .dispatch-page {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            color: #e5e9f5;
+            background: linear-gradient(135deg, #0b1120 0%, #111c3a 40%, #041226 100%);
+            padding: 2rem;
+            margin: -1rem;
+            border-radius: 1.5rem;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+        }
+
+        .dispatch-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            background: linear-gradient(120deg, rgba(0, 170, 255, 0.15), rgba(76, 29, 149, 0.35));
+            border-radius: 1.5rem;
+            padding: 2rem 2.5rem;
+            box-shadow: 0 18px 40px rgba(6, 16, 38, 0.45);
+        }
+
+        .dispatch-header h1 {
+            margin: 0;
+            font-size: 2.3rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .dispatch-header p {
+            margin: 0.4rem 0 0;
+            color: rgba(229, 233, 245, 0.75);
+            font-size: 1rem;
+        }
+
+        .create-incident-btn {
+            background: linear-gradient(135deg, #ff7043, #ff3d00);
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 1rem 2.5rem;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 12px 30px rgba(255, 61, 0, 0.35);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .create-incident-btn::before {
+            content: '+';
+            font-size: 1.4rem;
+        }
+
+        .create-incident-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 35px rgba(255, 61, 0, 0.45);
+        }
+
+        .vehicle-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .section-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .status-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.25rem;
+            font-size: 0.9rem;
+            color: rgba(229, 233, 245, 0.7);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .legend-dot {
+            display: inline-flex;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
+        }
+
+        .legend-dot.status-1 { background: #2ecc71; }
+        .legend-dot.status-2 { background: #f1c40f; }
+        .legend-dot.status-3 { background: #f39c12; }
+        .legend-dot.status-4 { background: #e74c3c; }
+        .legend-dot.status-6 { background: #7f8c8d; }
+
+        .vehicle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.8rem;
+        }
+
+        .vehicle-card {
+            --status-color: #1e293b;
+            background: linear-gradient(180deg, rgba(19, 31, 53, 0.95) 0%, rgba(10, 16, 32, 0.92) 100%);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 22px 45px rgba(2, 8, 23, 0.55);
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        .vehicle-card header {
+            padding: 1.2rem 1.5rem;
+            background: linear-gradient(140deg, rgba(0, 0, 0, 0.45), var(--status-color));
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .vehicle-card .call-sign {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.04em;
+        }
+
+        .vehicle-card .vehicle-type {
+            margin-top: 0.25rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+        }
+
+        .vehicle-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 1.5rem;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-pill::before {
+            content: '';
+            width: 0.7rem;
+            height: 0.7rem;
+            border-radius: 50%;
+            background: var(--status-color);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+        }
+
+        .vehicle-location {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.9rem;
+            color: rgba(229, 233, 245, 0.8);
+        }
+
+        .vehicle-location svg {
+            width: 1rem;
+            height: 1rem;
+            opacity: 0.7;
+        }
+
+        .vehicle-details {
+            padding: 1.2rem 1.5rem 1.1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .vehicle-details dl {
+            margin: 0;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.35rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .vehicle-details dt {
+            color: rgba(229, 233, 245, 0.6);
+            font-weight: 500;
+        }
+
+        .vehicle-details dd {
+            margin: 0;
+            color: rgba(229, 233, 245, 0.95);
+            font-weight: 500;
+        }
+
+        .crew-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .crew-pill {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+
+        .equipment-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+        }
+
+        .equipment-list span {
+            background: rgba(0, 188, 212, 0.12);
+            color: #80deea;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.7rem;
+            border: 1px solid rgba(0, 188, 212, 0.25);
+        }
+
+        .vehicle-card footer {
+            margin-top: auto;
+            padding: 1.1rem 1.5rem 1.3rem;
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+
+        .incident-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .incident-info strong {
+            font-size: 1rem;
+            color: #ffffff;
+            letter-spacing: 0.01em;
+        }
+
+        .incident-meta {
+            font-size: 0.85rem;
+            color: rgba(229, 233, 245, 0.7);
+        }
+
+        .incident-address {
+            font-size: 0.85rem;
+            color: rgba(229, 233, 245, 0.65);
+        }
+
+        .incident-placeholder {
+            color: rgba(229, 233, 245, 0.55);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .incident-placeholder::before {
+            content: '\26A0';
+            opacity: 0.5;
+        }
+
+        .edit-incident-btn {
+            align-self: flex-end;
+            background: linear-gradient(135deg, rgba(0, 188, 212, 0.95), rgba(0, 131, 143, 0.95));
+            color: #04202b;
+            border: none;
+            padding: 0.55rem 1.2rem;
+            border-radius: 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 20px rgba(0, 188, 212, 0.3);
+        }
+
+        .edit-incident-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(0, 188, 212, 0.35);
+        }
+
+        .incident-list {
+            background: rgba(8, 15, 34, 0.8);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .incident-list h2 {
+            margin: 0;
+            font-size: 1.7rem;
+            font-weight: 600;
+        }
+
+        .incident-list p.description {
+            margin: 0.5rem 0 1.5rem;
+            color: rgba(229, 233, 245, 0.7);
+        }
+
+        .incident-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+
+        .incident-table th,
+        .incident-table td {
+            padding: 0.85rem 1rem;
+            text-align: left;
+        }
+
+        .incident-table thead {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .incident-table tbody tr {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .incident-table tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .incident-table tbody tr:hover {
+            background: rgba(0, 188, 212, 0.12);
+        }
+
+        .incident-table .incident-priority {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .incident-priority.high {
+            background: rgba(231, 76, 60, 0.2);
+            color: #ff9e9e;
+        }
+
+        .incident-priority.medium {
+            background: rgba(241, 196, 15, 0.18);
+            color: #ffe9a1;
+        }
+
+        .incident-priority.low {
+            background: rgba(46, 204, 113, 0.18);
+            color: #a8f5c5;
+        }
+
+        .empty-state {
+            margin: 0;
+            padding: 1rem;
+            color: rgba(229, 233, 245, 0.7);
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 8, 22, 0.82);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-dialog {
+            position: relative;
+            width: min(760px, 92vw);
+            background: linear-gradient(160deg, rgba(10, 21, 43, 0.98), rgba(6, 13, 30, 0.98));
+            border-radius: 1.25rem;
+            padding: 2.3rem;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #e2e8f0;
+        }
+
+        .modal-title {
+            margin: 0 0 1.5rem;
+            font-size: 1.7rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.1rem;
+            right: 1.1rem;
+            width: 2.6rem;
+            height: 2.6rem;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.2s ease;
+        }
+
+        .modal-close:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .incident-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.4rem;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 1rem 1.2rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .form-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            font-size: 0.9rem;
+            color: rgba(148, 163, 184, 0.9);
+        }
+
+        .form-grid input,
+        .form-grid select,
+        .form-grid textarea {
+            background: rgba(15, 32, 58, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 0.75rem;
+            padding: 0.65rem 0.85rem;
+            font-size: 1rem;
+            color: #f8fafc;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+        }
+
+        .form-grid input:focus,
+        .form-grid select:focus,
+        .form-grid textarea:focus {
+            outline: none;
+            border-color: rgba(0, 188, 212, 0.6);
+            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.18);
+        }
+
+        .form-grid textarea {
+            min-height: 130px;
+            resize: vertical;
+            grid-column: 1 / -1;
+        }
+
+        .modal-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            font-size: 0.9rem;
+            color: rgba(148, 163, 184, 0.85);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .modal-actions button {
+            border: none;
+            border-radius: 0.8rem;
+            padding: 0.75rem 1.6rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+
+        .modal-actions .secondary {
+            background: rgba(148, 163, 184, 0.18);
+            color: #cbd5f5;
+        }
+
+        .modal-actions .primary {
+            background: linear-gradient(135deg, #00acc1, #00838f);
+            color: #032029;
+            box-shadow: 0 12px 25px rgba(0, 188, 212, 0.28);
+        }
+
+        .modal-actions .primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 32px rgba(0, 188, 212, 0.35);
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 1200;
+        }
+
+        .toast {
+            background: rgba(22, 36, 64, 0.95);
+            border: 1px solid rgba(0, 188, 212, 0.25);
+            border-radius: 0.9rem;
+            padding: 0.9rem 1.2rem;
+            color: #e0f7fa;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+            min-width: 220px;
+            font-size: 0.95rem;
+            transition: opacity 0.35s ease;
+        }
+
+        .toast strong {
+            display: block;
+            margin-bottom: 0.2rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .dispatch-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .create-incident-btn {
+                align-self: stretch;
+                justify-content: center;
+            }
+
+            .vehicle-grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            }
+
+            .modal-dialog {
+                padding: 1.8rem;
+            }
+        }
+    </style>
+
+    <header class="dispatch-header">
+        <div>
+            <h1>Leitstellenübersicht</h1>
+            <p>Letzte Aktualisierung: {{ last_update }}</p>
+        </div>
+        <button class="create-incident-btn" type="button" data-action="create">Einsatz erstellen</button>
+    </header>
+
+    <section class="vehicle-section">
+        <div class="section-header">
+            <h2>Fahrzeugübersicht</h2>
+            <div class="status-legend" aria-hidden="true">
+                <span class="legend-item"><span class="legend-dot status-1"></span>Status 1</span>
+                <span class="legend-item"><span class="legend-dot status-2"></span>Status 2</span>
+                <span class="legend-item"><span class="legend-dot status-3"></span>Status 3</span>
+                <span class="legend-item"><span class="legend-dot status-4"></span>Status 4</span>
+                <span class="legend-item"><span class="legend-dot status-6"></span>Status 6</span>
+            </div>
+        </div>
+        <div class="vehicle-grid">
+            {% for vehicle in vehicles %}
+            <article class="vehicle-card" style="--status-color: {{ vehicle.status_color }};">
+                <header>
+                    <div class="call-sign">{{ vehicle.call_sign }}</div>
+                    <div class="vehicle-type">{{ vehicle.type }}</div>
+                </header>
+                <div class="vehicle-status">
+                    <span class="status-pill">{{ vehicle.status_label }}</span>
+                    <span class="vehicle-location">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+                        </svg>
+                        {{ vehicle.location }}
+                    </span>
+                </div>
+                <div class="vehicle-details">
+                    <dl>
+                        <dt>Besatzung</dt>
+                        <dd>
+                            <div class="crew-list">
+                                {% if vehicle.crew %}
+                                    {% for member in vehicle.crew %}
+                                        <span class="crew-pill">{{ member.role }} {{ member.name }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="crew-pill" style="background: rgba(255,255,255,0.08); color: rgba(229,233,245,0.6);">Keine Besatzung</span>
+                                {% endif %}
+                            </div>
+                        </dd>
+                        <dt>Hinweis</dt>
+                        <dd>{{ vehicle.notes }}</dd>
+                    </dl>
+                    <div class="equipment-list" aria-label="Ausrüstung">
+                        {% for item in vehicle.equipment %}
+                            <span>{{ item }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <footer>
+                    {% if vehicle.incident %}
+                        <div class="incident-info">
+                            <strong>{{ vehicle.incident.title }}</strong>
+                            <span class="incident-meta">{{ vehicle.incident.category }} · {{ vehicle.incident.priority }}</span>
+                            <span class="incident-address">{{ vehicle.incident.address }}, {{ vehicle.incident.city }}</span>
+                        </div>
+                        <button class="edit-incident-btn" type="button"
+                                data-vehicle='{{ vehicle | tojson }}'>Einsatz bearbeiten</button>
+                    {% else %}
+                        <div class="incident-placeholder">Aktuell kein Einsatz zugewiesen</div>
+                    {% endif %}
+                </footer>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="incident-list">
+        <h2>Aktuelle Einsätze</h2>
+        <p class="description">Alle laufenden Einsatzaufträge im Überblick – priorisiert nach Dringlichkeit.</p>
+        <div class="incident-table">
+            {% if incidents %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Einsatznummer</th>
+                        <th>Stichwort</th>
+                        <th>Adresse</th>
+                        <th>Priorität</th>
+                        <th>Patienten</th>
+                        <th>Führungskraft</th>
+                        <th>Alarmzeit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for incident in incidents %}
+                    {% set priority_class = 'low' %}
+                    {% if incident.priority.lower().startswith('dring') %}
+                        {% set priority_class = 'high' %}
+                    {% elif incident.priority.lower().startswith('normal') %}
+                        {% set priority_class = 'medium' %}
+                    {% endif %}
+                    <tr>
+                        <td>{{ incident.id }}</td>
+                        <td>{{ incident.title }}</td>
+                        <td>{{ incident.address }}, {{ incident.city }}</td>
+                        <td><span class="incident-priority {{ priority_class }}">{{ incident.priority }}</span></td>
+                        <td>{{ incident.patients }}</td>
+                        <td>{{ incident.leader }}</td>
+                        <td>{{ incident.timestamp }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">Derzeit sind keine Einsätze aktiv.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<div class="modal hidden" id="incident-modal" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+        <button class="modal-close" type="button" aria-label="Fenster schließen">×</button>
+        <h3 class="modal-title">Einsatz anlegen</h3>
+        <form class="incident-form" novalidate>
+            <div class="modal-meta">
+                <span class="modal-meta-vehicle">Fahrzeug: <strong id="modal-vehicle-label">—</strong></span>
+                <span class="modal-meta-status">Modus: <strong id="modal-mode-label">Neu</strong></span>
+            </div>
+            <div class="form-grid">
+                <label>Fahrzeug
+                    <select name="vehicle_id" required>
+                        <option value="">Bitte wählen</option>
+                        {% for vehicle in vehicles %}
+                        <option value="{{ vehicle.id }}">{{ vehicle.call_sign }} – {{ vehicle.type }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Einsatznummer
+                    <input type="text" name="incident_id" placeholder="z. B. E-24-0180" required>
+                </label>
+                <label>Alarmzeit
+                    <input type="text" name="timestamp" placeholder="TT.MM.JJJJ HH:MM" required>
+                </label>
+                <label>Stichwort
+                    <input type="text" name="title" placeholder="z. B. Brand 4" required>
+                </label>
+                <label>Einsatzart
+                    <input type="text" name="category" placeholder="Technische Hilfeleistung">
+                </label>
+                <label>Priorität
+                    <select name="priority">
+                        <option value="Normal">Normal</option>
+                        <option value="Dringend">Dringend</option>
+                        <option value="Niedrig">Niedrig</option>
+                    </select>
+                </label>
+                <label>Adresse
+                    <input type="text" name="address" placeholder="Straße und Hausnummer" required>
+                </label>
+                <label>Ort
+                    <input type="text" name="city" placeholder="Ort / Stadtteil" required>
+                </label>
+                <label>Meldende Stelle
+                    <input type="text" name="reporting" placeholder="z. B. Anrufer, Polizei">
+                </label>
+                <label>Patienten
+                    <input type="number" name="patients" min="0" value="0">
+                </label>
+                <label>Einsatzleiter*in
+                    <input type="text" name="leader" placeholder="z. B. B-Dienst Müller">
+                </label>
+                <label>Besondere Hinweise
+                    <textarea name="notes" placeholder="Lagebeschreibung, Gefahren, Maßnahmen"></textarea>
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="secondary" data-dismiss>Abbrechen</button>
+                <button type="submit" class="primary">Speichern</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+<script>
+    const vehiclesData = {{ vehicles | tojson }};
+    const modal = document.getElementById('incident-modal');
+    const form = modal.querySelector('.incident-form');
+    const vehicleSelect = form.querySelector('select[name="vehicle_id"]');
+    const vehicleLabel = document.getElementById('modal-vehicle-label');
+    const modeLabel = document.getElementById('modal-mode-label');
+    const modalTitle = modal.querySelector('.modal-title');
+    const toastContainer = document.getElementById('toast-container');
+
+    let activeVehicle = null;
+    let currentMode = 'create';
+
+    function openModal(mode, vehicle = null) {
+        currentMode = mode;
+        activeVehicle = vehicle;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        form.reset();
+        vehicleSelect.disabled = false;
+
+        if (mode === 'create') {
+            modalTitle.textContent = 'Neuen Einsatz anlegen';
+            vehicleLabel.textContent = 'nicht zugewiesen';
+            modeLabel.textContent = 'Neu';
+            form.dataset.mode = 'create';
+        } else if (vehicle) {
+            modalTitle.textContent = `Einsatz für ${vehicle.call_sign} bearbeiten`;
+            vehicleLabel.textContent = vehicle.call_sign;
+            modeLabel.textContent = 'Bearbeitung';
+            vehicleSelect.value = vehicle.id;
+            vehicleSelect.disabled = true;
+            form.dataset.mode = 'edit';
+
+            const incident = vehicle.incident || {};
+            form.elements['incident_id'].value = incident.id || '';
+            form.elements['timestamp'].value = incident.timestamp || '';
+            form.elements['title'].value = incident.title || '';
+            form.elements['category'].value = incident.category || '';
+            form.elements['priority'].value = incident.priority || 'Normal';
+            form.elements['address'].value = incident.address || '';
+            form.elements['city'].value = incident.city || '';
+            form.elements['reporting'].value = incident.reporting || '';
+            form.elements['patients'].value = incident.patients ?? 0;
+            form.elements['leader'].value = incident.leader || '';
+            form.elements['notes'].value = incident.notes || '';
+        }
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        activeVehicle = null;
+    }
+
+    function showToast(title, message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<strong>${title}</strong>${message}`;
+        toastContainer.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 600);
+        }, 2800);
+    }
+
+    document.querySelector('.create-incident-btn')?.addEventListener('click', () => openModal('create'));
+
+    document.querySelectorAll('.edit-incident-btn').forEach(btn => {
+        const data = JSON.parse(btn.dataset.vehicle);
+        btn.addEventListener('click', () => openModal('edit', data));
+    });
+
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', event => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    modal.querySelector('[data-dismiss]').addEventListener('click', closeModal);
+
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+        const modeText = currentMode === 'edit' ? 'bearbeitet' : 'angelegt';
+        const vehicleText = vehicleSelect.selectedOptions[0]?.textContent ?? '—';
+
+        console.table(payload);
+        showToast('Einsatz gespeichert', `Der Einsatz wurde erfolgreich ${modeText}.<br><small>${vehicleText}</small>`);
+        closeModal();
+    });
+</script>
+{% endblock %}
