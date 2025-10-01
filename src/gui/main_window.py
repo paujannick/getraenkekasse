@@ -97,9 +97,18 @@ class QuantityDialog(QtWidgets.QDialog):
                 font-size: 18px;
                 font-weight: 600;
                 min-height: 70px;
+                padding: 20px;
             }
             #quantity_dialog QPushButton[btnClass="action"]:hover {
                 background-color: #cbd5f5;
+            }
+            #quantity_dialog QPushButton[btnClass="action"][variant="cancel"] {
+                background-color: #ef4444;
+                color: #ffffff;
+                font-size: 20px;
+            }
+            #quantity_dialog QPushButton[btnClass="action"][variant="cancel"]:hover {
+                background-color: #dc2626;
             }
         """
         self.setStyleSheet(base_style)
@@ -214,7 +223,9 @@ class QuantityDialog(QtWidgets.QDialog):
 
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         cancel_btn.setProperty("btnClass", "action")
+        cancel_btn.setProperty("variant", "cancel")
         cancel_btn.setMinimumHeight(90)
+        cancel_btn.setMinimumWidth(260)
         cancel_btn.clicked.connect(self.reject)
         layout.addWidget(cancel_btn)
 
@@ -322,11 +333,70 @@ class TicTacToeDialog(QtWidgets.QDialog):
         self.setWindowState(QtCore.Qt.WindowFullScreen)
         self.setModal(True)
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+        self.setObjectName("tictactoe_dialog")
+
+        base_style = """
+            #tictactoe_dialog {
+                background-color: #0f172a;
+            }
+            #tictactoe_container {
+                background-color: rgba(15, 23, 42, 0.88);
+                border-radius: 32px;
+                border: 2px solid #334155;
+                padding: 32px;
+            }
+            #tictactoe_info {
+                color: #f8fafc;
+                font-weight: 600;
+            }
+            QPushButton[ttt="cell"] {
+                border-radius: 18px;
+                background-color: #1e293b;
+                color: #38bdf8;
+                font-weight: 700;
+                border: 3px solid #334155;
+                min-width: 120px;
+                min-height: 120px;
+            }
+            QPushButton[ttt="cell"]:hover {
+                background-color: #0ea5e9;
+                color: #0f172a;
+            }
+            QPushButton[ttt="cell"]:disabled {
+                background-color: #0f172a;
+                color: #38bdf8;
+            }
+            QPushButton[ttt="cell"][symbol="O"] {
+                color: #f472b6;
+            }
+            QPushButton[ttt="cell"][state="winner"] {
+                background-color: #22c55e;
+                color: #0f172a;
+            }
+            QPushButton[ttt="close"] {
+                border-radius: 16px;
+                background-color: #38bdf8;
+                color: #0f172a;
+                font-weight: 700;
+                padding: 18px 32px;
+            }
+            QPushButton[ttt="close"]:hover {
+                background-color: #0ea5e9;
+            }
+        """
+        self.setStyleSheet(base_style)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setSpacing(20)
+        layout.setContentsMargins(60, 40, 60, 40)
+
+        container = QtWidgets.QFrame()
+        container.setObjectName("tictactoe_container")
+        container_layout = QtWidgets.QVBoxLayout(container)
+        container_layout.setSpacing(30)
+        container_layout.setAlignment(QtCore.Qt.AlignCenter)
 
         self.info_label = QtWidgets.QLabel("Schlage den Computer! Du spielst 'X'.")
+        self.info_label.setObjectName("tictactoe_info")
         screen = QtWidgets.QApplication.primaryScreen()
         geometry = screen.availableGeometry() if screen else QtCore.QRect(0, 0, 1280, 720)
         height = geometry.height()
@@ -337,10 +407,11 @@ class TicTacToeDialog(QtWidgets.QDialog):
         font.setPointSize(base_font_size)
         self.info_label.setFont(font)
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
-        layout.addWidget(self.info_label)
+        container_layout.addWidget(self.info_label)
 
         grid = QtWidgets.QGridLayout()
-        grid.setSpacing(10)
+        grid.setHorizontalSpacing(18)
+        grid.setVerticalSpacing(18)
         self._board: list[str] = [""] * 9
         self._buttons: list[QtWidgets.QPushButton] = []
         button_size = max(110, min(180, int(min(width, height) / 4)))
@@ -351,22 +422,27 @@ class TicTacToeDialog(QtWidgets.QDialog):
             btn_font.setPointSize(symbol_font_size)
             button.setFont(btn_font)
             button.setFixedSize(button_size, button_size)
+            button.setProperty("ttt", "cell")
             button.clicked.connect(lambda _, idx=index: self._player_move(idx))
             self._buttons.append(button)
             grid.addWidget(button, index // 3, index % 3)
-        layout.addLayout(grid)
+        container_layout.addLayout(grid)
 
         self._close_button = QtWidgets.QPushButton("Schließen")
+        self._close_button.setProperty("ttt", "close")
         close_font = self._close_button.font()
         close_font.setPointSize(max(18, int(base_font_size * 0.85)))
         self._close_button.setFont(close_font)
         self._close_button.setMinimumWidth(max(200, button_size))
         self._close_button.clicked.connect(self.accept)
         self._close_button.hide()
-        layout.addWidget(self._close_button, alignment=QtCore.Qt.AlignCenter)
+        container_layout.addWidget(self._close_button, alignment=QtCore.Qt.AlignCenter)
+
+        layout.addWidget(container, alignment=QtCore.Qt.AlignCenter)
 
         self._game_over = False
         self._result: str | None = None
+        self._winning_line: tuple[int, int, int] | None = None
 
     @property
     def result(self) -> str | None:
@@ -375,6 +451,7 @@ class TicTacToeDialog(QtWidgets.QDialog):
     def _player_move(self, index: int) -> None:
         if self._game_over or self._board[index]:
             return
+        self._winning_line = None
         self._set_move(index, 'X')
         if self._check_winner('X'):
             self._finish('win', "Du hast gewonnen! Dein Getränk ist gratis.")
@@ -387,6 +464,7 @@ class TicTacToeDialog(QtWidgets.QDialog):
         self._computer_move()
 
     def _computer_move(self) -> None:
+        self._winning_line = None
         move = self._find_best_move('O')
         if move is None:
             move = self._find_best_move('X')
@@ -419,10 +497,17 @@ class TicTacToeDialog(QtWidgets.QDialog):
         self._board[index] = symbol
         button = self._buttons[index]
         button.setText(symbol)
+        button.setProperty("symbol", symbol)
+        button.setProperty("state", "")
         button.setEnabled(False)
+        self._refresh_button_style(button)
 
     def _check_winner(self, symbol: str) -> bool:
-        return any(all(self._board[i] == symbol for i in line) for line in self._WIN_LINES)
+        for line in self._WIN_LINES:
+            if all(self._board[i] == symbol for i in line):
+                self._winning_line = line
+                return True
+        return False
 
     def _is_draw(self) -> bool:
         return all(cell for cell in self._board)
@@ -433,7 +518,18 @@ class TicTacToeDialog(QtWidgets.QDialog):
         self.info_label.setText(message)
         for button in self._buttons:
             button.setEnabled(False)
+            self._refresh_button_style(button)
+        if self._winning_line:
+            for index in self._winning_line:
+                btn = self._buttons[index]
+                btn.setProperty("state", "winner")
+                self._refresh_button_style(btn)
         self._close_button.show()
+
+    def _refresh_button_style(self, button: QtWidgets.QPushButton) -> None:
+        button.style().unpolish(button)
+        button.style().polish(button)
+        button.update()
 
 
 class StockPage(QtWidgets.QWidget):
