@@ -156,6 +156,9 @@ class QuantityDialog(QtWidgets.QDialog):
 
         payment_group = QtWidgets.QGroupBox("Zahlungsart wählen")
         payment_group.setObjectName("payment_group")
+        payment_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+        )
         payment_layout = QtWidgets.QGridLayout(payment_group)
         payment_layout.setContentsMargins(12, 24, 12, 12)
         payment_layout.setHorizontalSpacing(18)
@@ -193,6 +196,10 @@ class QuantityDialog(QtWidgets.QDialog):
             payment_layout.addWidget(btn, row, col)
             payment_layout.setColumnStretch(col, 1)
 
+        for col in range(columns):
+            if payment_layout.columnStretch(col) == 0:
+                payment_layout.setColumnStretch(col, 1)
+
         if not event_users:
             hint = QtWidgets.QLabel(
                 "Keine Veranstaltungskarten für die Schnellzahlung aktiviert."
@@ -203,7 +210,7 @@ class QuantityDialog(QtWidgets.QDialog):
             rows_used = (len(payment_buttons) + columns - 1) // columns
             payment_layout.addWidget(hint, rows_used, 0, 1, columns)
 
-        layout.addWidget(payment_group)
+        layout.addWidget(payment_group, stretch=1)
 
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         cancel_btn.setProperty("btnClass", "action")
@@ -708,6 +715,7 @@ class MainWindow(QtWidgets.QMainWindow):
         font = self.info_label.font()
         font.setPointSize(24)
         self.info_label.setFont(font)
+        self.info_label.setWordWrap(True)
         info_layout.addWidget(self.info_label, alignment=QtCore.Qt.AlignCenter)
         self.game_button = QtWidgets.QPushButton("Tic Tac Toe spielen")
         game_font = self.game_button.font()
