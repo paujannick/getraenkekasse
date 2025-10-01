@@ -21,6 +21,7 @@ class QuantityDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.drink = drink
         self.setWindowTitle("Menge wählen")
+        self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
         self.setWindowState(QtCore.Qt.WindowFullScreen)
         self.quantity = 1
 
@@ -269,15 +270,30 @@ class QuantityDialog(QtWidgets.QDialog):
 
         layout.addWidget(payment_group, stretch=1)
 
+        layout.addStretch(1)
+
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         cancel_btn.setProperty("btnClass", "action")
         cancel_btn.setProperty("variant", "cancel")
         cancel_btn.setMinimumHeight(70 if self._compact_layout else 90)
         cancel_btn.setMinimumWidth(240 if self._compact_layout else 260)
+        cancel_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Fixed,
+        )
         cancel_btn.clicked.connect(self.reject)
-        layout.addWidget(cancel_btn, alignment=QtCore.Qt.AlignCenter)
+        action_layout = QtWidgets.QHBoxLayout()
+        action_layout.setContentsMargins(0, 0, 0, 0)
+        action_layout.addStretch(1)
+        action_layout.addWidget(cancel_btn, stretch=2)
+        action_layout.addStretch(1)
+        layout.addLayout(action_layout)
 
         self._cash = False
+
+    def showEvent(self, event: QtGui.QShowEvent) -> None:
+        super().showEvent(event)
+        self.setWindowState(QtCore.Qt.WindowFullScreen)
 
     def inc(self) -> None:
         if self.quantity < 10:
