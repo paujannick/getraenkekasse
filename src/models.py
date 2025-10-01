@@ -43,6 +43,19 @@ def set_admin_pin(pin: str, conn: Optional[sqlite3.Connection] = None) -> None:
     set_setting('admin_pin', pin, conn)
 
 
+def is_game_enabled(conn: Optional[sqlite3.Connection] = None) -> bool:
+    """Return True if the Tic-Tac-Toe bonus game should be offered."""
+    val = get_setting('tictactoe_enabled', conn)
+    if val is None:
+        return True
+    return val != '0'
+
+
+def set_game_enabled(enabled: bool, conn: Optional[sqlite3.Connection] = None) -> None:
+    """Persist whether the Tic-Tac-Toe bonus game is available."""
+    set_setting('tictactoe_enabled', '1' if enabled else '0', conn)
+
+
 def get_telegram_token(conn: Optional[sqlite3.Connection] = None) -> str:
     """Return the Telegram bot token."""
     return get_setting('telegram_token', conn) or ''

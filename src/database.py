@@ -167,6 +167,11 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
     cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='admin_pin'")
     if cur.fetchone()[0] == 0:
         conn.execute("INSERT INTO config(key, value) VALUES ('admin_pin', '1234')")
+
+    cur = conn.execute("SELECT COUNT(*) FROM config WHERE key='tictactoe_enabled'")
+    if cur.fetchone()[0] == 0:
+        conn.execute("INSERT INTO config(key, value) VALUES ('tictactoe_enabled', '1')")
+
     conn.commit()
 
 
@@ -183,6 +188,9 @@ def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
     upgrade_schema(conn)
     cursor.execute(
         "INSERT OR IGNORE INTO config (key, value) VALUES ('overdraft_limit', '0')"
+    )
+    cursor.execute(
+        "INSERT OR IGNORE INTO config (key, value) VALUES ('tictactoe_enabled', '1')"
     )
     conn.commit()
     add_sample_data(conn)

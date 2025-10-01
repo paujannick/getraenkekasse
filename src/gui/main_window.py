@@ -24,81 +24,189 @@ class QuantityDialog(QtWidgets.QDialog):
         self.setWindowState(QtCore.Qt.WindowFullScreen)
         self.quantity = 1
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(40, 30, 40, 30)
+        layout.setSpacing(24)
 
         self.setObjectName("quantity_dialog")
+
+        base_style = """
+            #quantity_dialog {
+                background-color: #f4f6fb;
+            }
+            #quantity_dialog QLabel#title_label {
+                font-size: 32px;
+                font-weight: 700;
+                color: #0f172a;
+            }
+            #quantity_dialog QLabel#info_label {
+                font-size: 16px;
+                color: #475569;
+            }
+            #quantity_dialog QFrame#quantity_frame {
+                background-color: #ffffff;
+                border-radius: 24px;
+                padding: 24px;
+                border: 2px solid #e2e8f0;
+            }
+            #quantity_dialog QLabel#quantity_value {
+                font-size: 48px;
+                font-weight: 700;
+                color: #0f172a;
+            }
+            #quantity_dialog QPushButton[btnClass="quantity"] {
+                border-radius: 44px;
+                background-color: #1f2937;
+                color: #ffffff;
+                font-size: 42px;
+                min-width: 140px;
+                min-height: 140px;
+            }
+            #quantity_dialog QGroupBox#payment_group {
+                border: 2px solid #e2e8f0;
+                border-radius: 24px;
+                margin-top: 12px;
+                background-color: #ffffff;
+                font-size: 18px;
+                font-weight: 600;
+                color: #0f172a;
+                padding: 24px;
+            }
+            #quantity_dialog QPushButton[btnClass="payment"] {
+                border-radius: 20px;
+                background-color: #2563eb;
+                color: #ffffff;
+                font-size: 20px;
+                font-weight: 600;
+                min-height: 110px;
+                padding: 20px;
+                text-align: center;
+            }
+            #quantity_dialog QPushButton[btnClass="payment"][variant="cash"] {
+                background-color: #f97316;
+            }
+            #quantity_dialog QPushButton[btnClass="payment"][variant="event"] {
+                background-color: #0ea5e9;
+            }
+            #quantity_dialog QPushButton[btnClass="payment"]:hover {
+                background-color: #1d4ed8;
+            }
+            #quantity_dialog QPushButton[btnClass="action"] {
+                border-radius: 16px;
+                background-color: #e2e8f0;
+                color: #1f2937;
+                font-size: 18px;
+                font-weight: 600;
+                min-height: 70px;
+            }
+            #quantity_dialog QPushButton[btnClass="action"]:hover {
+                background-color: #cbd5f5;
+            }
+        """
+        self.setStyleSheet(base_style)
+
         pixmap = QtGui.QPixmap(drink.image) if drink.image else QtGui.QPixmap()
         if not pixmap.isNull():
-            layout.setContentsMargins(40, 40, 40, 40)
             image_path = Path(drink.image).as_posix()
-            # Keep the icon in the background so the layout of the payment buttons stays intact.
             style = (
                 f"#quantity_dialog{{"
                 f"background-image: url('{image_path}');"
                 "background-repeat: no-repeat;"
                 "background-position: top right;"
+                "background-origin: content;"
                 "}}"
             )
             existing_style = self.styleSheet()
             self.setStyleSheet(f"{existing_style}\n{style}" if existing_style else style)
 
         self.product_label = QtWidgets.QLabel(drink.name)
-        f = self.product_label.font()
-        f.setPointSize(24)
-        self.product_label.setFont(f)
+        self.product_label.setObjectName("title_label")
         self.product_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.product_label.setWordWrap(True)
         layout.addWidget(self.product_label)
 
-        qty_layout = QtWidgets.QHBoxLayout()
-        self.minus_btn = QtWidgets.QPushButton("-")
+        info_label = QtWidgets.QLabel(
+            "Bitte Menge wählen und danach eine Zahlungsart antippen."
+        )
+        info_label.setObjectName("info_label")
+        info_label.setAlignment(QtCore.Qt.AlignCenter)
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        qty_frame = QtWidgets.QFrame()
+        qty_frame.setObjectName("quantity_frame")
+        qty_layout = QtWidgets.QHBoxLayout(qty_frame)
+        qty_layout.setContentsMargins(16, 16, 16, 16)
+        qty_layout.setSpacing(24)
+        self.minus_btn = QtWidgets.QPushButton("−")
         self.plus_btn = QtWidgets.QPushButton("+")
-        for b in (self.minus_btn, self.plus_btn):
-            b.setFixedSize(100, 100)
-            f = b.font()
-            f.setPointSize(32)
-            b.setFont(f)
+        for btn in (self.minus_btn, self.plus_btn):
+            btn.setProperty("btnClass", "quantity")
+            btn.setMinimumSize(140, 140)
         self.label = QtWidgets.QLabel(f"{self.quantity} Stück")
+        self.label.setObjectName("quantity_value")
         self.label.setAlignment(QtCore.Qt.AlignCenter)
-        font = self.label.font()
-        font.setPointSize(40)
-        font.setBold(True)
-        self.label.setFont(font)
-        self.label.setMinimumWidth(200)
+        self.label.setMinimumWidth(220)
         qty_layout.addWidget(self.minus_btn)
-        qty_layout.addWidget(self.label)
+        qty_layout.addWidget(self.label, stretch=1)
         qty_layout.addWidget(self.plus_btn)
-        layout.addLayout(qty_layout)
+        layout.addWidget(qty_frame)
 
         self.minus_btn.clicked.connect(self.dec)
         self.plus_btn.clicked.connect(self.inc)
 
-        grid = QtWidgets.QGridLayout()
-        self.cash_btn = QtWidgets.QPushButton("Bar")
+        payment_group = QtWidgets.QGroupBox("Zahlungsart wählen")
+        payment_group.setObjectName("payment_group")
+        payment_layout = QtWidgets.QGridLayout(payment_group)
+        payment_layout.setContentsMargins(12, 24, 12, 12)
+        payment_layout.setHorizontalSpacing(18)
+        payment_layout.setVerticalSpacing(18)
+
+        self.cash_btn = QtWidgets.QPushButton("Barzahlung")
+        self.cash_btn.setProperty("btnClass", "payment")
+        self.cash_btn.setProperty("variant", "cash")
+        self.cash_btn.setMinimumSize(220, 110)
         self.cash_btn.clicked.connect(self.cash)
-        self.chip_btn = QtWidgets.QPushButton("Chip")
+        self.chip_btn = QtWidgets.QPushButton("Chip / Karte")
+        self.chip_btn.setProperty("btnClass", "payment")
+        self.chip_btn.setProperty("variant", "chip")
+        self.chip_btn.setMinimumSize(220, 110)
         self.chip_btn.clicked.connect(self.accept)
-        buttons = [self.cash_btn, self.chip_btn]
+
+        payment_buttons: list[QtWidgets.QWidget] = [self.cash_btn, self.chip_btn]
 
         self._event_user_id: int | None = None
-        for user in models.get_event_payment_users():
-            btn = QtWidgets.QPushButton(user.name)
+        event_users = models.get_event_payment_users()
+        for user in event_users:
+            btn = QtWidgets.QPushButton(
+                f"{user.name}\n{user.balance / 100:.2f} €"
+            )
+            btn.setProperty("btnClass", "payment")
+            btn.setProperty("variant", "event")
+            btn.setToolTip("Veranstaltungskarte direkt belasten")
+            btn.setMinimumSize(220, 110)
             btn.clicked.connect(lambda _, uid=user.id: self._select_event_user(uid))
-            buttons.append(btn)
+            payment_buttons.append(btn)
 
-        for i, btn in enumerate(buttons):
-            r, c = divmod(i, 2)
-            f = btn.font()
-            f.setPointSize(18)
-            btn.setFont(f)
-            btn.setMinimumHeight(80)
-            grid.addWidget(btn, r, c)
+        columns = 3
+        for index, btn in enumerate(payment_buttons):
+            row, col = divmod(index, columns)
+            payment_layout.addWidget(btn, row, col)
+            payment_layout.setColumnStretch(col, 1)
 
-        layout.addLayout(grid)
+        if not event_users:
+            hint = QtWidgets.QLabel(
+                "Keine Veranstaltungskarten für die Schnellzahlung aktiviert."
+            )
+            hint.setObjectName("info_label")
+            hint.setAlignment(QtCore.Qt.AlignCenter)
+            hint.setWordWrap(True)
+            rows_used = (len(payment_buttons) + columns - 1) // columns
+            payment_layout.addWidget(hint, rows_used, 0, 1, columns)
+
+        layout.addWidget(payment_group)
 
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
-        f = cancel_btn.font()
-        f.setPointSize(16)
-        cancel_btn.setFont(f)
-        cancel_btn.setMinimumHeight(60)
+        cancel_btn.setProperty("btnClass", "action")
         cancel_btn.clicked.connect(self.reject)
         layout.addWidget(cancel_btn)
 
@@ -552,6 +660,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.central.setObjectName("central_widget")
         self.setCentralWidget(self.central)
 
+        self._game_enabled: bool = True
+        self._setup_styles()
+
         data_dir = Path(__file__).resolve().parent.parent / 'data'
         self._default_bg = data_dir / 'background.png'
         self._thank_bg = data_dir / 'background_thanks.png'
@@ -569,8 +680,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.start_page = QtWidgets.QWidget()
         self.start_layout = QtWidgets.QGridLayout(self.start_page)
+        self.start_layout.setContentsMargins(30, 30, 30, 30)
+        self.start_layout.setHorizontalSpacing(24)
+        self.start_layout.setVerticalSpacing(24)
         self.current_page = 1
         self.page_count = 1
+        self._start_page_needs_refresh = False
         self._populate_start_page()
 
 
@@ -590,6 +705,8 @@ class MainWindow(QtWidgets.QMainWindow):
         game_font.setPointSize(20)
         self.game_button.setFont(game_font)
         self.game_button.setMinimumSize(260, 80)
+        self.game_button.setProperty("btnClass", "game")
+        self._apply_button_style(self.game_button)
         self.game_button.clicked.connect(self._start_tictactoe)
         self.game_button.hide()
         info_layout.addWidget(self.game_button, alignment=QtCore.Qt.AlignCenter)
@@ -618,7 +735,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.addWidget(self.event_card_page)
 
         self._pending_game: dict[str, Any] | None = None
-
+        self._sync_game_setting()
         self.show_start_page()
 
     def _apply_background(self, path: Path) -> None:
@@ -632,6 +749,78 @@ class MainWindow(QtWidgets.QMainWindow):
             )
         else:
             self.central.setStyleSheet("")
+
+    def _setup_styles(self) -> None:
+        self.setStyleSheet(
+            """
+            QPushButton[btnClass='tile'] {
+                border-radius: 18px;
+                background-color: #2a9d8f;
+                color: #ffffff;
+                font-size: 18px;
+                font-weight: 600;
+                padding: 18px 16px;
+            }
+            QPushButton[btnClass='tile'][accent='info'] {
+                background-color: #4f46e5;
+            }
+            QPushButton[btnClass='tile'][accent='secondary'] {
+                background-color: #028090;
+            }
+            QPushButton[btnClass='tile'][state='warning'] {
+                background-color: #f4a261;
+                color: #1f2937;
+            }
+            QPushButton[btnClass='tile'][state='error'] {
+                background-color: #e76f51;
+            }
+            QPushButton[btnClass='tile']:hover {
+                background-color: #23867b;
+            }
+            QPushButton[btnClass='nav'] {
+                border-radius: 12px;
+                background-color: rgba(15, 23, 42, 0.78);
+                color: #f8fafc;
+                font-size: 16px;
+                font-weight: 600;
+                padding: 10px 14px;
+            }
+            QPushButton[btnClass='nav'][accent='admin'] {
+                background-color: #ef4444;
+            }
+            QPushButton[btnClass='nav']:disabled {
+                background-color: rgba(148, 163, 184, 0.45);
+                color: #e2e8f0;
+            }
+            QPushButton[btnClass='game'] {
+                border-radius: 18px;
+                background-color: #9333ea;
+                color: #ffffff;
+                font-size: 20px;
+                font-weight: 700;
+                padding: 18px 28px;
+            }
+            QPushButton[btnClass='game']:hover {
+                background-color: #7c3aed;
+            }
+        """
+        )
+
+    @staticmethod
+    def _apply_button_style(button: QtWidgets.QPushButton) -> None:
+        style = button.style()
+        style.unpolish(button)
+        style.polish(button)
+        button.update()
+
+    def _sync_game_setting(self) -> None:
+        self._game_enabled = models.is_game_enabled()
+        if not self._game_enabled:
+            self._pending_game = None
+            self.game_button.hide()
+
+    def _game_message_duration(self) -> int:
+        return 25000 if self._game_enabled else 8000
 
     def _populate_start_page(self) -> None:
         layout = self.start_layout
@@ -649,7 +838,9 @@ class MainWindow(QtWidgets.QMainWindow):
         balance_btn = QtWidgets.QPushButton("Guthaben\nabfragen")
         balance_btn.setFont(font)
         balance_btn.setMinimumSize(220, 120)
-        balance_btn.setStyleSheet("background-color: #87cefa;")
+        balance_btn.setProperty("btnClass", "tile")
+        balance_btn.setProperty("accent", "info")
+        self._apply_button_style(balance_btn)
         balance_btn.clicked.connect(self._check_balance)
         layout.addWidget(balance_btn, 0, 0)
 
@@ -661,14 +852,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 button.setIcon(QtGui.QIcon(drink.image))
                 button.setIconSize(QtCore.QSize(120, 120))
             button.setMinimumSize(220, 120)
-
-            style = ""
+            button.setProperty("btnClass", "tile")
             if drink.stock < 0:
-                style = "color: red;"
+                button.setProperty("state", "error")
             elif drink.stock < drink.min_stock:
-                style = "color: orange;"
-
-            button.setStyleSheet(style)
+                button.setProperty("state", "warning")
+            else:
+                button.setProperty("state", "normal")
+            self._apply_button_style(button)
             button.clicked.connect(lambda _, d=drink: self.on_drink_selected(d))
             r, c = divmod(idx + 1, 3)
             layout.addWidget(button, r, c)
@@ -681,6 +872,8 @@ class MainWindow(QtWidgets.QMainWindow):
             f.setPointSize(20)
             btn.setFont(f)
             btn.setFixedSize(nav_size)
+            btn.setProperty("btnClass", "nav")
+            self._apply_button_style(btn)
         self.prev_button.clicked.connect(self.prev_page)
         self.next_button.clicked.connect(self.next_page)
 
@@ -696,6 +889,9 @@ class MainWindow(QtWidgets.QMainWindow):
         f.setPointSize(12)
         self.admin_button.setFont(f)
         self.admin_button.setFixedSize(nav_size)
+        self.admin_button.setProperty("btnClass", "nav")
+        self.admin_button.setProperty("accent", "admin")
+        self._apply_button_style(self.admin_button)
         self.admin_button.clicked.connect(self._open_admin)
         layout.addWidget(self.admin_button, bottom, 2,
                          alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
@@ -709,6 +905,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._pending_game = None
         self.game_button.hide()
         self.game_button.setEnabled(True)
+        if self._start_page_needs_refresh:
+            self._rebuild_start_page()
+            self._start_page_needs_refresh = False
         self._apply_background(self._default_bg)
         self.stack.setCurrentWidget(self.start_page)
 
@@ -722,7 +921,8 @@ class MainWindow(QtWidgets.QMainWindow):
     ) -> None:
         self.info_label.setText(message)
         self._info_timer.stop()
-        if allow_game and game_context:
+        enable_game = allow_game and self._game_enabled and bool(game_context)
+        if enable_game:
             self._pending_game = game_context
             self.game_button.show()
             self.game_button.setEnabled(True)
@@ -905,10 +1105,6 @@ class MainWindow(QtWidgets.QMainWindow):
             if self._thank_bg.exists():
                 self._apply_background(self._thank_bg)
             thank_message = f"Danke {user.name}!\nKauf wird verbucht."
-            thank_message += (
-                "\n\nGewinne im Tic Tac Toe, dann ist dein Getränk gratis. "
-                "Bei einer Niederlage kostet es doppelt!"
-            )
             game_context = {
                 "user_id": user.id,
                 "drink_id": drink.id,
@@ -918,11 +1114,20 @@ class MainWindow(QtWidgets.QMainWindow):
                 "drink_name": drink.name,
                 "event_user": True,
             }
+            if self._game_enabled:
+                thank_message += (
+                    "\n\nGewinne im Tic Tac Toe, dann ist dein Getränk gratis. "
+                    "Bei einer Niederlage kostet es doppelt!"
+                    "\n\nTippe auf \"Tic Tac Toe spielen\" oder warte kurz,"
+                    " dann kehrst du automatisch zum Start zurück."
+                )
+            else:
+                thank_message += "\n\nDu kehrst gleich automatisch zum Startbildschirm zurück."
             self._show_info_message(
                 thank_message,
-                allow_game=True,
-                game_context=game_context,
-                auto_return_ms=20000,
+                allow_game=self._game_enabled,
+                game_context=game_context if self._game_enabled else None,
+                auto_return_ms=self._game_message_duration(),
             )
             return
         self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
@@ -955,10 +1160,6 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         if new_user.balance < 0:
             msg += "\nBitte Guthaben aufladen!"
-        msg += (
-            "\n\nGewinne im Tic Tac Toe, dann ist dein Getränk gratis. "
-            "Bei einer Niederlage kostet es doppelt!"
-        )
         game_context = {
             "user_id": user.id,
             "drink_id": drink.id,
@@ -968,11 +1169,20 @@ class MainWindow(QtWidgets.QMainWindow):
             "drink_name": drink.name,
             "event_user": False,
         }
+        if self._game_enabled:
+            msg += (
+                "\n\nGewinne im Tic Tac Toe, dann ist dein Getränk gratis. "
+                "Bei einer Niederlage kostet es doppelt!"
+                "\n\nTippe auf \"Tic Tac Toe spielen\" oder warte kurz,"
+                " dann kehrst du automatisch zum Start zurück."
+            )
+        else:
+            msg += "\n\nDu kehrst gleich automatisch zum Startbildschirm zurück."
         self._show_info_message(
             msg,
-            allow_game=True,
-            game_context=game_context,
-            auto_return_ms=20000,
+            allow_game=self._game_enabled,
+            game_context=game_context if self._game_enabled else None,
+            auto_return_ms=self._game_message_duration(),
         )
         QtWidgets.QApplication.processEvents()
 
@@ -982,9 +1192,13 @@ class MainWindow(QtWidgets.QMainWindow):
             database.clear_exit_flag()
             QtWidgets.QApplication.quit()
             return
-        if self.stack.currentWidget() is self.start_page and database.refresh_needed(self.refresh_mtime):
+        if database.refresh_needed(self.refresh_mtime):
             self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime
-            self._rebuild_start_page()
+            self._start_page_needs_refresh = True
+            self._sync_game_setting()
+            if self.stack.currentWidget() is self.start_page:
+                self._rebuild_start_page()
+                self._start_page_needs_refresh = False
 
     def _rebuild_start_page(self) -> None:
         layout = self.start_layout
