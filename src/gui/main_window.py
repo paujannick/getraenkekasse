@@ -207,6 +207,7 @@ class QuantityDialog(QtWidgets.QDialog):
 
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         cancel_btn.setProperty("btnClass", "action")
+        cancel_btn.setMinimumHeight(90)
         cancel_btn.clicked.connect(self.reject)
         layout.addWidget(cancel_btn)
 
@@ -663,7 +664,7 @@ class MainWindow(QtWidgets.QMainWindow):
         database.init_db()
         database.clear_exit_flag()
         self.setWindowTitle("Getränkekasse")
-        self.resize(800, 480)
+        self.setWindowState(self.windowState() | QtCore.Qt.WindowFullScreen)
         self.central = QtWidgets.QWidget()
         self.central.setObjectName("central_widget")
         self.setCentralWidget(self.central)
@@ -828,7 +829,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.game_button.hide()
 
     def _game_message_duration(self) -> int:
-        return 25000 if self._game_enabled else 8000
+        return 12000 if self._game_enabled else 5000
 
     def _populate_start_page(self) -> None:
         layout = self.start_layout
@@ -1036,7 +1037,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self._show_info_message("Spiel abgebrochen. Preis bleibt unverändert.", auto_return_ms=4000)
             return
 
-        user_id = context["user_id"]
+        user_id = context.get("user_id")
+        if user_id is None:
+            self._handle_cash_game_result(result, context)
+            return
         total_price = context["total_price"]
         drink_name = context.get("drink_name", "")
         before_user = models.get_user(user_id)
@@ -1078,6 +1082,33 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._show_info_message(message, auto_return_ms=4000)
 
+    def _handle_cash_game_result(self, result: str | None, context: dict[str, Any]) -> None:
+        total_price = context.get("total_price", 0)
+        drink_name = context.get("drink_name") or "dein Getränk"
+        base_price_text = f"{total_price / 100:.2f} €" if total_price else "den Betrag"
+        message: str
+        if result == "win":
+            message = (
+                "Glückwunsch! Du hast gewonnen.\n"
+                f"Du darfst {base_price_text} für {drink_name} behalten."
+            )
+        elif result == "lose":
+            double_total = context.get("double_amount", total_price * 2)
+            double_text = f"{double_total / 100:.2f} €" if double_total else "den Betrag noch einmal"
+            message = (
+                "Leider verloren!\n"
+                f"Bitte insgesamt {double_text} in die Getränkekasse legen."
+            )
+        elif result == "draw":
+            message = (
+                "Unentschieden! Preis bleibt gleich.\n"
+                f"{drink_name} kostet weiterhin {base_price_text}."
+            )
+        else:
+            message = "Spiel abgebrochen. Preis bleibt unverändert."
+
+        self._show_info_message(message, auto_return_ms=5000)
+
     def on_drink_selected(self, drink: models.Drink) -> None:
         dialog = QuantityDialog(drink, self)
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
@@ -1089,9 +1120,32 @@ class MainWindow(QtWidgets.QMainWindow):
             models.add_transaction(cash_id, drink.id, quantity)
             led.indicate_success()
             total_price = drink.price * quantity
+            message = f"Bitte {total_price/100:.2f} \u20ac passend in die Getränkekasse legen."
+            game_context: dict[str, Any] | None = None
+            auto_return = 3000
+            if self._game_enabled:
+                message += (
+                    "\n\nGewinne im Tic Tac Toe, dann darfst du dein Geld behalten. "
+                    "Bei einer Niederlage kostet das Getränk doppelt!"
+                    "\n\nTippe auf \"Tic Tac Toe spielen\" oder warte kurz,"
+                    " dann kehrst du automatisch zum Start zurück."
+                )
+                game_context = {
+                    "user_id": None,
+                    "drink_id": drink.id,
+                    "quantity": quantity,
+                    "total_price": total_price,
+                    "drink_name": drink.name,
+                    "payment": "cash",
+                }
+                auto_return = self._game_message_duration()
+            else:
+                message += "\n\nDu kehrst gleich automatisch zum Startbildschirm zurück."
             self._show_info_message(
-                f"Bitte {total_price/100:.2f} \u20ac passend in die Getränkekasse legen",
-                auto_return_ms=2000,
+                message,
+                allow_game=self._game_enabled,
+                game_context=game_context,
+                auto_return_ms=auto_return,
             )
             return
         if dialog.event_user_id is not None:
@@ -1118,7 +1172,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 thank_message,
                 allow_game=False,
                 game_context=None,
-                auto_return_ms=8000,
+                auto_return_ms=5000,
             )
             return
         self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
