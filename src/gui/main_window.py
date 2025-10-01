@@ -23,45 +23,74 @@ class QuantityDialog(QtWidgets.QDialog):
         self.setWindowTitle("Menge wählen")
         self.setWindowState(QtCore.Qt.WindowFullScreen)
         self.quantity = 1
+
+        screen = QtWidgets.QApplication.primaryScreen()
+        screen_size = screen.size() if screen else QtCore.QSize()
+        self._compact_layout = bool(
+            screen and min(screen_size.width(), screen_size.height()) <= 600
+        )
+
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(40, 30, 40, 30)
-        layout.setSpacing(24)
+        if self._compact_layout:
+            layout.setContentsMargins(28, 20, 28, 20)
+            layout.setSpacing(18)
+        else:
+            layout.setContentsMargins(40, 30, 40, 30)
+            layout.setSpacing(24)
 
         self.setObjectName("quantity_dialog")
 
-        base_style = """
-            #quantity_dialog {
+        style = {
+            "title_font": "26px" if self._compact_layout else "32px",
+            "info_font": "14px" if self._compact_layout else "16px",
+            "frame_padding": "18px" if self._compact_layout else "24px",
+            "quantity_font": "40px" if self._compact_layout else "48px",
+            "quantity_btn_radius": "36px" if self._compact_layout else "44px",
+            "quantity_btn_size": "110px" if self._compact_layout else "140px",
+            "quantity_btn_font": "36px" if self._compact_layout else "42px",
+            "payment_font": "18px" if self._compact_layout else "20px",
+            "payment_padding": "16px" if self._compact_layout else "20px",
+            "payment_radius": "18px" if self._compact_layout else "20px",
+            "payment_height": "90px" if self._compact_layout else "110px",
+            "action_font": "16px" if self._compact_layout else "18px",
+            "action_padding": "16px" if self._compact_layout else "20px",
+            "action_height": "60px" if self._compact_layout else "70px",
+            "cancel_font": "18px" if self._compact_layout else "20px",
+        }
+
+        base_style = f"""
+            #quantity_dialog {{
                 background-color: #f4f6fb;
-            }
-            #quantity_dialog QLabel#title_label {
-                font-size: 32px;
+            }}
+            #quantity_dialog QLabel#title_label {{
+                font-size: {style['title_font']};
                 font-weight: 700;
                 color: #0f172a;
-            }
-            #quantity_dialog QLabel#info_label {
-                font-size: 16px;
+            }}
+            #quantity_dialog QLabel#info_label {{
+                font-size: {style['info_font']};
                 color: #475569;
-            }
-            #quantity_dialog QFrame#quantity_frame {
+            }}
+            #quantity_dialog QFrame#quantity_frame {{
                 background-color: #ffffff;
                 border-radius: 24px;
-                padding: 24px;
+                padding: {style['frame_padding']};
                 border: 2px solid #e2e8f0;
-            }
-            #quantity_dialog QLabel#quantity_value {
-                font-size: 48px;
+            }}
+            #quantity_dialog QLabel#quantity_value {{
+                font-size: {style['quantity_font']};
                 font-weight: 700;
                 color: #0f172a;
-            }
-            #quantity_dialog QPushButton[btnClass="quantity"] {
-                border-radius: 44px;
+            }}
+            #quantity_dialog QPushButton[btnClass="quantity"] {{
+                border-radius: {style['quantity_btn_radius']};
                 background-color: #1f2937;
                 color: #ffffff;
-                font-size: 42px;
-                min-width: 140px;
-                min-height: 140px;
-            }
-            #quantity_dialog QGroupBox#payment_group {
+                font-size: {style['quantity_btn_font']};
+                min-width: {style['quantity_btn_size']};
+                min-height: {style['quantity_btn_size']};
+            }}
+            #quantity_dialog QGroupBox#payment_group {{
                 border: 2px solid #e2e8f0;
                 border-radius: 24px;
                 margin-top: 12px;
@@ -69,47 +98,47 @@ class QuantityDialog(QtWidgets.QDialog):
                 font-size: 18px;
                 font-weight: 600;
                 color: #0f172a;
-                padding: 24px;
-            }
-            #quantity_dialog QPushButton[btnClass="payment"] {
-                border-radius: 20px;
+                padding: {style['frame_padding']};
+            }}
+            #quantity_dialog QPushButton[btnClass="payment"] {{
+                border-radius: {style['payment_radius']};
                 background-color: #2563eb;
                 color: #ffffff;
-                font-size: 20px;
+                font-size: {style['payment_font']};
                 font-weight: 600;
-                min-height: 110px;
-                padding: 20px;
+                min-height: {style['payment_height']};
+                padding: {style['payment_padding']};
                 text-align: center;
-            }
-            #quantity_dialog QPushButton[btnClass="payment"][variant="cash"] {
+            }}
+            #quantity_dialog QPushButton[btnClass="payment"][variant="cash"] {{
                 background-color: #f97316;
-            }
-            #quantity_dialog QPushButton[btnClass="payment"][variant="event"] {
+            }}
+            #quantity_dialog QPushButton[btnClass="payment"][variant="event"] {{
                 background-color: #0ea5e9;
-            }
-            #quantity_dialog QPushButton[btnClass="payment"]:hover {
+            }}
+            #quantity_dialog QPushButton[btnClass="payment"]:hover {{
                 background-color: #1d4ed8;
-            }
-            #quantity_dialog QPushButton[btnClass="action"] {
+            }}
+            #quantity_dialog QPushButton[btnClass="action"] {{
                 border-radius: 16px;
                 background-color: #e2e8f0;
                 color: #1f2937;
-                font-size: 18px;
+                font-size: {style['action_font']};
                 font-weight: 600;
-                min-height: 70px;
-                padding: 20px;
-            }
-            #quantity_dialog QPushButton[btnClass="action"]:hover {
+                min-height: {style['action_height']};
+                padding: {style['action_padding']};
+            }}
+            #quantity_dialog QPushButton[btnClass="action"]:hover {{
                 background-color: #cbd5f5;
-            }
-            #quantity_dialog QPushButton[btnClass="action"][variant="cancel"] {
+            }}
+            #quantity_dialog QPushButton[btnClass="action"][variant="cancel"] {{
                 background-color: #ef4444;
                 color: #ffffff;
-                font-size: 20px;
-            }
-            #quantity_dialog QPushButton[btnClass="action"][variant="cancel"]:hover {
+                font-size: {style['cancel_font']};
+            }}
+            #quantity_dialog QPushButton[btnClass="action"][variant="cancel"]:hover {{
                 background-color: #dc2626;
-            }
+            }}
         """
         self.setStyleSheet(base_style)
 
@@ -144,17 +173,22 @@ class QuantityDialog(QtWidgets.QDialog):
         qty_frame = QtWidgets.QFrame()
         qty_frame.setObjectName("quantity_frame")
         qty_layout = QtWidgets.QHBoxLayout(qty_frame)
-        qty_layout.setContentsMargins(16, 16, 16, 16)
-        qty_layout.setSpacing(24)
+        if self._compact_layout:
+            qty_layout.setContentsMargins(12, 12, 12, 12)
+            qty_layout.setSpacing(16)
+        else:
+            qty_layout.setContentsMargins(16, 16, 16, 16)
+            qty_layout.setSpacing(24)
         self.minus_btn = QtWidgets.QPushButton("−")
         self.plus_btn = QtWidgets.QPushButton("+")
         for btn in (self.minus_btn, self.plus_btn):
             btn.setProperty("btnClass", "quantity")
-            btn.setMinimumSize(140, 140)
+            size = 110 if self._compact_layout else 140
+            btn.setMinimumSize(size, size)
         self.label = QtWidgets.QLabel(f"{self.quantity} Stück")
         self.label.setObjectName("quantity_value")
         self.label.setAlignment(QtCore.Qt.AlignCenter)
-        self.label.setMinimumWidth(220)
+        self.label.setMinimumWidth(200 if self._compact_layout else 220)
         qty_layout.addWidget(self.minus_btn)
         qty_layout.addWidget(self.label, stretch=1)
         qty_layout.addWidget(self.plus_btn)
@@ -169,19 +203,30 @@ class QuantityDialog(QtWidgets.QDialog):
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
         payment_layout = QtWidgets.QGridLayout(payment_group)
-        payment_layout.setContentsMargins(12, 24, 12, 12)
-        payment_layout.setHorizontalSpacing(18)
-        payment_layout.setVerticalSpacing(18)
+        if self._compact_layout:
+            payment_layout.setContentsMargins(10, 18, 10, 10)
+            payment_layout.setHorizontalSpacing(14)
+            payment_layout.setVerticalSpacing(14)
+        else:
+            payment_layout.setContentsMargins(12, 24, 12, 12)
+            payment_layout.setHorizontalSpacing(18)
+            payment_layout.setVerticalSpacing(18)
 
         self.cash_btn = QtWidgets.QPushButton("Barzahlung")
         self.cash_btn.setProperty("btnClass", "payment")
         self.cash_btn.setProperty("variant", "cash")
-        self.cash_btn.setMinimumSize(220, 110)
+        self.cash_btn.setMinimumSize(
+            200 if self._compact_layout else 220,
+            90 if self._compact_layout else 110,
+        )
         self.cash_btn.clicked.connect(self.cash)
         self.chip_btn = QtWidgets.QPushButton("Chip / Karte")
         self.chip_btn.setProperty("btnClass", "payment")
         self.chip_btn.setProperty("variant", "chip")
-        self.chip_btn.setMinimumSize(220, 110)
+        self.chip_btn.setMinimumSize(
+            200 if self._compact_layout else 220,
+            90 if self._compact_layout else 110,
+        )
         self.chip_btn.clicked.connect(self.accept)
 
         payment_buttons: list[QtWidgets.QWidget] = [self.cash_btn, self.chip_btn]
@@ -195,7 +240,10 @@ class QuantityDialog(QtWidgets.QDialog):
             btn.setProperty("btnClass", "payment")
             btn.setProperty("variant", "event")
             btn.setToolTip("Veranstaltungskarte direkt belasten")
-            btn.setMinimumSize(220, 110)
+            btn.setMinimumSize(
+                200 if self._compact_layout else 220,
+                90 if self._compact_layout else 110,
+            )
             btn.clicked.connect(lambda _, uid=user.id: self._select_event_user(uid))
             payment_buttons.append(btn)
 
@@ -224,10 +272,10 @@ class QuantityDialog(QtWidgets.QDialog):
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         cancel_btn.setProperty("btnClass", "action")
         cancel_btn.setProperty("variant", "cancel")
-        cancel_btn.setMinimumHeight(90)
-        cancel_btn.setMinimumWidth(260)
+        cancel_btn.setMinimumHeight(70 if self._compact_layout else 90)
+        cancel_btn.setMinimumWidth(240 if self._compact_layout else 260)
         cancel_btn.clicked.connect(self.reject)
-        layout.addWidget(cancel_btn)
+        layout.addWidget(cancel_btn, alignment=QtCore.Qt.AlignCenter)
 
         self._cash = False
 
