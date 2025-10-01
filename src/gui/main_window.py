@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import platform
+import random
+from typing import Any
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from .. import database
@@ -187,6 +189,127 @@ class PinDialog(QtWidgets.QDialog):
     @property
     def pin(self) -> str:
         return self.edit.text()
+
+
+class TicTacToeDialog(QtWidgets.QDialog):
+    """Simple Tic-Tac-Toe game against the computer."""
+
+    _WIN_LINES = (
+        (0, 1, 2), (3, 4, 5), (6, 7, 8),
+        (0, 3, 6), (1, 4, 7), (2, 5, 8),
+        (0, 4, 8), (2, 4, 6),
+    )
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Tic Tac Toe")
+        self.setWindowState(QtCore.Qt.WindowFullScreen)
+        self.setModal(True)
+        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setSpacing(20)
+
+        self.info_label = QtWidgets.QLabel("Schlage den Computer! Du spielst 'X'.")
+        font = self.info_label.font()
+        font.setPointSize(28)
+        self.info_label.setFont(font)
+        self.info_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.info_label)
+
+        grid = QtWidgets.QGridLayout()
+        grid.setSpacing(10)
+        self._board: list[str] = [""] * 9
+        self._buttons: list[QtWidgets.QPushButton] = []
+        for index in range(9):
+            button = QtWidgets.QPushButton("")
+            btn_font = button.font()
+            btn_font.setPointSize(48)
+            button.setFont(btn_font)
+            button.setFixedSize(180, 180)
+            button.clicked.connect(lambda _, idx=index: self._player_move(idx))
+            self._buttons.append(button)
+            grid.addWidget(button, index // 3, index % 3)
+        layout.addLayout(grid)
+
+        self._close_button = QtWidgets.QPushButton("Schließen")
+        close_font = self._close_button.font()
+        close_font.setPointSize(24)
+        self._close_button.setFont(close_font)
+        self._close_button.setMinimumWidth(220)
+        self._close_button.clicked.connect(self.accept)
+        self._close_button.hide()
+        layout.addWidget(self._close_button, alignment=QtCore.Qt.AlignCenter)
+
+        self._game_over = False
+        self._result: str | None = None
+
+    @property
+    def result(self) -> str | None:
+        return self._result
+
+    def _player_move(self, index: int) -> None:
+        if self._game_over or self._board[index]:
+            return
+        self._set_move(index, 'X')
+        if self._check_winner('X'):
+            self._finish('win', "Du hast gewonnen! Dein Getränk ist gratis.")
+            return
+        if self._is_draw():
+            self._finish('draw', "Unentschieden! Preis bleibt gleich.")
+            return
+        self.info_label.setText("Computer ist am Zug…")
+        QtWidgets.QApplication.processEvents()
+        self._computer_move()
+
+    def _computer_move(self) -> None:
+        move = self._find_best_move('O')
+        if move is None:
+            move = self._find_best_move('X')
+        if move is None and not self._board[4]:
+            move = 4
+        if move is None:
+            corners = [i for i in (0, 2, 6, 8) if not self._board[i]]
+            if corners:
+                move = random.choice(corners)
+        if move is None:
+            available = [i for i, cell in enumerate(self._board) if not cell]
+            move = random.choice(available)
+        self._set_move(move, 'O')
+        if self._check_winner('O'):
+            self._finish('lose', "Der Computer hat gewonnen. Getränk kostet doppelt.")
+            return
+        if self._is_draw():
+            self._finish('draw', "Unentschieden! Preis bleibt gleich.")
+            return
+        self.info_label.setText("Du bist wieder dran!")
+
+    def _find_best_move(self, symbol: str) -> int | None:
+        for line in self._WIN_LINES:
+            values = [self._board[i] for i in line]
+            if values.count(symbol) == 2 and values.count('') == 1:
+                return line[values.index('')]
+        return None
+
+    def _set_move(self, index: int, symbol: str) -> None:
+        self._board[index] = symbol
+        button = self._buttons[index]
+        button.setText(symbol)
+        button.setEnabled(False)
+
+    def _check_winner(self, symbol: str) -> bool:
+        return any(all(self._board[i] == symbol for i in line) for line in self._WIN_LINES)
+
+    def _is_draw(self) -> bool:
+        return all(cell for cell in self._board)
+
+    def _finish(self, result: str, message: str) -> None:
+        self._game_over = True
+        self._result = result
+        self.info_label.setText(message)
+        for button in self._buttons:
+            button.setEnabled(False)
+        self._close_button.show()
 
 
 class StockPage(QtWidgets.QWidget):
@@ -435,6 +558,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._apply_background(self._default_bg)
 
         self.stack = QtWidgets.QStackedLayout(self.central)
+        self._info_timer = QtCore.QTimer(self)
+        self._info_timer.setSingleShot(True)
+        self._info_timer.timeout.connect(self.show_start_page)
 
         self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime if database.REFRESH_FLAG.exists() else 0.0
         self.timer = QtCore.QTimer(self)
@@ -450,12 +576,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.stack.addWidget(self.start_page)
 
+        self.info_page = QtWidgets.QWidget()
+        info_layout = QtWidgets.QVBoxLayout(self.info_page)
+        info_layout.addStretch()
         self.info_label = QtWidgets.QLabel()
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
         font = self.info_label.font()
         font.setPointSize(24)
         self.info_label.setFont(font)
-        self.stack.addWidget(self.info_label)
+        info_layout.addWidget(self.info_label, alignment=QtCore.Qt.AlignCenter)
+        self.game_button = QtWidgets.QPushButton("Tic Tac Toe spielen")
+        game_font = self.game_button.font()
+        game_font.setPointSize(20)
+        self.game_button.setFont(game_font)
+        self.game_button.setMinimumSize(260, 80)
+        self.game_button.clicked.connect(self._start_tictactoe)
+        self.game_button.hide()
+        info_layout.addWidget(self.game_button, alignment=QtCore.Qt.AlignCenter)
+        info_layout.addStretch()
+        self.stack.addWidget(self.info_page)
 
         self.admin_menu = AdminMenu(self)
         self.admin_menu.stock_btn.clicked.connect(self.show_stock_page)
@@ -477,6 +616,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.event_card_page = EventCardPage(self)
         self.stack.addWidget(self.event_card_page)
+
+        self._pending_game: dict[str, Any] | None = None
 
         self.show_start_page()
 
@@ -564,8 +705,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self.next_button.setEnabled(self.current_page < self.page_count)
 
     def show_start_page(self):
+        self._info_timer.stop()
+        self._pending_game = None
+        self.game_button.hide()
+        self.game_button.setEnabled(True)
         self._apply_background(self._default_bg)
         self.stack.setCurrentWidget(self.start_page)
+
+    def _show_info_message(
+        self,
+        message: str,
+        *,
+        allow_game: bool = False,
+        game_context: dict[str, Any] | None = None,
+        auto_return_ms: int | None = 4000,
+    ) -> None:
+        self.info_label.setText(message)
+        self._info_timer.stop()
+        if allow_game and game_context:
+            self._pending_game = game_context
+            self.game_button.show()
+            self.game_button.setEnabled(True)
+        else:
+            self._pending_game = None
+            self.game_button.hide()
+            self.game_button.setEnabled(True)
+        self.stack.setCurrentWidget(self.info_page)
+        if auto_return_ms is not None:
+            self._info_timer.start(auto_return_ms)
 
     def show_admin_menu(self) -> None:
         self.admin_menu.reload_web_qr()
@@ -627,8 +794,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dlg.exec_()
 
     def _check_balance(self) -> None:
-        self.info_label.setText("Bitte Karte auflegen…")
-        self.stack.setCurrentWidget(self.info_label)
+        self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
         uid = rfid.read_uid(show_dialog=False)
         if not uid:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
@@ -641,11 +807,68 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show_start_page()
             return
         led.indicate_success()
-        self.info_label.setText(
-            f"{user.name}\nGuthaben: {user.balance/100:.2f} €"
+        self._show_info_message(
+            f"{user.name}\nGuthaben: {user.balance/100:.2f} €",
+            auto_return_ms=3000,
         )
-        self.stack.setCurrentWidget(self.info_label)
-        QtCore.QTimer.singleShot(3000, self.show_start_page)
+
+    def _start_tictactoe(self) -> None:
+        if not self._pending_game:
+            return
+        context = self._pending_game
+        self._pending_game = None
+        self._info_timer.stop()
+        self.game_button.setEnabled(False)
+        self.game_button.hide()
+
+        dialog = TicTacToeDialog(self)
+        dialog.exec_()
+        result = dialog.result
+        if result is None:
+            self._show_info_message("Spiel abgebrochen. Preis bleibt unverändert.", auto_return_ms=4000)
+            return
+
+        user_id = context["user_id"]
+        total_price = context["total_price"]
+        drink_name = context.get("drink_name", "")
+        before_user = models.get_user(user_id)
+        if before_user is None:
+            self._show_info_message(
+                "Benutzer konnte nicht ermittelt werden. Preis bleibt unverändert.",
+                auto_return_ms=4000,
+            )
+            return
+
+        message: str
+        if result == 'win':
+            models.update_balance(user_id, total_price)
+            after_user = models.get_user(user_id) or before_user
+            message = (
+                f"Glückwunsch {after_user.name}! Du hast gewonnen.\n"
+                f"{drink_name} ist gratis. Neues Guthaben: {after_user.balance/100:.2f} €"
+            )
+        elif result == 'lose':
+            if models.update_balance(user_id, -total_price):
+                after_user = models.get_user(user_id) or before_user
+                message = (
+                    f"Leider verloren, {after_user.name}.\n"
+                    f"{drink_name} kostet nun doppelt. Neues Guthaben: {after_user.balance/100:.2f} €"
+                )
+            else:
+                message = (
+                    "Leider verloren! Der Zusatzbetrag konnte nicht verbucht werden.\n"
+                    f"Guthaben bleibt bei {before_user.balance/100:.2f} €."
+                )
+        elif result == 'draw':
+            after_user = models.get_user(user_id) or before_user
+            message = (
+                "Unentschieden! Preis bleibt gleich.\n"
+                f"Aktuelles Guthaben: {after_user.balance/100:.2f} €."
+            )
+        else:
+            message = "Spiel abgebrochen. Preis bleibt unverändert."
+
+        self._show_info_message(message, auto_return_ms=4000)
 
     def on_drink_selected(self, drink: models.Drink) -> None:
         dialog = QuantityDialog(drink, self)
@@ -658,11 +881,10 @@ class MainWindow(QtWidgets.QMainWindow):
             models.add_transaction(cash_id, drink.id, quantity)
             led.indicate_success()
             total_price = drink.price * quantity
-            self.info_label.setText(
-                f"Bitte {total_price/100:.2f} \u20ac passend in die Getränkekasse legen"
+            self._show_info_message(
+                f"Bitte {total_price/100:.2f} \u20ac passend in die Getränkekasse legen",
+                auto_return_ms=2000,
             )
-            self.stack.setCurrentWidget(self.info_label)
-            QtCore.QTimer.singleShot(2000, self.show_start_page)
             return
         if dialog.event_user_id is not None:
             user = models.get_user(dialog.event_user_id)
@@ -682,14 +904,28 @@ class MainWindow(QtWidgets.QMainWindow):
             led.indicate_success()
             if self._thank_bg.exists():
                 self._apply_background(self._thank_bg)
-            self.info_label.setText(
-                f"Danke {user.name}!\nKauf wird verbucht."
+            thank_message = f"Danke {user.name}!\nKauf wird verbucht."
+            thank_message += (
+                "\n\nGewinne im Tic Tac Toe, dann ist dein Getränk gratis. "
+                "Bei einer Niederlage kostet es doppelt!"
             )
-            self.stack.setCurrentWidget(self.info_label)
-            QtCore.QTimer.singleShot(4000, self.show_start_page)
+            game_context = {
+                "user_id": user.id,
+                "drink_id": drink.id,
+                "quantity": quantity,
+                "total_price": total_price,
+                "user_name": user.name,
+                "drink_name": drink.name,
+                "event_user": True,
+            }
+            self._show_info_message(
+                thank_message,
+                allow_game=True,
+                game_context=game_context,
+                auto_return_ms=20000,
+            )
             return
-        self.info_label.setText("Bitte Karte auflegen…")
-        self.stack.setCurrentWidget(self.info_label)
+        self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
         uid = rfid.read_uid(show_dialog=False)
         if not uid:
             QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
@@ -719,10 +955,26 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         if new_user.balance < 0:
             msg += "\nBitte Guthaben aufladen!"
-        self.info_label.setText(msg)
-        self.stack.setCurrentWidget(self.info_label)
+        msg += (
+            "\n\nGewinne im Tic Tac Toe, dann ist dein Getränk gratis. "
+            "Bei einer Niederlage kostet es doppelt!"
+        )
+        game_context = {
+            "user_id": user.id,
+            "drink_id": drink.id,
+            "quantity": quantity,
+            "total_price": total_price,
+            "user_name": new_user.name,
+            "drink_name": drink.name,
+            "event_user": False,
+        }
+        self._show_info_message(
+            msg,
+            allow_game=True,
+            game_context=game_context,
+            auto_return_ms=20000,
+        )
         QtWidgets.QApplication.processEvents()
-        QtCore.QTimer.singleShot(4000, self.show_start_page)
 
 
     def check_refresh(self) -> None:
@@ -746,8 +998,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._populate_start_page()
 
     def _open_admin(self) -> None:
-        self.info_label.setText("Bitte Admin-Karte auflegen…")
-        self.stack.setCurrentWidget(self.info_label)
+        self._show_info_message("Bitte Admin-Karte auflegen…", auto_return_ms=None)
         uid = rfid.read_uid(show_dialog=False)
         user = models.get_user_by_uid(uid) if uid else None
         if not (user and user.is_admin):
