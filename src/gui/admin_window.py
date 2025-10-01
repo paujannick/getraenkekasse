@@ -12,7 +12,7 @@ class AdminWindow(QtWidgets.QWidget):
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         self.setWindowTitle("Admin")
-        self.resize(800, 480)
+        self.setWindowState(self.windowState() | QtCore.Qt.WindowFullScreen)
         layout = QtWidgets.QVBoxLayout(self)
         self.tabs = QtWidgets.QTabWidget()
         layout.addWidget(self.tabs)
