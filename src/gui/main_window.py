@@ -319,8 +319,14 @@ class TicTacToeDialog(QtWidgets.QDialog):
         layout.setSpacing(20)
 
         self.info_label = QtWidgets.QLabel("Schlage den Computer! Du spielst 'X'.")
+        screen = QtWidgets.QApplication.primaryScreen()
+        geometry = screen.availableGeometry() if screen else QtCore.QRect(0, 0, 1280, 720)
+        height = geometry.height()
+        width = geometry.width()
+
+        base_font_size = max(20, min(32, height // 15))
         font = self.info_label.font()
-        font.setPointSize(28)
+        font.setPointSize(base_font_size)
         self.info_label.setFont(font)
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
         layout.addWidget(self.info_label)
@@ -329,12 +335,14 @@ class TicTacToeDialog(QtWidgets.QDialog):
         grid.setSpacing(10)
         self._board: list[str] = [""] * 9
         self._buttons: list[QtWidgets.QPushButton] = []
+        button_size = max(110, min(180, int(min(width, height) / 4)))
+        symbol_font_size = max(32, int(button_size * 0.4))
         for index in range(9):
             button = QtWidgets.QPushButton("")
             btn_font = button.font()
-            btn_font.setPointSize(48)
+            btn_font.setPointSize(symbol_font_size)
             button.setFont(btn_font)
-            button.setFixedSize(180, 180)
+            button.setFixedSize(button_size, button_size)
             button.clicked.connect(lambda _, idx=index: self._player_move(idx))
             self._buttons.append(button)
             grid.addWidget(button, index // 3, index % 3)
@@ -342,9 +350,9 @@ class TicTacToeDialog(QtWidgets.QDialog):
 
         self._close_button = QtWidgets.QPushButton("Schließen")
         close_font = self._close_button.font()
-        close_font.setPointSize(24)
+        close_font.setPointSize(max(18, int(base_font_size * 0.85)))
         self._close_button.setFont(close_font)
-        self._close_button.setMinimumWidth(220)
+        self._close_button.setMinimumWidth(max(200, button_size))
         self._close_button.clicked.connect(self.accept)
         self._close_button.hide()
         layout.addWidget(self._close_button, alignment=QtCore.Qt.AlignCenter)
@@ -1105,29 +1113,12 @@ class MainWindow(QtWidgets.QMainWindow):
             if self._thank_bg.exists():
                 self._apply_background(self._thank_bg)
             thank_message = f"Danke {user.name}!\nKauf wird verbucht."
-            game_context = {
-                "user_id": user.id,
-                "drink_id": drink.id,
-                "quantity": quantity,
-                "total_price": total_price,
-                "user_name": user.name,
-                "drink_name": drink.name,
-                "event_user": True,
-            }
-            if self._game_enabled:
-                thank_message += (
-                    "\n\nGewinne im Tic Tac Toe, dann ist dein Getränk gratis. "
-                    "Bei einer Niederlage kostet es doppelt!"
-                    "\n\nTippe auf \"Tic Tac Toe spielen\" oder warte kurz,"
-                    " dann kehrst du automatisch zum Start zurück."
-                )
-            else:
-                thank_message += "\n\nDu kehrst gleich automatisch zum Startbildschirm zurück."
+            thank_message += "\n\nDu kehrst gleich automatisch zum Startbildschirm zurück."
             self._show_info_message(
                 thank_message,
-                allow_game=self._game_enabled,
-                game_context=game_context if self._game_enabled else None,
-                auto_return_ms=self._game_message_duration(),
+                allow_game=False,
+                game_context=None,
+                auto_return_ms=8000,
             )
             return
         self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
