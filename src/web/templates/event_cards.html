@@ -1,43 +1,85 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Veranstaltungskarten</h1>
-{% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
-<table>
-<tr><th>Firma</th><th>UID</th><th>Guthaben</th><th>Gültig von</th><th>Gültig bis</th><th>Aktiv</th><th>Zahlungsmethoden</th><th colspan="4">Aktion</th></tr>
-{% for u in users %}
-<tr>
-<td>{{ u['name'] }}</td>
-<td>{{ u['rfid_uid'] }}</td>
-<td>{{ (u['balance']/100)|round(2) }} €</td>
-<td>{{ u['valid_from'] or '' }}</td>
-<td>{{ u['valid_until'] or '' }}</td>
-<td>{{ 'ja' if u['active'] else 'nein' }}</td>
-<td>{{ 'ja' if u['show_on_payment'] else 'nein' }}</td>
-<td>
-    <form method="get" action="{{ url_for('event_card_print', user_id=u['id']) }}" target="_blank" style="display:inline">
-        <button type="submit">PDF</button>
+<div class="card">
+    <h1>Veranstaltungskarten</h1>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <table>
+        <tr>
+            <th>Firma</th>
+            <th>UID</th>
+            <th>Guthaben</th>
+            <th>Gültigkeit</th>
+            <th>Status</th>
+            <th>Direktzahlung</th>
+            <th>Aktionen</th>
+        </tr>
+        {% for u in users %}
+        <tr>
+            <td>{{ u['name'] }}</td>
+            <td>{{ u['rfid_uid'] }}</td>
+            <td>{{ (u['balance']/100)|round(2) }} €</td>
+            <td>
+                {{ u['valid_from'] or '–' }}<br>
+                <small>bis {{ u['valid_until'] or 'unbegrenzt' }}</small>
+            </td>
+            <td>
+                <span class="status-pill {{ 'active' if u['active'] else 'inactive' }}">
+                    {{ 'Aktiv' if u['active'] else 'Inaktiv' }}
+                </span>
+            </td>
+            <td>
+                <span class="status-pill {{ 'highlight' if u['show_on_payment'] else 'inactive' }}">
+                    {{ 'Schnellwahl' if u['show_on_payment'] else 'Aus' }}
+                </span>
+            </td>
+            <td>
+                <div class="table-actions">
+                    <form method="get" action="{{ url_for('event_card_print', user_id=u['id']) }}" target="_blank">
+                        <button type="submit" class="secondary">PDF</button>
+                    </form>
+                    <a class="btn secondary" href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a>
+                    <form method="post" action="{{ url_for('event_card_reset', user_id=u['id']) }}" onsubmit="return confirm('Karte wirklich zurücksetzen?');">
+                        <button type="submit" class="secondary">Zurücksetzen</button>
+                    </form>
+                    <a class="btn danger" href="{{ url_for('event_card_delete', user_id=u['id']) }}" onclick="return confirm('Benutzer wirklich löschen?');">Löschen</a>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h2>Neue Karte anlegen</h2>
+    <form method="post" action="{{ url_for('event_card_add') }}" class="form-section">
+        <div class="form-grid">
+            <div>
+                <label for="name">Firmenname</label>
+                <input type="text" id="name" name="name" placeholder="Firmenname">
+            </div>
+            <div>
+                <label for="uid_new">RFID UID</label>
+                <input type="text" name="uid" id="uid_new" placeholder="UID">
+            </div>
+            <div>
+                <label for="valid_from">Gültig von</label>
+                <input type="date" name="valid_from" id="valid_from">
+            </div>
+            <div>
+                <label for="valid_until">Gültig bis</label>
+                <input type="date" name="valid_until" id="valid_until">
+            </div>
+        </div>
+        <label class="toggle">
+            <input type="checkbox" name="show_on_payment" value="1">
+            In der Zahlungsübersicht anzeigen
+        </label>
+        <div class="actions">
+            <button type="button" class="secondary" onclick="readUid('uid_new')">UID lesen</button>
+            <button type="submit">Karte hinzufügen</button>
+        </div>
     </form>
-</td>
-<td><a href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a></td>
-<td>
-    <form method="post" action="{{ url_for('event_card_reset', user_id=u['id']) }}" style="display:inline" onsubmit="return confirm('Karte wirklich zurücksetzen?');">
-        <button type="submit">Zurücksetzen</button>
-    </form>
-</td>
-<td><a href="{{ url_for('event_card_delete', user_id=u['id']) }}" onclick="return confirm('Benutzer wirklich löschen?');">Löschen</a></td>
-</tr>
-{% endfor %}
-</table>
-<h2>Neu</h2>
-<form method="post" action="{{ url_for('event_card_add') }}">
-    <input type="text" name="name" placeholder="Firmenname">
-    <input type="text" name="uid" id="uid_new" placeholder="UID">
-    <input type="date" name="valid_from" placeholder="Gültig von">
-    <input type="date" name="valid_until" placeholder="Gültig bis">
-    <label><input type="checkbox" name="show_on_payment" value="1"> Auf Zahlungsmethoden anzeigen</label>
-    <button type="button" onclick="readUid('uid_new')">UID lesen</button>
-    <button type="submit">Hinzufügen</button>
-</form>
+</div>
 <script>
 function readUid(targetId) {
     fetch('{{ url_for('read_uid') }}').then(r => r.json()).then(data => {

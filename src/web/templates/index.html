@@ -1,31 +1,34 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Adminbereich</h1>
-<p>Willkommen!</p>
-
-<p>Guthaben aller Benutzer (ohne Veranstaltungskarten):
-   {{ (total_balance/100)|round(2) }} €</p>
-
-<form method="post" action="{{ url_for('refresh') }}">
-    <button type="submit">GUI aktualisieren</button>
-</form>
-
-<form method="post" action="{{ url_for('stop') }}" onsubmit="return confirm('Anwendung wirklich beenden?');">
-    <button type="submit">Beenden</button>
-</form>
+<div class="card">
+    <h1>Adminbereich</h1>
+    <p>Willkommen!</p>
+    <p>Guthaben aller Benutzer (ohne Veranstaltungskarten):
+        {{ (total_balance/100)|round(2) }} €</p>
+    <div class="actions">
+        <form method="post" action="{{ url_for('refresh') }}">
+            <button type="submit" class="secondary">GUI aktualisieren</button>
+        </form>
+        <form method="post" action="{{ url_for('stop') }}" onsubmit="return confirm('Anwendung wirklich beenden?');">
+            <button type="submit" class="danger">Beenden</button>
+        </form>
+    </div>
+</div>
 
 {% if to_buy %}
-<h2>Nachkaufen</h2>
-<table>
-<tr><th>Getränk</th><th>Bestand</th><th>Mindest</th></tr>
-{% for d in to_buy %}
-<tr class="{% if d.stock < d.min_stock %}negstock{% endif %}">
-<td>{{ d.name }}</td>
-<td>{{ d.stock }}</td>
-<td>{{ d.min_stock }}</td>
-</tr>
-{% endfor %}
-</table>
+<div class="card">
+    <h2>Nachkaufen</h2>
+    <table>
+        <tr><th>Getränk</th><th>Bestand</th><th>Mindest</th></tr>
+        {% for d in to_buy %}
+        <tr class="{% if d.stock < d.min_stock %}negstock{% endif %}">
+            <td>{{ d.name }}</td>
+            <td>{{ d.stock }}</td>
+            <td>{{ d.min_stock }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
 {% endif %}
 
 {% endblock %}

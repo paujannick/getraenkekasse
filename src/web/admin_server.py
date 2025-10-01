@@ -120,6 +120,7 @@ def create_app() -> Flask:
         conn = database.get_connection()
         current_limit = models.get_overdraft_limit(conn)
         current_pin = models.get_admin_pin(conn)
+        current_game_enabled = models.is_game_enabled(conn)
         data_dir = Path(__file__).resolve().parent.parent / 'data'
         qr_path = data_dir / 'web_qr.png'
         bg_path = data_dir / 'background.png'
@@ -131,6 +132,10 @@ def create_app() -> Flask:
             pin_val = request.form.get('admin_pin')
             if pin_val is not None:
                 models.set_admin_pin(pin_val, conn)
+            game_val = request.form.get('game_enabled')
+            new_game_state = bool(game_val)
+            models.set_game_enabled(new_game_state, conn)
+            current_game_enabled = new_game_state
             qr_file = request.files.get('qr_code')
             if qr_file and qr_file.filename:
                 data_dir.mkdir(parents=True, exist_ok=True)
@@ -143,11 +148,13 @@ def create_app() -> Flask:
             if thank_file and thank_file.filename:
                 data_dir.mkdir(parents=True, exist_ok=True)
                 thank_file.save(thank_path)
+            database.touch_refresh_flag()
             conn.close()
             return redirect(url_for('settings'))
         conn.close()
         return render_template('settings.html', overdraft_limit=current_limit,
                                admin_pin=current_pin,
+                               game_enabled=current_game_enabled,
                                qr_code_exists=qr_path.exists(),
                                background_exists=bg_path.exists(),
                                thank_background_exists=thank_path.exists())
