@@ -1250,7 +1250,7 @@ class MainWindow(QtWidgets.QMainWindow):
         led.indicate_success()
         self._show_info_message(
             f"{user.name}\nGuthaben: {user.balance/100:.2f} €",
-            auto_return_ms=3000,
+            auto_return_ms=1000,
         )
 
     def _start_tictactoe(self) -> None:
@@ -1354,7 +1354,7 @@ class MainWindow(QtWidgets.QMainWindow):
             total_price = drink.price * quantity
             message = f"Bitte {total_price/100:.2f} \u20ac passend in die Getränkekasse legen."
             game_context: dict[str, Any] | None = None
-            auto_return = 3000
+            auto_return = 1000
             if self._game_enabled:
                 message += (
                     "\n\nGewinne im Tic Tac Toe, dann darfst du dein Geld behalten. "
