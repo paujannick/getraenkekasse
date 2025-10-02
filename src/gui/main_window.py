@@ -473,13 +473,23 @@ class TicTacToeDialog(QtWidgets.QDialog):
         width = geometry.width()
         compact_board = min(width, height) <= 600
 
-        container_padding = 18 if compact_board else 32
-        container_radius = 24 if compact_board else 32
-        cell_radius = 14 if compact_board else 18
-        cell_border = 2 if compact_board else 3
-        layout_margin = 24 if compact_board else 60
-        close_radius = 14 if compact_board else 16
-        close_padding = "14px 26px" if compact_board else "18px 32px"
+        scale_factor = 0.85 if compact_board else 0.65
+
+        def scaled(value: int, *, minimum: int | None = None) -> int:
+            scaled_value = int(round(value * scale_factor))
+            if minimum is not None:
+                return max(minimum, scaled_value)
+            return max(1, scaled_value)
+
+        container_padding = scaled(18 if compact_board else 32)
+        container_radius = scaled(24 if compact_board else 32)
+        cell_radius = scaled(14 if compact_board else 18)
+        cell_border = scaled(2 if compact_board else 3, minimum=1)
+        layout_margin = scaled(24 if compact_board else 60)
+        close_radius = scaled(14 if compact_board else 16)
+        close_padding_v = scaled(14 if compact_board else 18)
+        close_padding_h = scaled(26 if compact_board else 32)
+        close_padding = f"{close_padding_v}px {close_padding_h}px"
 
         base_style = f"""
             #tictactoe_dialog {{
@@ -541,10 +551,11 @@ class TicTacToeDialog(QtWidgets.QDialog):
 
         self.info_label = QtWidgets.QLabel("Schlage den Computer! Du spielst 'X'.")
         self.info_label.setObjectName("tictactoe_info")
-        base_font_size = max(
-            18 if compact_board else 20,
-            min(30 if compact_board else 32, height // (16 if compact_board else 15)),
-        )
+        min_font = scaled(18 if compact_board else 20)
+        max_font = scaled(30 if compact_board else 32)
+        auto_font = scaled(height // (16 if compact_board else 15))
+        base_font_size = max(min_font, min(max_font, auto_font,))
+        base_font_size = max(14, base_font_size)
         font = self.info_label.font()
         font.setPointSize(base_font_size)
         self.info_label.setFont(font)
@@ -552,7 +563,7 @@ class TicTacToeDialog(QtWidgets.QDialog):
         container_layout.addWidget(self.info_label)
 
         grid = QtWidgets.QGridLayout()
-        grid_spacing = 14 if compact_board else 18
+        grid_spacing = scaled(14 if compact_board else 18, minimum=6)
         grid.setHorizontalSpacing(grid_spacing)
         grid.setVerticalSpacing(grid_spacing)
         self._board: list[str] = [""] * 9
@@ -560,15 +571,15 @@ class TicTacToeDialog(QtWidgets.QDialog):
         available_side = min(width, height) - 2 * (layout_margin + container_padding)
         grid_total_spacing = grid_spacing * 2
         effective_side = max(0, available_side - grid_total_spacing)
-        board_side = int(effective_side * 0.72)
+        board_side = int(effective_side * (0.72 * scale_factor))
         button_size = max(
-            84 if compact_board else 110,
+            scaled(84 if compact_board else 110, minimum=70 if compact_board else 80),
             min(
-                150 if compact_board else 180,
-                int(board_side / 3),
+                scaled(150 if compact_board else 180, minimum=90 if compact_board else 110),
+                int(board_side / 3) if board_side else 0,
             ),
         )
-        symbol_font_size = max(28 if compact_board else 32, int(button_size * 0.4))
+        symbol_font_size = max(scaled(28 if compact_board else 32, minimum=20), int(button_size * 0.38))
         for index in range(9):
             button = QtWidgets.QPushButton("")
             btn_font = button.font()
@@ -584,10 +595,13 @@ class TicTacToeDialog(QtWidgets.QDialog):
         self._close_button = QtWidgets.QPushButton("Schließen")
         self._close_button.setProperty("ttt", "close")
         close_font = self._close_button.font()
-        close_font.setPointSize(max(16 if compact_board else 18, int(base_font_size * 0.85)))
+        close_font.setPointSize(max(scaled(16 if compact_board else 18, minimum=14), int(base_font_size * 0.85)))
         self._close_button.setFont(close_font)
         self._close_button.setMinimumWidth(
-            max(160 if compact_board else 200, int(button_size * 1.4))
+            max(
+                scaled(160 if compact_board else 200, minimum=140 if compact_board else 160),
+                int(button_size * 1.2),
+            )
         )
         self._close_button.clicked.connect(self.accept)
         self._close_button.hide()
