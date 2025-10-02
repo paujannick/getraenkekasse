@@ -89,7 +89,20 @@
             background: #eef2ff;
             color: #1d4ed8;
         }
-        nav ul.menu > li:hover .submenu { display: block; }
+        nav ul.menu > li:hover .submenu,
+        nav ul.menu > li.open .submenu { display: block; }
+        nav ul.menu > li.dropdown > a {
+            position: relative;
+        }
+        nav ul.menu > li.dropdown > a::after {
+            content: '\25BE';
+            font-size: 0.65rem;
+            margin-left: 0.35rem;
+            transition: transform 0.2s ease;
+        }
+        nav ul.menu > li.dropdown.open > a::after {
+            transform: rotate(180deg);
+        }
         main.content {
             max-width: 1200px;
             margin: 2.5rem auto;
@@ -273,7 +286,19 @@
                 margin-top: 0.5rem;
             }
             nav ul.menu > li:hover .submenu,
-            nav ul.menu > li:focus-within .submenu { display: block; }
+            nav ul.menu > li:focus-within .submenu,
+            nav ul.menu > li.open .submenu { display: block; }
+        }
+        @media (hover: none), (pointer: coarse) {
+            nav ul.menu > li.dropdown > a {
+                touch-action: manipulation;
+            }
+            nav .submenu {
+                position: static;
+                box-shadow: none;
+                padding: 0.25rem 0;
+                margin-top: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -322,5 +347,38 @@
 <main class="content">
 {% block content %}{% endblock %}
 </main>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropdownItems = Array.from(document.querySelectorAll('nav ul.menu > li.dropdown'));
+        if (!dropdownItems.length) {
+            return;
+        }
+        const prefersTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+        if (!prefersTouch) {
+            return;
+        }
+
+        const closeAll = () => dropdownItems.forEach((item) => item.classList.remove('open'));
+
+        dropdownItems.forEach((item) => {
+            item.addEventListener('click', (event) => event.stopPropagation());
+            const link = item.querySelector('a');
+            if (!link) {
+                return;
+            }
+            link.addEventListener('click', (event) => {
+                const wasOpen = item.classList.contains('open');
+                closeAll();
+                if (!wasOpen) {
+                    item.classList.add('open');
+                }
+                event.preventDefault();
+                event.stopPropagation();
+            });
+        });
+
+        document.addEventListener('click', closeAll);
+    });
+</script>
 </body>
 </html>
