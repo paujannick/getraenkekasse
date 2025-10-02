@@ -38,7 +38,6 @@ class QuantityDialog(QtWidgets.QDialog):
         else:
             layout.setContentsMargins(48, 36, 48, 36)
             layout.setSpacing(24)
-        layout.setAlignment(QtCore.Qt.AlignTop)
 
         self.setObjectName("quantity_dialog")
 
@@ -309,7 +308,7 @@ class QuantityDialog(QtWidgets.QDialog):
 
         layout.addWidget(payment_frame, stretch=1)
 
-        layout.addSpacing(12 if self._compact_layout else 20)
+        layout.addStretch(1)
 
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         cancel_btn.setProperty("btnClass", "action")
