@@ -559,11 +559,13 @@ class TicTacToeDialog(QtWidgets.QDialog):
         self._buttons: list[QtWidgets.QPushButton] = []
         available_side = min(width, height) - 2 * (layout_margin + container_padding)
         grid_total_spacing = grid_spacing * 2
+        effective_side = max(0, available_side - grid_total_spacing)
+        board_side = int(effective_side * 0.72)
         button_size = max(
             84 if compact_board else 110,
             min(
                 150 if compact_board else 180,
-                int((available_side - grid_total_spacing) / 3),
+                int(board_side / 3),
             ),
         )
         symbol_font_size = max(28 if compact_board else 32, int(button_size * 0.4))
@@ -1179,7 +1181,8 @@ class MainWindow(QtWidgets.QMainWindow):
         f = self.admin_button.font()
         f.setPointSize(12 if not self._compact_display else 10)
         self.admin_button.setFont(f)
-        self.admin_button.setFixedSize(nav_size)
+        admin_size = QtCore.QSize(int(nav_size.width() * 1.35), nav_size.height())
+        self.admin_button.setFixedSize(admin_size)
         self.admin_button.setProperty("btnClass", "nav")
         self.admin_button.setProperty("accent", "admin")
         self._apply_button_style(self.admin_button)
