@@ -301,6 +301,38 @@ class QuantityDialog(QtWidgets.QDialog):
             btn.clicked.connect(lambda _, uid=user.id: self._select_event_user(uid))
             payment_buttons.append(btn)
 
+        many_payment_options = len(payment_buttons) > 3
+        if many_payment_options:
+            quantity_size = 72 if self._compact_layout else 120
+        else:
+            quantity_size = 96 if self._compact_layout else 160
+        for btn in (self.minus_btn, self.plus_btn):
+            btn.setMinimumSize(quantity_size, quantity_size)
+            btn.setMaximumSize(quantity_size, quantity_size)
+
+        base_payment_height = 66 if self._compact_layout else 110
+        reduced_payment_height = 58 if self._compact_layout else 84
+        payment_button_height = (
+            reduced_payment_height if many_payment_options else base_payment_height
+        )
+        for btn in payment_buttons:
+            btn.setMinimumHeight(payment_button_height)
+            if many_payment_options:
+                btn.setMaximumHeight(payment_button_height)
+            else:
+                btn.setMaximumHeight(QtWidgets.QWIDGETSIZE_MAX)
+
+        if many_payment_options:
+            payment_layout.setHorizontalSpacing(
+                10 if self._compact_layout else 18
+            )
+            payment_layout.setVerticalSpacing(
+                12 if self._compact_layout else 16
+            )
+            payment_frame.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum
+            )
+
         columns = 3
         for index, btn in enumerate(payment_buttons):
             row, col = divmod(index, columns)
@@ -311,6 +343,17 @@ class QuantityDialog(QtWidgets.QDialog):
             if payment_layout.columnStretch(col) == 0:
                 payment_layout.setColumnStretch(col, 1)
 
+        rows_used = (len(payment_buttons) + columns - 1) // columns
+        if many_payment_options:
+            margins = payment_layout.contentsMargins()
+            total_height = (
+                rows_used * payment_button_height
+                + max(0, rows_used - 1) * payment_layout.verticalSpacing()
+                + margins.top()
+                + margins.bottom()
+            )
+            payment_frame.setMaximumHeight(total_height)
+
         if not event_users:
             hint = QtWidgets.QLabel(
                 "Keine Veranstaltungskarten für die Schnellzahlung aktiviert."
@@ -318,12 +361,14 @@ class QuantityDialog(QtWidgets.QDialog):
             hint.setObjectName("info_label")
             hint.setAlignment(QtCore.Qt.AlignCenter)
             hint.setWordWrap(True)
-            rows_used = (len(payment_buttons) + columns - 1) // columns
             payment_layout.addWidget(hint, rows_used, 0, 1, columns)
 
-        layout.addWidget(payment_frame, stretch=1)
+        layout.addWidget(payment_frame, stretch=0)
 
-        layout.addStretch(1)
+        if many_payment_options:
+            layout.addSpacing(12)
+        else:
+            layout.addStretch(1)
 
         self.cancel_btn = QtWidgets.QPushButton("Abbrechen")
         self.cancel_btn.setProperty("btnClass", "action")
@@ -551,15 +596,19 @@ class TicTacToeDialog(QtWidgets.QDialog):
 
         self.info_label = QtWidgets.QLabel("Schlage den Computer! Du spielst 'X'.")
         self.info_label.setObjectName("tictactoe_info")
-        min_font = scaled(18 if compact_board else 20)
-        max_font = scaled(30 if compact_board else 32)
-        auto_font = scaled(height // (16 if compact_board else 15))
+        min_font = scaled(16 if compact_board else 18)
+        max_font = scaled(26 if compact_board else 30)
+        auto_font = scaled(height // (17 if compact_board else 16))
         base_font_size = max(min_font, min(max_font, auto_font,))
-        base_font_size = max(14, base_font_size)
+        base_font_size = max(13, base_font_size)
         font = self.info_label.font()
         font.setPointSize(base_font_size)
         self.info_label.setFont(font)
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.info_label.setWordWrap(True)
+        self.info_label.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
+        )
         container_layout.addWidget(self.info_label)
 
         grid = QtWidgets.QGridLayout()
@@ -684,6 +733,11 @@ class TicTacToeDialog(QtWidgets.QDialog):
     def _finish(self, result: str, message: str) -> None:
         self._game_over = True
         self._result = result
+        current_font = self.info_label.font()
+        if current_font.pointSize() > 0:
+            result_font = QtGui.QFont(current_font)
+            result_font.setPointSize(max(12, int(current_font.pointSize() * 0.9)))
+            self.info_label.setFont(result_font)
         self.info_label.setText(message)
         for button in self._buttons:
             button.setEnabled(False)
