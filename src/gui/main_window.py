@@ -31,13 +31,21 @@ class QuantityDialog(QtWidgets.QDialog):
             screen and min(screen_size.width(), screen_size.height()) <= 600
         )
 
-        layout = QtWidgets.QVBoxLayout(self)
+        outer_layout = QtWidgets.QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        content = QtWidgets.QFrame()
+        content.setObjectName("quantity_content")
+        layout = QtWidgets.QVBoxLayout(content)
         if self._compact_layout:
             layout.setContentsMargins(24, 18, 24, 18)
             layout.setSpacing(16)
         else:
             layout.setContentsMargins(48, 36, 48, 36)
             layout.setSpacing(24)
+
+        outer_layout.addWidget(content, 1)
 
         self.setObjectName("quantity_dialog")
 
@@ -75,6 +83,9 @@ class QuantityDialog(QtWidgets.QDialog):
             #quantity_dialog QLabel#info_label {{
                 font-size: {style['info_font']};
                 color: #475569;
+            }}
+            #quantity_dialog QFrame#quantity_content {{
+                background-color: transparent;
             }}
             #quantity_dialog QFrame#quantity_frame {{
                 background-color: #ffffff;
@@ -149,6 +160,10 @@ class QuantityDialog(QtWidgets.QDialog):
             }}
             #quantity_dialog QPushButton[btnClass="action"][variant="cancel"]:hover {{
                 background-color: #dc2626;
+            }}
+            #quantity_dialog QFrame#quantity_footer {{
+                background-color: rgba(15, 23, 42, 0.12);
+                border-top: 2px solid rgba(148, 163, 184, 0.45);
             }}
         """
         self.setStyleSheet(base_style)
@@ -310,21 +325,32 @@ class QuantityDialog(QtWidgets.QDialog):
 
         layout.addStretch(1)
 
-        cancel_btn = QtWidgets.QPushButton("Abbrechen")
-        cancel_btn.setProperty("btnClass", "action")
-        cancel_btn.setProperty("variant", "cancel")
-        cancel_btn.setSizePolicy(
+        self.cancel_btn = QtWidgets.QPushButton("Abbrechen")
+        self.cancel_btn.setProperty("btnClass", "action")
+        self.cancel_btn.setProperty("variant", "cancel")
+        self.cancel_btn.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Fixed,
         )
-        cancel_btn.clicked.connect(self.reject)
+        self.cancel_btn.clicked.connect(self.reject)
 
-        action_layout = QtWidgets.QHBoxLayout()
-        action_layout.setContentsMargins(0, 0, 0, 0)
-        action_layout.setSpacing(16)
-        action_layout.addWidget(cancel_btn, 0, QtCore.Qt.AlignLeft)
-        action_layout.addStretch(1)
-        layout.addLayout(action_layout)
+        footer = QtWidgets.QFrame()
+        footer.setObjectName("quantity_footer")
+        footer.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Fixed,
+        )
+        footer_layout = QtWidgets.QHBoxLayout(footer)
+        if self._compact_layout:
+            footer_layout.setContentsMargins(24, 12, 24, 24)
+            footer_layout.setSpacing(16)
+        else:
+            footer_layout.setContentsMargins(48, 18, 48, 36)
+            footer_layout.setSpacing(24)
+        footer_layout.addWidget(self.cancel_btn, 0, QtCore.Qt.AlignLeft)
+        footer_layout.addStretch(1)
+
+        outer_layout.addWidget(footer, 0)
 
         self._cash = False
 
