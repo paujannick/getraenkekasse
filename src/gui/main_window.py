@@ -39,8 +39,8 @@ class QuantityDialog(QtWidgets.QDialog):
         content.setObjectName("quantity_content")
         layout = QtWidgets.QVBoxLayout(content)
         if self._compact_layout:
-            layout.setContentsMargins(24, 18, 24, 18)
-            layout.setSpacing(16)
+            layout.setContentsMargins(18, 14, 18, 14)
+            layout.setSpacing(14)
         else:
             layout.setContentsMargins(48, 36, 48, 36)
             layout.setSpacing(24)
@@ -50,25 +50,25 @@ class QuantityDialog(QtWidgets.QDialog):
         self.setObjectName("quantity_dialog")
 
         style = {
-            "title_font": "26px" if self._compact_layout else "32px",
-            "info_font": "14px" if self._compact_layout else "16px",
-            "frame_padding": "20px" if self._compact_layout else "28px",
-            "quantity_font": "40px" if self._compact_layout else "48px",
-            "quantity_btn_radius": "36px" if self._compact_layout else "44px",
-            "quantity_btn_size": "120px" if self._compact_layout else "160px",
-            "quantity_btn_font": "36px" if self._compact_layout else "42px",
-            "payment_font": "18px" if self._compact_layout else "20px",
-            "payment_padding": "16px" if self._compact_layout else "20px",
-            "payment_radius": "18px" if self._compact_layout else "20px",
-            "payment_height": "90px" if self._compact_layout else "110px",
-            "action_font": "16px" if self._compact_layout else "18px",
-            "action_padding": "16px" if self._compact_layout else "20px",
-            "action_height": "60px" if self._compact_layout else "70px",
-            "cancel_font": "18px" if self._compact_layout else "20px",
-            "cancel_height": "70px" if self._compact_layout else "90px",
-            "cancel_width": "240px" if self._compact_layout else "280px",
-            "payment_title_font": "20px" if self._compact_layout else "24px",
-            "payment_container_padding": "18px" if self._compact_layout else "26px",
+            "title_font": "24px" if self._compact_layout else "32px",
+            "info_font": "13px" if self._compact_layout else "16px",
+            "frame_padding": "16px" if self._compact_layout else "28px",
+            "quantity_font": "34px" if self._compact_layout else "48px",
+            "quantity_btn_radius": "30px" if self._compact_layout else "44px",
+            "quantity_btn_size": "100px" if self._compact_layout else "160px",
+            "quantity_btn_font": "32px" if self._compact_layout else "42px",
+            "payment_font": "16px" if self._compact_layout else "20px",
+            "payment_padding": "12px" if self._compact_layout else "20px",
+            "payment_radius": "16px" if self._compact_layout else "20px",
+            "payment_height": "72px" if self._compact_layout else "110px",
+            "action_font": "14px" if self._compact_layout else "18px",
+            "action_padding": "12px" if self._compact_layout else "20px",
+            "action_height": "50px" if self._compact_layout else "70px",
+            "cancel_font": "16px" if self._compact_layout else "20px",
+            "cancel_height": "58px" if self._compact_layout else "90px",
+            "cancel_width": "200px" if self._compact_layout else "280px",
+            "payment_title_font": "18px" if self._compact_layout else "24px",
+            "payment_container_padding": "14px" if self._compact_layout else "26px",
         }
 
         base_style = f"""
@@ -197,13 +197,13 @@ class QuantityDialog(QtWidgets.QDialog):
         layout.addWidget(info_label)
 
         quantity_row = QtWidgets.QHBoxLayout()
-        quantity_row.setSpacing(20 if self._compact_layout else 28)
+        quantity_row.setSpacing(16 if self._compact_layout else 28)
 
         self.minus_btn = QtWidgets.QPushButton("−")
         self.plus_btn = QtWidgets.QPushButton("+")
         for btn in (self.minus_btn, self.plus_btn):
             btn.setProperty("btnClass", "quantity")
-            size = 120 if self._compact_layout else 160
+            size = 104 if self._compact_layout else 160
             btn.setMinimumSize(size, size)
             btn.setSizePolicy(
                 QtWidgets.QSizePolicy.Preferred,
@@ -221,7 +221,7 @@ class QuantityDialog(QtWidgets.QDialog):
         self.label = QtWidgets.QLabel(f"{self.quantity} Stück")
         self.label.setObjectName("quantity_value")
         self.label.setAlignment(QtCore.Qt.AlignCenter)
-        self.label.setMinimumWidth(220 if self._compact_layout else 260)
+        self.label.setMinimumWidth(190 if self._compact_layout else 260)
         qty_layout.addStretch(1)
         qty_layout.addWidget(self.label, alignment=QtCore.Qt.AlignCenter)
         qty_layout.addStretch(1)
@@ -246,9 +246,9 @@ class QuantityDialog(QtWidgets.QDialog):
         )
         payment_layout = QtWidgets.QGridLayout(payment_frame)
         if self._compact_layout:
-            payment_layout.setContentsMargins(8, 8, 8, 8)
-            payment_layout.setHorizontalSpacing(14)
-            payment_layout.setVerticalSpacing(14)
+            payment_layout.setContentsMargins(6, 6, 6, 6)
+            payment_layout.setHorizontalSpacing(12)
+            payment_layout.setVerticalSpacing(12)
         else:
             payment_layout.setContentsMargins(12, 12, 12, 12)
             payment_layout.setHorizontalSpacing(22)
@@ -258,8 +258,8 @@ class QuantityDialog(QtWidgets.QDialog):
         self.cash_btn.setProperty("btnClass", "payment")
         self.cash_btn.setProperty("variant", "cash")
         self.cash_btn.setMinimumSize(
-            200 if self._compact_layout else 220,
-            90 if self._compact_layout else 110,
+            180 if self._compact_layout else 220,
+            76 if self._compact_layout else 110,
         )
         self.cash_btn.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
@@ -270,8 +270,8 @@ class QuantityDialog(QtWidgets.QDialog):
         self.chip_btn.setProperty("btnClass", "payment")
         self.chip_btn.setProperty("variant", "chip")
         self.chip_btn.setMinimumSize(
-            200 if self._compact_layout else 220,
-            90 if self._compact_layout else 110,
+            180 if self._compact_layout else 220,
+            76 if self._compact_layout else 110,
         )
         self.chip_btn.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
@@ -291,8 +291,8 @@ class QuantityDialog(QtWidgets.QDialog):
             btn.setProperty("variant", "event")
             btn.setToolTip("Veranstaltungskarte direkt belasten")
             btn.setMinimumSize(
-                200 if self._compact_layout else 220,
-                90 if self._compact_layout else 110,
+                180 if self._compact_layout else 220,
+                76 if self._compact_layout else 110,
             )
             btn.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding,
@@ -342,8 +342,8 @@ class QuantityDialog(QtWidgets.QDialog):
         )
         footer_layout = QtWidgets.QHBoxLayout(footer)
         if self._compact_layout:
-            footer_layout.setContentsMargins(24, 12, 24, 24)
-            footer_layout.setSpacing(16)
+            footer_layout.setContentsMargins(18, 10, 18, 18)
+            footer_layout.setSpacing(14)
         else:
             footer_layout.setContentsMargins(48, 18, 48, 36)
             footer_layout.setSpacing(24)
@@ -900,6 +900,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.central.setObjectName("central_widget")
         self.setCentralWidget(self.central)
 
+        screen = QtWidgets.QApplication.primaryScreen()
+        screen_size = screen.size() if screen else QtCore.QSize()
+        self._compact_display = bool(
+            screen and min(screen_size.width(), screen_size.height()) <= 600
+        )
+
         self._game_enabled: bool = True
         self._setup_styles()
 
@@ -920,9 +926,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.start_page = QtWidgets.QWidget()
         self.start_layout = QtWidgets.QGridLayout(self.start_page)
-        self.start_layout.setContentsMargins(30, 30, 30, 30)
-        self.start_layout.setHorizontalSpacing(24)
-        self.start_layout.setVerticalSpacing(24)
+        if self._compact_display:
+            self.start_layout.setContentsMargins(18, 18, 18, 18)
+            self.start_layout.setHorizontalSpacing(16)
+            self.start_layout.setVerticalSpacing(16)
+        else:
+            self.start_layout.setContentsMargins(30, 30, 30, 30)
+            self.start_layout.setHorizontalSpacing(24)
+            self.start_layout.setVerticalSpacing(24)
         self.current_page = 1
         self.page_count = 1
         self._start_page_needs_refresh = False
@@ -937,15 +948,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.info_label = QtWidgets.QLabel()
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
         font = self.info_label.font()
-        font.setPointSize(24)
+        font.setPointSize(22 if self._compact_display else 24)
         self.info_label.setFont(font)
         self.info_label.setWordWrap(True)
         info_layout.addWidget(self.info_label, alignment=QtCore.Qt.AlignCenter)
         self.game_button = QtWidgets.QPushButton("Tic Tac Toe spielen")
         game_font = self.game_button.font()
-        game_font.setPointSize(20)
+        game_font.setPointSize(18 if self._compact_display else 20)
         self.game_button.setFont(game_font)
-        self.game_button.setMinimumSize(260, 80)
+        if self._compact_display:
+            self.game_button.setMinimumSize(220, 70)
+        else:
+            self.game_button.setMinimumSize(260, 80)
         self.game_button.setProperty("btnClass", "game")
         self._apply_button_style(self.game_button)
         self.game_button.clicked.connect(self._start_tictactoe)
@@ -1070,7 +1084,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.page_count = models.get_max_page(conn)
         drinks = models.get_drinks(conn, limit=8, page=self.current_page)
         font = QtGui.QFont()
-        font.setPointSize(16)
+        font.setPointSize(14 if self._compact_display else 16)
 
         rows = ((len(drinks) + 1) + 2) // 3
         for row in range(rows):
@@ -1078,7 +1092,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         balance_btn = QtWidgets.QPushButton("Guthaben\nabfragen")
         balance_btn.setFont(font)
-        balance_btn.setMinimumSize(220, 120)
+        if self._compact_display:
+            balance_btn.setMinimumSize(190, 110)
+        else:
+            balance_btn.setMinimumSize(220, 120)
         balance_btn.setProperty("btnClass", "tile")
         balance_btn.setProperty("accent", "info")
         self._apply_button_style(balance_btn)
@@ -1091,8 +1108,12 @@ class MainWindow(QtWidgets.QMainWindow):
             button.setFont(font)
             if drink.image:
                 button.setIcon(QtGui.QIcon(drink.image))
-                button.setIconSize(QtCore.QSize(120, 120))
-            button.setMinimumSize(220, 120)
+                icon_size = 100 if self._compact_display else 120
+                button.setIconSize(QtCore.QSize(icon_size, icon_size))
+            if self._compact_display:
+                button.setMinimumSize(190, 110)
+            else:
+                button.setMinimumSize(220, 120)
             button.setProperty("btnClass", "tile")
             if drink.stock < 0:
                 button.setProperty("state", "error")
@@ -1107,10 +1128,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_button = QtWidgets.QPushButton("◀")
         self.next_button = QtWidgets.QPushButton("▶")
 
-        nav_size = QtCore.QSize(80, 40)
+        nav_size = QtCore.QSize(68, 38) if self._compact_display else QtCore.QSize(80, 40)
         for btn in (self.prev_button, self.next_button):
             f = btn.font()
-            f.setPointSize(20)
+            f.setPointSize(18 if self._compact_display else 20)
             btn.setFont(f)
             btn.setFixedSize(nav_size)
             btn.setProperty("btnClass", "nav")
@@ -1127,7 +1148,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.admin_button = QtWidgets.QPushButton("Admin")
         f = self.admin_button.font()
-        f.setPointSize(12)
+        f.setPointSize(12 if not self._compact_display else 11)
         self.admin_button.setFont(f)
         self.admin_button.setFixedSize(nav_size)
         self.admin_button.setProperty("btnClass", "nav")
