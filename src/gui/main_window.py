@@ -54,21 +54,21 @@ class QuantityDialog(QtWidgets.QDialog):
             "info_font": "13px" if self._compact_layout else "16px",
             "frame_padding": "16px" if self._compact_layout else "28px",
             "quantity_font": "34px" if self._compact_layout else "48px",
-            "quantity_btn_radius": "30px" if self._compact_layout else "44px",
-            "quantity_btn_size": "100px" if self._compact_layout else "160px",
-            "quantity_btn_font": "32px" if self._compact_layout else "42px",
-            "payment_font": "16px" if self._compact_layout else "20px",
-            "payment_padding": "12px" if self._compact_layout else "20px",
-            "payment_radius": "16px" if self._compact_layout else "20px",
-            "payment_height": "72px" if self._compact_layout else "110px",
-            "action_font": "14px" if self._compact_layout else "18px",
-            "action_padding": "12px" if self._compact_layout else "20px",
-            "action_height": "50px" if self._compact_layout else "70px",
-            "cancel_font": "16px" if self._compact_layout else "20px",
-            "cancel_height": "58px" if self._compact_layout else "90px",
-            "cancel_width": "200px" if self._compact_layout else "280px",
+            "quantity_btn_radius": "28px" if self._compact_layout else "44px",
+            "quantity_btn_size": "96px" if self._compact_layout else "160px",
+            "quantity_btn_font": "30px" if self._compact_layout else "42px",
+            "payment_font": "15px" if self._compact_layout else "20px",
+            "payment_padding": "10px" if self._compact_layout else "20px",
+            "payment_radius": "14px" if self._compact_layout else "20px",
+            "payment_height": "64px" if self._compact_layout else "110px",
+            "action_font": "13px" if self._compact_layout else "18px",
+            "action_padding": "10px" if self._compact_layout else "20px",
+            "action_height": "46px" if self._compact_layout else "70px",
+            "cancel_font": "15px" if self._compact_layout else "20px",
+            "cancel_height": "52px" if self._compact_layout else "90px",
+            "cancel_width": "180px" if self._compact_layout else "280px",
             "payment_title_font": "18px" if self._compact_layout else "24px",
-            "payment_container_padding": "14px" if self._compact_layout else "26px",
+            "payment_container_padding": "12px" if self._compact_layout else "26px",
         }
 
         base_style = f"""
@@ -197,13 +197,13 @@ class QuantityDialog(QtWidgets.QDialog):
         layout.addWidget(info_label)
 
         quantity_row = QtWidgets.QHBoxLayout()
-        quantity_row.setSpacing(16 if self._compact_layout else 28)
+        quantity_row.setSpacing(14 if self._compact_layout else 28)
 
         self.minus_btn = QtWidgets.QPushButton("−")
         self.plus_btn = QtWidgets.QPushButton("+")
         for btn in (self.minus_btn, self.plus_btn):
             btn.setProperty("btnClass", "quantity")
-            size = 104 if self._compact_layout else 160
+            size = 96 if self._compact_layout else 160
             btn.setMinimumSize(size, size)
             btn.setSizePolicy(
                 QtWidgets.QSizePolicy.Preferred,
@@ -246,9 +246,9 @@ class QuantityDialog(QtWidgets.QDialog):
         )
         payment_layout = QtWidgets.QGridLayout(payment_frame)
         if self._compact_layout:
-            payment_layout.setContentsMargins(6, 6, 6, 6)
-            payment_layout.setHorizontalSpacing(12)
-            payment_layout.setVerticalSpacing(12)
+            payment_layout.setContentsMargins(4, 4, 4, 4)
+            payment_layout.setHorizontalSpacing(10)
+            payment_layout.setVerticalSpacing(10)
         else:
             payment_layout.setContentsMargins(12, 12, 12, 12)
             payment_layout.setHorizontalSpacing(22)
@@ -258,8 +258,8 @@ class QuantityDialog(QtWidgets.QDialog):
         self.cash_btn.setProperty("btnClass", "payment")
         self.cash_btn.setProperty("variant", "cash")
         self.cash_btn.setMinimumSize(
-            180 if self._compact_layout else 220,
-            76 if self._compact_layout else 110,
+            160 if self._compact_layout else 220,
+            66 if self._compact_layout else 110,
         )
         self.cash_btn.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
@@ -270,8 +270,8 @@ class QuantityDialog(QtWidgets.QDialog):
         self.chip_btn.setProperty("btnClass", "payment")
         self.chip_btn.setProperty("variant", "chip")
         self.chip_btn.setMinimumSize(
-            180 if self._compact_layout else 220,
-            76 if self._compact_layout else 110,
+            160 if self._compact_layout else 220,
+            66 if self._compact_layout else 110,
         )
         self.chip_btn.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
@@ -291,8 +291,8 @@ class QuantityDialog(QtWidgets.QDialog):
             btn.setProperty("variant", "event")
             btn.setToolTip("Veranstaltungskarte direkt belasten")
             btn.setMinimumSize(
-                180 if self._compact_layout else 220,
-                76 if self._compact_layout else 110,
+                160 if self._compact_layout else 220,
+                66 if self._compact_layout else 110,
             )
             btn.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding,
@@ -463,74 +463,88 @@ class TicTacToeDialog(QtWidgets.QDialog):
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
         self.setObjectName("tictactoe_dialog")
 
-        base_style = """
-            #tictactoe_dialog {
+        screen = QtWidgets.QApplication.primaryScreen()
+        geometry = (
+            screen.availableGeometry()
+            if screen
+            else QtCore.QRect(0, 0, 1280, 720)
+        )
+        height = geometry.height()
+        width = geometry.width()
+        compact_board = min(width, height) <= 600
+
+        container_padding = 18 if compact_board else 32
+        container_radius = 24 if compact_board else 32
+        cell_radius = 14 if compact_board else 18
+        cell_border = 2 if compact_board else 3
+        layout_margin = 24 if compact_board else 60
+        close_radius = 14 if compact_board else 16
+        close_padding = "14px 26px" if compact_board else "18px 32px"
+
+        base_style = f"""
+            #tictactoe_dialog {{
                 background-color: #0f172a;
-            }
-            #tictactoe_container {
+            }}
+            #tictactoe_container {{
                 background-color: rgba(15, 23, 42, 0.88);
-                border-radius: 32px;
+                border-radius: {container_radius}px;
                 border: 2px solid #334155;
-                padding: 32px;
-            }
-            #tictactoe_info {
+                padding: {container_padding}px;
+            }}
+            #tictactoe_info {{
                 color: #f8fafc;
                 font-weight: 600;
-            }
-            QPushButton[ttt="cell"] {
-                border-radius: 18px;
+            }}
+            QPushButton[ttt="cell"] {{
+                border-radius: {cell_radius}px;
                 background-color: #1e293b;
                 color: #38bdf8;
                 font-weight: 700;
-                border: 3px solid #334155;
-                min-width: 120px;
-                min-height: 120px;
-            }
-            QPushButton[ttt="cell"]:hover {
+                border: {cell_border}px solid #334155;
+            }}
+            QPushButton[ttt="cell"]:hover {{
                 background-color: #0ea5e9;
                 color: #0f172a;
-            }
-            QPushButton[ttt="cell"]:disabled {
+            }}
+            QPushButton[ttt="cell"]:disabled {{
                 background-color: #0f172a;
                 color: #38bdf8;
-            }
-            QPushButton[ttt="cell"][symbol="O"] {
+            }}
+            QPushButton[ttt="cell"][symbol="O"] {{
                 color: #f472b6;
-            }
-            QPushButton[ttt="cell"][state="winner"] {
+            }}
+            QPushButton[ttt="cell"][state="winner"] {{
                 background-color: #22c55e;
                 color: #0f172a;
-            }
-            QPushButton[ttt="close"] {
-                border-radius: 16px;
+            }}
+            QPushButton[ttt="close"] {{
+                border-radius: {close_radius}px;
                 background-color: #38bdf8;
                 color: #0f172a;
                 font-weight: 700;
-                padding: 18px 32px;
-            }
-            QPushButton[ttt="close"]:hover {
+                padding: {close_padding};
+            }}
+            QPushButton[ttt="close"]:hover {{
                 background-color: #0ea5e9;
-            }
+            }}
         """
         self.setStyleSheet(base_style)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(60, 40, 60, 40)
+        layout.setContentsMargins(layout_margin, layout_margin, layout_margin, layout_margin)
 
         container = QtWidgets.QFrame()
         container.setObjectName("tictactoe_container")
         container_layout = QtWidgets.QVBoxLayout(container)
-        container_layout.setSpacing(30)
+        container_layout.setSpacing(22 if compact_board else 30)
         container_layout.setAlignment(QtCore.Qt.AlignCenter)
 
         self.info_label = QtWidgets.QLabel("Schlage den Computer! Du spielst 'X'.")
         self.info_label.setObjectName("tictactoe_info")
-        screen = QtWidgets.QApplication.primaryScreen()
-        geometry = screen.availableGeometry() if screen else QtCore.QRect(0, 0, 1280, 720)
-        height = geometry.height()
-        width = geometry.width()
-
-        base_font_size = max(20, min(32, height // 15))
+        base_font_size = max(
+            18 if compact_board else 20,
+            min(30 if compact_board else 32, height // (16 if compact_board else 15)),
+        )
         font = self.info_label.font()
         font.setPointSize(base_font_size)
         self.info_label.setFont(font)
@@ -538,12 +552,21 @@ class TicTacToeDialog(QtWidgets.QDialog):
         container_layout.addWidget(self.info_label)
 
         grid = QtWidgets.QGridLayout()
-        grid.setHorizontalSpacing(18)
-        grid.setVerticalSpacing(18)
+        grid_spacing = 14 if compact_board else 18
+        grid.setHorizontalSpacing(grid_spacing)
+        grid.setVerticalSpacing(grid_spacing)
         self._board: list[str] = [""] * 9
         self._buttons: list[QtWidgets.QPushButton] = []
-        button_size = max(110, min(180, int(min(width, height) / 4)))
-        symbol_font_size = max(32, int(button_size * 0.4))
+        available_side = min(width, height) - 2 * (layout_margin + container_padding)
+        grid_total_spacing = grid_spacing * 2
+        button_size = max(
+            84 if compact_board else 110,
+            min(
+                150 if compact_board else 180,
+                int((available_side - grid_total_spacing) / 3),
+            ),
+        )
+        symbol_font_size = max(28 if compact_board else 32, int(button_size * 0.4))
         for index in range(9):
             button = QtWidgets.QPushButton("")
             btn_font = button.font()
@@ -559,9 +582,11 @@ class TicTacToeDialog(QtWidgets.QDialog):
         self._close_button = QtWidgets.QPushButton("Schließen")
         self._close_button.setProperty("ttt", "close")
         close_font = self._close_button.font()
-        close_font.setPointSize(max(18, int(base_font_size * 0.85)))
+        close_font.setPointSize(max(16 if compact_board else 18, int(base_font_size * 0.85)))
         self._close_button.setFont(close_font)
-        self._close_button.setMinimumWidth(max(200, button_size))
+        self._close_button.setMinimumWidth(
+            max(160 if compact_board else 200, int(button_size * 1.4))
+        )
         self._close_button.clicked.connect(self.accept)
         self._close_button.hide()
         container_layout.addWidget(self._close_button, alignment=QtCore.Qt.AlignCenter)
@@ -927,9 +952,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.start_page = QtWidgets.QWidget()
         self.start_layout = QtWidgets.QGridLayout(self.start_page)
         if self._compact_display:
-            self.start_layout.setContentsMargins(18, 18, 18, 18)
-            self.start_layout.setHorizontalSpacing(16)
-            self.start_layout.setVerticalSpacing(16)
+            self.start_layout.setContentsMargins(14, 14, 14, 14)
+            self.start_layout.setHorizontalSpacing(12)
+            self.start_layout.setVerticalSpacing(12)
         else:
             self.start_layout.setContentsMargins(30, 30, 30, 30)
             self.start_layout.setHorizontalSpacing(24)
@@ -948,16 +973,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.info_label = QtWidgets.QLabel()
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
         font = self.info_label.font()
-        font.setPointSize(22 if self._compact_display else 24)
+        font.setPointSize(21 if self._compact_display else 24)
         self.info_label.setFont(font)
         self.info_label.setWordWrap(True)
         info_layout.addWidget(self.info_label, alignment=QtCore.Qt.AlignCenter)
         self.game_button = QtWidgets.QPushButton("Tic Tac Toe spielen")
         game_font = self.game_button.font()
-        game_font.setPointSize(18 if self._compact_display else 20)
+        game_font.setPointSize(16 if self._compact_display else 20)
         self.game_button.setFont(game_font)
         if self._compact_display:
-            self.game_button.setMinimumSize(220, 70)
+            self.game_button.setMinimumSize(200, 64)
         else:
             self.game_button.setMinimumSize(260, 80)
         self.game_button.setProperty("btnClass", "game")
@@ -1084,7 +1109,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.page_count = models.get_max_page(conn)
         drinks = models.get_drinks(conn, limit=8, page=self.current_page)
         font = QtGui.QFont()
-        font.setPointSize(14 if self._compact_display else 16)
+        font.setPointSize(13 if self._compact_display else 16)
 
         rows = ((len(drinks) + 1) + 2) // 3
         for row in range(rows):
@@ -1093,7 +1118,7 @@ class MainWindow(QtWidgets.QMainWindow):
         balance_btn = QtWidgets.QPushButton("Guthaben\nabfragen")
         balance_btn.setFont(font)
         if self._compact_display:
-            balance_btn.setMinimumSize(190, 110)
+            balance_btn.setMinimumSize(170, 100)
         else:
             balance_btn.setMinimumSize(220, 120)
         balance_btn.setProperty("btnClass", "tile")
@@ -1108,10 +1133,10 @@ class MainWindow(QtWidgets.QMainWindow):
             button.setFont(font)
             if drink.image:
                 button.setIcon(QtGui.QIcon(drink.image))
-                icon_size = 100 if self._compact_display else 120
+                icon_size = 92 if self._compact_display else 120
                 button.setIconSize(QtCore.QSize(icon_size, icon_size))
             if self._compact_display:
-                button.setMinimumSize(190, 110)
+                button.setMinimumSize(170, 100)
             else:
                 button.setMinimumSize(220, 120)
             button.setProperty("btnClass", "tile")
@@ -1128,10 +1153,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.prev_button = QtWidgets.QPushButton("◀")
         self.next_button = QtWidgets.QPushButton("▶")
 
-        nav_size = QtCore.QSize(68, 38) if self._compact_display else QtCore.QSize(80, 40)
+        nav_size = (
+            QtCore.QSize(58, 34)
+            if self._compact_display
+            else QtCore.QSize(80, 40)
+        )
         for btn in (self.prev_button, self.next_button):
             f = btn.font()
-            f.setPointSize(18 if self._compact_display else 20)
+            f.setPointSize(16 if self._compact_display else 20)
             btn.setFont(f)
             btn.setFixedSize(nav_size)
             btn.setProperty("btnClass", "nav")
@@ -1148,7 +1177,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.admin_button = QtWidgets.QPushButton("Admin")
         f = self.admin_button.font()
-        f.setPointSize(12 if not self._compact_display else 11)
+        f.setPointSize(12 if not self._compact_display else 10)
         self.admin_button.setFont(f)
         self.admin_button.setFixedSize(nav_size)
         self.admin_button.setProperty("btnClass", "nav")
