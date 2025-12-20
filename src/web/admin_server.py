@@ -121,10 +121,12 @@ def create_app() -> Flask:
         current_limit = models.get_overdraft_limit(conn)
         current_pin = models.get_admin_pin(conn)
         current_game_enabled = models.is_game_enabled(conn)
+        current_free_day = models.is_free_day_enabled(conn)
         data_dir = Path(__file__).resolve().parent.parent / 'data'
         qr_path = data_dir / 'web_qr.png'
         bg_path = data_dir / 'background.png'
         thank_path = data_dir / 'background_thanks.png'
+        free_path = data_dir / 'background_free.png'
         if request.method == 'POST':
             val = request.form.get('overdraft', type=float)
             if val is not None:
@@ -136,6 +138,10 @@ def create_app() -> Flask:
             new_game_state = bool(game_val)
             models.set_game_enabled(new_game_state, conn)
             current_game_enabled = new_game_state
+            free_val = request.form.get('free_day_enabled')
+            new_free_day = bool(free_val)
+            models.set_free_day_enabled(new_free_day, conn)
+            current_free_day = new_free_day
             qr_file = request.files.get('qr_code')
             if qr_file and qr_file.filename:
                 data_dir.mkdir(parents=True, exist_ok=True)
@@ -148,6 +154,10 @@ def create_app() -> Flask:
             if thank_file and thank_file.filename:
                 data_dir.mkdir(parents=True, exist_ok=True)
                 thank_file.save(thank_path)
+            free_file = request.files.get('free_background')
+            if free_file and free_file.filename:
+                data_dir.mkdir(parents=True, exist_ok=True)
+                free_file.save(free_path)
             database.touch_refresh_flag()
             conn.close()
             return redirect(url_for('settings'))
@@ -155,9 +165,11 @@ def create_app() -> Flask:
         return render_template('settings.html', overdraft_limit=current_limit,
                                admin_pin=current_pin,
                                game_enabled=current_game_enabled,
+                               free_day_enabled=current_free_day,
                                qr_code_exists=qr_path.exists(),
                                background_exists=bg_path.exists(),
-                               thank_background_exists=thank_path.exists())
+                               thank_background_exists=thank_path.exists(),
+                               free_background_exists=free_path.exists())
 
     @app.route('/telegram', methods=['GET', 'POST'])
     @login_required
@@ -201,6 +213,14 @@ def create_app() -> Flask:
     @login_required
     def thank_background_png():
         path = Path(__file__).resolve().parent.parent / 'data' / 'background_thanks.png'
+        if path.exists():
+            return send_file(path)
+        return ('', 404)
+
+    @app.route('/free_background.png')
+    @login_required
+    def free_background_png():
+        path = Path(__file__).resolve().parent.parent / 'data' / 'background_free.png'
         if path.exists():
             return send_file(path)
         return ('', 404)

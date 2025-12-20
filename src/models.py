@@ -56,6 +56,17 @@ def set_game_enabled(enabled: bool, conn: Optional[sqlite3.Connection] = None) -
     set_setting('tictactoe_enabled', '1' if enabled else '0', conn)
 
 
+def is_free_day_enabled(conn: Optional[sqlite3.Connection] = None) -> bool:
+    """Return True if the free-day mode is enabled."""
+    val = get_setting('free_day_enabled', conn)
+    return val == '1'
+
+
+def set_free_day_enabled(enabled: bool, conn: Optional[sqlite3.Connection] = None) -> None:
+    """Persist whether the free-day mode is enabled."""
+    set_setting('free_day_enabled', '1' if enabled else '0', conn)
+
+
 def get_telegram_token(conn: Optional[sqlite3.Connection] = None) -> str:
     """Return the Telegram bot token."""
     return get_setting('telegram_token', conn) or ''
@@ -501,4 +512,3 @@ def get_monthly_stats(months: int = 12) -> tuple[list[dict[str, int]], dict[str,
         return stats, totals
     finally:
         conn.close()
-

@@ -17,9 +17,16 @@ class QuantityDialog(QtWidgets.QDialog):
     """Dialog zum Wählen der Menge über +/--Buttons."""
 
 
-    def __init__(self, drink: models.Drink, parent: QtWidgets.QWidget | None = None):
+    def __init__(
+        self,
+        drink: models.Drink,
+        parent: QtWidgets.QWidget | None = None,
+        *,
+        free_mode: bool = False,
+    ):
         super().__init__(parent)
         self.drink = drink
+        self._free_mode = free_mode
         self.setWindowTitle("Menge wählen")
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
         self.setWindowState(QtCore.Qt.WindowFullScreen)
@@ -188,9 +195,12 @@ class QuantityDialog(QtWidgets.QDialog):
         self.product_label.setWordWrap(True)
         layout.addWidget(self.product_label)
 
-        info_label = QtWidgets.QLabel(
-            "Bitte Menge wählen und danach eine Zahlungsart antippen."
+        info_message = (
+            "Bitte Menge wählen und danach kostenlos buchen."
+            if self._free_mode
+            else "Bitte Menge wählen und danach eine Zahlungsart antippen."
         )
+        info_label = QtWidgets.QLabel(info_message)
         info_label.setObjectName("info_label")
         info_label.setAlignment(QtCore.Qt.AlignCenter)
         info_label.setWordWrap(True)
@@ -234,139 +244,144 @@ class QuantityDialog(QtWidgets.QDialog):
         self.minus_btn.clicked.connect(self.dec)
         self.plus_btn.clicked.connect(self.inc)
 
-        payment_title = QtWidgets.QLabel("Zahlungsart wählen")
-        payment_title.setObjectName("payment_title")
-        payment_title.setAlignment(QtCore.Qt.AlignLeft)
-        layout.addWidget(payment_title)
+        if not self._free_mode:
+            payment_title = QtWidgets.QLabel("Zahlungsart wählen")
+            payment_title.setObjectName("payment_title")
+            payment_title.setAlignment(QtCore.Qt.AlignLeft)
+            layout.addWidget(payment_title)
 
-        payment_frame = QtWidgets.QFrame()
-        payment_frame.setObjectName("payment_frame")
-        payment_frame.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
-        )
-        payment_layout = QtWidgets.QGridLayout(payment_frame)
-        if self._compact_layout:
-            payment_layout.setContentsMargins(4, 4, 4, 4)
-            payment_layout.setHorizontalSpacing(10)
-            payment_layout.setVerticalSpacing(10)
-        else:
-            payment_layout.setContentsMargins(12, 12, 12, 12)
-            payment_layout.setHorizontalSpacing(22)
-            payment_layout.setVerticalSpacing(22)
-
-        self.cash_btn = QtWidgets.QPushButton("Barzahlung")
-        self.cash_btn.setProperty("btnClass", "payment")
-        self.cash_btn.setProperty("variant", "cash")
-        self.cash_btn.setMinimumSize(
-            160 if self._compact_layout else 220,
-            66 if self._compact_layout else 110,
-        )
-        self.cash_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding,
-            QtWidgets.QSizePolicy.Expanding,
-        )
-        self.cash_btn.clicked.connect(self.cash)
-        self.chip_btn = QtWidgets.QPushButton("Chip / Karte")
-        self.chip_btn.setProperty("btnClass", "payment")
-        self.chip_btn.setProperty("variant", "chip")
-        self.chip_btn.setMinimumSize(
-            160 if self._compact_layout else 220,
-            66 if self._compact_layout else 110,
-        )
-        self.chip_btn.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding,
-            QtWidgets.QSizePolicy.Expanding,
-        )
-        self.chip_btn.clicked.connect(self.accept)
-
-        payment_buttons: list[QtWidgets.QWidget] = [self.cash_btn, self.chip_btn]
+        if not self._free_mode:
+            payment_frame = QtWidgets.QFrame()
+            payment_frame.setObjectName("payment_frame")
+            payment_frame.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+            )
+            payment_layout = QtWidgets.QGridLayout(payment_frame)
+            if self._compact_layout:
+                payment_layout.setContentsMargins(4, 4, 4, 4)
+                payment_layout.setHorizontalSpacing(10)
+                payment_layout.setVerticalSpacing(10)
+            else:
+                payment_layout.setContentsMargins(12, 12, 12, 12)
+                payment_layout.setHorizontalSpacing(22)
+                payment_layout.setVerticalSpacing(22)
 
         self._event_user_id: int | None = None
-        event_users = models.get_event_payment_users()
-        for user in event_users:
-            btn = QtWidgets.QPushButton(
-                f"{user.name}\n{user.balance / 100:.2f} €"
-            )
-            btn.setProperty("btnClass", "payment")
-            btn.setProperty("variant", "event")
-            btn.setToolTip("Veranstaltungskarte direkt belasten")
-            btn.setMinimumSize(
+        if not self._free_mode:
+            self.cash_btn = QtWidgets.QPushButton("Barzahlung")
+            self.cash_btn.setProperty("btnClass", "payment")
+            self.cash_btn.setProperty("variant", "cash")
+            self.cash_btn.setMinimumSize(
                 160 if self._compact_layout else 220,
                 66 if self._compact_layout else 110,
             )
-            btn.setSizePolicy(
+            self.cash_btn.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding,
                 QtWidgets.QSizePolicy.Expanding,
             )
-            btn.clicked.connect(lambda _, uid=user.id: self._select_event_user(uid))
-            payment_buttons.append(btn)
+            self.cash_btn.clicked.connect(self.cash)
+            self.chip_btn = QtWidgets.QPushButton("Chip / Karte")
+            self.chip_btn.setProperty("btnClass", "payment")
+            self.chip_btn.setProperty("variant", "chip")
+            self.chip_btn.setMinimumSize(
+                160 if self._compact_layout else 220,
+                66 if self._compact_layout else 110,
+            )
+            self.chip_btn.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Expanding,
+            )
+            self.chip_btn.clicked.connect(self.accept)
 
-        many_payment_options = len(payment_buttons) > 3
-        if many_payment_options:
-            quantity_size = 72 if self._compact_layout else 120
-        else:
-            quantity_size = 96 if self._compact_layout else 160
-        for btn in (self.minus_btn, self.plus_btn):
-            btn.setMinimumSize(quantity_size, quantity_size)
-            btn.setMaximumSize(quantity_size, quantity_size)
+            payment_buttons: list[QtWidgets.QWidget] = [self.cash_btn, self.chip_btn]
 
-        base_payment_height = 66 if self._compact_layout else 110
-        reduced_payment_height = 58 if self._compact_layout else 84
-        payment_button_height = (
-            reduced_payment_height if many_payment_options else base_payment_height
-        )
-        for btn in payment_buttons:
-            btn.setMinimumHeight(payment_button_height)
+            event_users = models.get_event_payment_users()
+            for user in event_users:
+                btn = QtWidgets.QPushButton(
+                    f"{user.name}\n{user.balance / 100:.2f} €"
+                )
+                btn.setProperty("btnClass", "payment")
+                btn.setProperty("variant", "event")
+                btn.setToolTip("Veranstaltungskarte direkt belasten")
+                btn.setMinimumSize(
+                    160 if self._compact_layout else 220,
+                    66 if self._compact_layout else 110,
+                )
+                btn.setSizePolicy(
+                    QtWidgets.QSizePolicy.Expanding,
+                    QtWidgets.QSizePolicy.Expanding,
+                )
+                btn.clicked.connect(lambda _, uid=user.id: self._select_event_user(uid))
+                payment_buttons.append(btn)
+
+            many_payment_options = len(payment_buttons) > 3
             if many_payment_options:
-                btn.setMaximumHeight(payment_button_height)
+                quantity_size = 72 if self._compact_layout else 120
             else:
-                btn.setMaximumHeight(QtWidgets.QWIDGETSIZE_MAX)
+                quantity_size = 96 if self._compact_layout else 160
+            for btn in (self.minus_btn, self.plus_btn):
+                btn.setMinimumSize(quantity_size, quantity_size)
+                btn.setMaximumSize(quantity_size, quantity_size)
 
-        if many_payment_options:
-            payment_layout.setHorizontalSpacing(
-                10 if self._compact_layout else 18
+            base_payment_height = 66 if self._compact_layout else 110
+            reduced_payment_height = 58 if self._compact_layout else 84
+            payment_button_height = (
+                reduced_payment_height if many_payment_options else base_payment_height
             )
-            payment_layout.setVerticalSpacing(
-                12 if self._compact_layout else 16
-            )
-            payment_frame.setSizePolicy(
-                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum
-            )
+            for btn in payment_buttons:
+                btn.setMinimumHeight(payment_button_height)
+                if many_payment_options:
+                    btn.setMaximumHeight(payment_button_height)
+                else:
+                    btn.setMaximumHeight(QtWidgets.QWIDGETSIZE_MAX)
 
-        columns = 3
-        for index, btn in enumerate(payment_buttons):
-            row, col = divmod(index, columns)
-            payment_layout.addWidget(btn, row, col)
-            payment_layout.setColumnStretch(col, 1)
+            if many_payment_options:
+                payment_layout.setHorizontalSpacing(
+                    10 if self._compact_layout else 18
+                )
+                payment_layout.setVerticalSpacing(
+                    12 if self._compact_layout else 16
+                )
+                payment_frame.setSizePolicy(
+                    QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum
+                )
 
-        for col in range(columns):
-            if payment_layout.columnStretch(col) == 0:
+            columns = 3
+            for index, btn in enumerate(payment_buttons):
+                row, col = divmod(index, columns)
+                payment_layout.addWidget(btn, row, col)
                 payment_layout.setColumnStretch(col, 1)
 
-        rows_used = (len(payment_buttons) + columns - 1) // columns
-        if many_payment_options:
-            margins = payment_layout.contentsMargins()
-            total_height = (
-                rows_used * payment_button_height
-                + max(0, rows_used - 1) * payment_layout.verticalSpacing()
-                + margins.top()
-                + margins.bottom()
-            )
-            payment_frame.setMaximumHeight(total_height)
+            for col in range(columns):
+                if payment_layout.columnStretch(col) == 0:
+                    payment_layout.setColumnStretch(col, 1)
 
-        if not event_users:
-            hint = QtWidgets.QLabel(
-                "Keine Veranstaltungskarten für die Schnellzahlung aktiviert."
-            )
-            hint.setObjectName("info_label")
-            hint.setAlignment(QtCore.Qt.AlignCenter)
-            hint.setWordWrap(True)
-            payment_layout.addWidget(hint, rows_used, 0, 1, columns)
+            rows_used = (len(payment_buttons) + columns - 1) // columns
+            if many_payment_options:
+                margins = payment_layout.contentsMargins()
+                total_height = (
+                    rows_used * payment_button_height
+                    + max(0, rows_used - 1) * payment_layout.verticalSpacing()
+                    + margins.top()
+                    + margins.bottom()
+                )
+                payment_frame.setMaximumHeight(total_height)
 
-        layout.addWidget(payment_frame, stretch=0)
+            if not event_users:
+                hint = QtWidgets.QLabel(
+                    "Keine Veranstaltungskarten für die Schnellzahlung aktiviert."
+                )
+                hint.setObjectName("info_label")
+                hint.setAlignment(QtCore.Qt.AlignCenter)
+                hint.setWordWrap(True)
+                payment_layout.addWidget(hint, rows_used, 0, 1, columns)
 
-        if many_payment_options:
-            layout.addSpacing(12)
+            layout.addWidget(payment_frame, stretch=0)
+
+            if many_payment_options:
+                layout.addSpacing(12)
+            else:
+                layout.addStretch(1)
         else:
             layout.addStretch(1)
 
@@ -393,6 +408,15 @@ class QuantityDialog(QtWidgets.QDialog):
             footer_layout.setContentsMargins(48, 18, 48, 36)
             footer_layout.setSpacing(24)
         footer_layout.addWidget(self.cancel_btn, 0, QtCore.Qt.AlignLeft)
+        if self._free_mode:
+            self.confirm_btn = QtWidgets.QPushButton("Gratis buchen")
+            self.confirm_btn.setProperty("btnClass", "action")
+            self.confirm_btn.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Fixed,
+            )
+            self.confirm_btn.clicked.connect(self.accept)
+            footer_layout.addWidget(self.confirm_btn, 0, QtCore.Qt.AlignLeft)
         footer_layout.addStretch(1)
 
         outer_layout.addWidget(footer, 0)
@@ -1007,7 +1031,10 @@ class MainWindow(QtWidgets.QMainWindow):
         data_dir = Path(__file__).resolve().parent.parent / 'data'
         self._default_bg = data_dir / 'background.png'
         self._thank_bg = data_dir / 'background_thanks.png'
-        self._apply_background(self._default_bg)
+        self._free_bg = data_dir / 'background_free.png'
+        self._free_day_enabled = models.is_free_day_enabled()
+        self._background_pixmap: QtGui.QPixmap | None = None
+        self._apply_start_background()
 
         self.stack = QtWidgets.QStackedLayout(self.central)
         self._info_timer = QtCore.QTimer(self)
@@ -1091,15 +1118,50 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _apply_background(self, path: Path) -> None:
         if path and path.exists():
-            self.central.setStyleSheet(
-                "#central_widget{"\
-                f"background-image: url('{path}');"\
-                "background-repeat: no-repeat;"\
-                "background-position: center;"\
-                "}"
-            )
+            pixmap = QtGui.QPixmap(str(path))
+            if pixmap.isNull():
+                self._background_pixmap = None
+                self.central.setAutoFillBackground(False)
+                self.central.setPalette(self.style().standardPalette())
+                return
+            self._background_pixmap = pixmap
+            self._refresh_background()
         else:
-            self.central.setStyleSheet("")
+            self._background_pixmap = None
+            self.central.setAutoFillBackground(False)
+            self.central.setPalette(self.style().standardPalette())
+
+    def _refresh_background(self) -> None:
+        if not self._background_pixmap or self._background_pixmap.isNull():
+            return
+        target_size = self.central.size()
+        if target_size.isEmpty():
+            return
+        scaled = self._background_pixmap.scaled(
+            target_size,
+            QtCore.Qt.KeepAspectRatioByExpanding,
+            QtCore.Qt.SmoothTransformation,
+        )
+        palette = self.central.palette()
+        palette.setBrush(QtGui.QPalette.Window, QtGui.QBrush(scaled))
+        self.central.setAutoFillBackground(True)
+        self.central.setPalette(palette)
+
+    def _apply_start_background(self) -> None:
+        path = self._default_bg
+        if self._free_day_enabled and self._free_bg.exists():
+            path = self._free_bg
+        self._apply_background(path)
+
+    def _apply_thank_background(self) -> None:
+        if self._free_day_enabled and self._free_bg.exists():
+            self._apply_background(self._free_bg)
+        elif self._thank_bg.exists():
+            self._apply_background(self._thank_bg)
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self._refresh_background()
 
     def _setup_styles(self) -> None:
         self.setStyleSheet(
@@ -1189,6 +1251,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._pending_game = None
             self.game_button.hide()
 
+    def _sync_free_day_setting(self) -> bool:
+        new_value = models.is_free_day_enabled()
+        if new_value != self._free_day_enabled:
+            self._free_day_enabled = new_value
+            return True
+        return False
+
     def _game_message_duration(self) -> int:
         return 12000 if self._game_enabled else 3500
 
@@ -1221,7 +1290,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for idx, drink in enumerate(drinks):
             button = QtWidgets.QPushButton()
-            button.setText(f"{drink.name}\n{drink.price/100:.2f} €")
+            price_cents = 0 if self._free_day_enabled else drink.price
+            button.setText(f"{drink.name}\n{price_cents/100:.2f} €")
             button.setFont(font)
             if drink.image:
                 button.setIcon(QtGui.QIcon(drink.image))
@@ -1294,7 +1364,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._start_page_needs_refresh:
             self._rebuild_start_page()
             self._start_page_needs_refresh = False
-        self._apply_background(self._default_bg)
+        self._apply_start_background()
         self.stack.setCurrentWidget(self.start_page)
 
     def _show_info_message(
@@ -1487,10 +1557,45 @@ class MainWindow(QtWidgets.QMainWindow):
         self._show_info_message(message, auto_return_ms=5000)
 
     def on_drink_selected(self, drink: models.Drink) -> None:
-        dialog = QuantityDialog(drink, self)
+        dialog = QuantityDialog(drink, self, free_mode=self._free_day_enabled)
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
         quantity = dialog.quantity
+        if self._free_day_enabled:
+            self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
+            uid = rfid.read_uid(show_dialog=False)
+            if not uid:
+                QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
+                self.show_start_page()
+                return
+            user = models.get_user_by_uid(uid)
+            if not user:
+                led.indicate_error()
+                QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+                self.show_start_page()
+                return
+            total_price = 0
+            if not models.update_balance(user.id, -total_price):
+                QtWidgets.QMessageBox.information(
+                    self, "Guthaben", "Limit überschritten - bitte Guthaben aufladen"
+                )
+                self.show_start_page()
+                return
+            models.update_drink_stock(drink.id, -quantity)
+            models.add_transaction(user.id, drink.id, quantity)
+            led.indicate_success()
+            self._apply_thank_background()
+            msg = (
+                f"Danke {user.name}!\n"
+                "Heute kostenlos - Kauf wurde verbucht."
+            )
+            self._show_info_message(
+                msg,
+                allow_game=False,
+                game_context=None,
+                auto_return_ms=3500,
+            )
+            return
         if dialog.is_cash:
             models.update_drink_stock(drink.id, -quantity)
             cash_id = models.get_cash_user_id()
@@ -1541,8 +1646,7 @@ class MainWindow(QtWidgets.QMainWindow):
             models.update_drink_stock(drink.id, -quantity)
             models.add_transaction(user.id, drink.id, quantity)
             led.indicate_success()
-            if self._thank_bg.exists():
-                self._apply_background(self._thank_bg)
+            self._apply_thank_background()
             thank_message = f"Danke {user.name}!\nKauf wird verbucht."
             thank_message += "\n\nDu kehrst gleich automatisch zum Startbildschirm zurück."
             self._show_info_message(
@@ -1574,8 +1678,7 @@ class MainWindow(QtWidgets.QMainWindow):
         models.add_transaction(user.id, drink.id, quantity)
         new_user = models.get_user_by_uid(uid)
         led.indicate_success()
-        if self._thank_bg.exists():
-            self._apply_background(self._thank_bg)
+        self._apply_thank_background()
         msg = (
             f"Danke {new_user.name}!\nAltes Guthaben: {old_balance/100:.2f} €\n"
             f"Neues Guthaben: {new_user.balance/100:.2f} €"
@@ -1618,9 +1721,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.refresh_mtime = database.REFRESH_FLAG.stat().st_mtime
             self._start_page_needs_refresh = True
             self._sync_game_setting()
+            free_day_changed = self._sync_free_day_setting()
             if self.stack.currentWidget() is self.start_page:
                 self._rebuild_start_page()
                 self._start_page_needs_refresh = False
+                if free_day_changed:
+                    self._apply_start_background()
 
     def _rebuild_start_page(self) -> None:
         layout = self.start_layout
@@ -1668,4 +1774,3 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.current_page > 1:
             self.current_page -= 1
             self._rebuild_start_page()
-
