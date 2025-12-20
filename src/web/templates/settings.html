@@ -17,6 +17,10 @@
             <input type="checkbox" name="game_enabled" value="1" {% if game_enabled %}checked{% endif %}>
             Tic-Tac-Toe Bonusspiel aktivieren
         </label>
+        <label class="toggle">
+            <input type="checkbox" name="free_day_enabled" value="1" {% if free_day_enabled %}checked{% endif %}>
+            Heute kostenlos Modus aktivieren
+        </label>
         <div class="form-grid">
             <div>
                 <label for="qr_code">Webinterface QR-Code</label>
@@ -37,6 +41,13 @@
                 <input type="file" id="thank_background" name="thank_background" accept="image/png">
                 {% if thank_background_exists %}
                 <img class="preview" src="{{ url_for('thank_background_png') }}" alt="Danke-Hintergrund">
+                {% endif %}
+            </div>
+            <div>
+                <label for="free_background">Hintergrundbild Heute kostenlos</label>
+                <input type="file" id="free_background" name="free_background" accept="image/png">
+                {% if free_background_exists %}
+                <img class="preview" src="{{ url_for('free_background_png') }}" alt="Heute kostenlos Hintergrund">
                 {% endif %}
             </div>
         </div>
