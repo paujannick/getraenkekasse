@@ -1175,13 +1175,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 font-weight: 700;
                 padding: 18px 16px;
                 border: 1px solid rgba(255, 255, 255, 0.35);
-                box-shadow: 0 16px 40px rgba(14, 165, 233, 0.28);
             }
             QPushButton[btnClass='tile'][accent='info'] {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #22c55e, stop:1 #16a34a);
                 color: #052e16;
-                box-shadow: 0 16px 40px rgba(34, 197, 94, 0.25);
             }
             QPushButton[btnClass='tile'][accent='secondary'] {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
@@ -1192,17 +1190,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #fbbf24, stop:1 #f59e0b);
                 color: #3b2f0b;
-                box-shadow: 0 16px 40px rgba(245, 158, 11, 0.32);
             }
             QPushButton[btnClass='tile'][state='error'] {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #f87171, stop:1 #ef4444);
                 color: #7f1d1d;
-                box-shadow: 0 16px 40px rgba(239, 68, 68, 0.3);
             }
             QPushButton[btnClass='tile']:hover {
-                filter: brightness(1.02);
-                box-shadow: 0 18px 44px rgba(59, 130, 246, 0.3);
             }
             QPushButton[btnClass='nav'] {
                 border-radius: 14px;
@@ -1212,7 +1206,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 font-weight: 700;
                 padding: 10px 14px;
                 border: 1px solid rgba(226, 232, 240, 0.2);
-                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
             }
             QPushButton[btnClass='nav'][accent='admin'] {
                 background-color: #ef4444;
@@ -1230,10 +1223,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 font-size: 20px;
                 font-weight: 800;
                 padding: 18px 28px;
-                box-shadow: 0 16px 38px rgba(139, 92, 246, 0.25);
             }
             QPushButton[btnClass='game']:hover {
-                filter: brightness(1.03);
             }
         """
         )
