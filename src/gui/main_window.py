@@ -1021,6 +1021,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.start_page = QtWidgets.QWidget()
         self.start_layout = QtWidgets.QGridLayout(self.start_page)
+        self.start_layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
         if self._compact_display:
             self.start_layout.setContentsMargins(14, 14, 14, 14)
             self.start_layout.setHorizontalSpacing(12)
@@ -1104,54 +1105,73 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStyleSheet(
             """
             QPushButton[btnClass='tile'] {
-                border-radius: 18px;
-                background-color: #2a9d8f;
-                color: #ffffff;
+                border-radius: 20px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #0ea5e9, stop:1 #6366f1);
+                color: #0b1224;
                 font-size: 18px;
-                font-weight: 600;
+                font-weight: 700;
                 padding: 18px 16px;
+                border: 1px solid rgba(255, 255, 255, 0.35);
+                box-shadow: 0 16px 40px rgba(14, 165, 233, 0.28);
             }
             QPushButton[btnClass='tile'][accent='info'] {
-                background-color: #4f46e5;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #22c55e, stop:1 #16a34a);
+                color: #052e16;
+                box-shadow: 0 16px 40px rgba(34, 197, 94, 0.25);
             }
             QPushButton[btnClass='tile'][accent='secondary'] {
-                background-color: #028090;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #06b6d4, stop:1 #0ea5e9);
+                color: #05202f;
             }
             QPushButton[btnClass='tile'][state='warning'] {
-                background-color: #f4a261;
-                color: #1f2937;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #fbbf24, stop:1 #f59e0b);
+                color: #3b2f0b;
+                box-shadow: 0 16px 40px rgba(245, 158, 11, 0.32);
             }
             QPushButton[btnClass='tile'][state='error'] {
-                background-color: #e76f51;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #f87171, stop:1 #ef4444);
+                color: #7f1d1d;
+                box-shadow: 0 16px 40px rgba(239, 68, 68, 0.3);
             }
             QPushButton[btnClass='tile']:hover {
-                background-color: #23867b;
+                filter: brightness(1.02);
+                box-shadow: 0 18px 44px rgba(59, 130, 246, 0.3);
             }
             QPushButton[btnClass='nav'] {
-                border-radius: 12px;
-                background-color: rgba(15, 23, 42, 0.78);
-                color: #f8fafc;
+                border-radius: 14px;
+                background-color: rgba(15, 23, 42, 0.82);
+                color: #e2e8f0;
                 font-size: 16px;
-                font-weight: 600;
+                font-weight: 700;
                 padding: 10px 14px;
+                border: 1px solid rgba(226, 232, 240, 0.2);
+                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
             }
             QPushButton[btnClass='nav'][accent='admin'] {
                 background-color: #ef4444;
+                color: #fff;
             }
             QPushButton[btnClass='nav']:disabled {
                 background-color: rgba(148, 163, 184, 0.45);
                 color: #e2e8f0;
             }
             QPushButton[btnClass='game'] {
-                border-radius: 18px;
-                background-color: #9333ea;
-                color: #ffffff;
+                border-radius: 20px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #8b5cf6, stop:1 #c084fc);
+                color: #1f0f3a;
                 font-size: 20px;
-                font-weight: 700;
+                font-weight: 800;
                 padding: 18px 28px;
+                box-shadow: 0 16px 38px rgba(139, 92, 246, 0.25);
             }
             QPushButton[btnClass='game']:hover {
-                background-color: #7c3aed;
+                filter: brightness(1.03);
             }
         """
         )
@@ -1188,9 +1208,11 @@ class MainWindow(QtWidgets.QMainWindow):
         balance_btn = QtWidgets.QPushButton("Guthaben\nabfragen")
         balance_btn.setFont(font)
         if self._compact_display:
-            balance_btn.setMinimumSize(170, 100)
+            balance_btn.setMinimumSize(170, 110)
+            balance_btn.setMaximumHeight(140)
         else:
-            balance_btn.setMinimumSize(220, 120)
+            balance_btn.setMinimumSize(220, 130)
+            balance_btn.setMaximumHeight(170)
         balance_btn.setProperty("btnClass", "tile")
         balance_btn.setProperty("accent", "info")
         self._apply_button_style(balance_btn)
@@ -1206,9 +1228,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 icon_size = 92 if self._compact_display else 120
                 button.setIconSize(QtCore.QSize(icon_size, icon_size))
             if self._compact_display:
-                button.setMinimumSize(170, 100)
+                button.setMinimumSize(170, 110)
+                button.setMaximumHeight(140)
             else:
-                button.setMinimumSize(220, 120)
+                button.setMinimumSize(220, 130)
+                button.setMaximumHeight(170)
             button.setProperty("btnClass", "tile")
             if drink.stock < 0:
                 button.setProperty("state", "error")

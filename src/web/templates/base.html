@@ -353,31 +353,63 @@
         if (!dropdownItems.length) {
             return;
         }
-        const prefersTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
-        if (!prefersTouch) {
-            return;
-        }
 
-        const closeAll = () => dropdownItems.forEach((item) => item.classList.remove('open'));
+        const closeAll = () => {
+            dropdownItems.forEach((item) => {
+                item.classList.remove('open');
+                const toggle = item.querySelector('a');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        };
 
         dropdownItems.forEach((item) => {
-            item.addEventListener('click', (event) => event.stopPropagation());
             const link = item.querySelector('a');
             if (!link) {
                 return;
             }
-            link.addEventListener('click', (event) => {
+
+            link.setAttribute('role', 'button');
+            link.setAttribute('aria-haspopup', 'true');
+            link.setAttribute('aria-expanded', 'false');
+
+            const toggleItem = (event) => {
+                event.preventDefault();
                 const wasOpen = item.classList.contains('open');
                 closeAll();
                 if (!wasOpen) {
                     item.classList.add('open');
+                    link.setAttribute('aria-expanded', 'true');
                 }
-                event.preventDefault();
-                event.stopPropagation();
+            };
+
+            link.addEventListener('click', toggleItem);
+            link.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                    toggleItem(event);
+                }
+            });
+
+            item.addEventListener('focusin', () => {
+                closeAll();
+                item.classList.add('open');
+                link.setAttribute('aria-expanded', 'true');
             });
         });
 
-        document.addEventListener('click', closeAll);
+        document.addEventListener('click', (event) => {
+            if (dropdownItems.some((item) => item.contains(event.target))) {
+                return;
+            }
+            closeAll();
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'Escape') {
+                closeAll();
+            }
+        });
     });
 </script>
 </body>
