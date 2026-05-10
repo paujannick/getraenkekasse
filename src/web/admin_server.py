@@ -4,6 +4,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Optional
 import sqlite3
+import time
 
 from .. import admin_auth
 
@@ -20,16 +21,56 @@ from ..telegram_bot import notifier
 
 def create_app() -> Flask:
     app = Flask(__name__)
-    app.secret_key = 'change-me'
+    app.secret_key = models.get_setting('flask_secret') or 'change-me'
+    app.config.update(
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        SESSION_COOKIE_SECURE=False,
+        PERMANENT_SESSION_LIFETIME=1800,
+    )
     PER_PAGE = 25
+    SESSION_TIMEOUT_SECONDS = 30 * 60
+    MAX_LOGIN_ATTEMPTS = 5
+    LOGIN_WINDOW_SECONDS = 5 * 60
+    LOCKOUT_SECONDS = 10 * 60
+    _login_attempts: dict[str, list[float]] = {}
+    _lockout_until: dict[str, float] = {}
+
 
     def login_required(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if not session.get('user'):
                 return redirect(url_for('login'))
+            last_seen = session.get('last_seen', 0)
+            now = time.time()
+            if last_seen and now - float(last_seen) > SESSION_TIMEOUT_SECONDS:
+                session.clear()
+                return redirect(url_for('login'))
+            session['last_seen'] = now
+            if admin_auth.is_default_password() and request.endpoint != 'change_password':
+                return redirect(url_for('change_password'))
             return func(*args, **kwargs)
         return wrapper
+
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "font-src 'self' data:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'self'; "
+            "base-uri 'self'; "
+            "form-action 'self'"
+        )
+        return response
 
 
     @app.route('/read_uid')
@@ -111,6 +152,7 @@ def create_app() -> Flask:
                 error = 'Passwörter stimmen nicht überein'
             else:
                 admin_auth.set_password(new_pw1)
+                session['force_pw_change'] = False
                 info = 'Passwort gespeichert'
         return render_template('change_password.html', error=error, info=info)
 
@@ -229,18 +271,43 @@ def create_app() -> Flask:
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         error: Optional[str] = None
+        client_ip = request.remote_addr or 'unknown'
+        now = time.time()
+        lockout_until = _lockout_until.get(client_ip, 0)
+        if lockout_until > now:
+            remaining = int(lockout_until - now)
+            error = f'Zu viele Fehlversuche. Bitte in {remaining} Sekunden erneut versuchen.'
+            return render_template('login.html', error=error)
+
         if request.method == 'POST':
             user = request.form.get('username')
             pw = request.form.get('password')
             if user == 'admin' and admin_auth.verify_password(pw or ''):
+                _login_attempts.pop(client_ip, None)
+                _lockout_until.pop(client_ip, None)
                 session['user'] = user
+                session['last_seen'] = now
+                session['force_pw_change'] = admin_auth.is_default_password()
+                if session['force_pw_change']:
+                    return redirect(url_for('change_password'))
                 return redirect(url_for('index'))
-            error = 'Falsche Zugangsdaten'
+
+            attempts = [ts for ts in _login_attempts.get(client_ip, []) if now - ts <= LOGIN_WINDOW_SECONDS]
+            attempts.append(now)
+            _login_attempts[client_ip] = attempts
+            if len(attempts) >= MAX_LOGIN_ATTEMPTS:
+                _lockout_until[client_ip] = now + LOCKOUT_SECONDS
+                _login_attempts.pop(client_ip, None)
+                error = 'Zu viele Fehlversuche. Bitte später erneut versuchen.'
+            else:
+                remaining = MAX_LOGIN_ATTEMPTS - len(attempts)
+                error = f'Falsche Zugangsdaten. Verbleibende Versuche: {remaining}'
+
         return render_template('login.html', error=error)
 
     @app.route('/logout')
     def logout():
-        session.pop('user', None)
+        session.clear()
         return redirect(url_for('login'))
 
     @app.route('/drinks')
