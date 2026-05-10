@@ -64,6 +64,13 @@ Das Admin-Passwort lässt sich im Web-Admin über den Punkt "Passwort" ändern.
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).
 
+## Umgesetzte Security-Updates
+
+- Web-Login hat jetzt eine einfache Fehlversuchssperre: Nach mehreren falschen Anmeldungen wird die Anmeldung für kurze Zeit blockiert.
+- Web-Sessions laufen nach Inaktivität automatisch ab.
+- Ist noch das Standard-Passwort aktiv, wird nach dem Login direkt auf die Passwort-Änderung umgeleitet, bis ein neues Passwort gesetzt ist.
+- Backups: Die Datenbank-Backups auf USB (ca. 10 Tage Historie) bleiben unverändert bestehen.
+
 ## Update von älteren Versionen
 
 Um die neuen Funktionen (z.B. Auflade- und Bestandslog) ohne Datenverlust zu nutzen,

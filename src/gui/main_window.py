@@ -1166,6 +1166,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def _setup_styles(self) -> None:
         self.setStyleSheet(
             """
+            QWidget {
+                color: #e2e8f0;
+            }
             QPushButton[btnClass='tile'] {
                 border-radius: 20px;
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
@@ -1197,6 +1200,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 color: #7f1d1d;
             }
             QPushButton[btnClass='tile']:hover {
+                border: 2px solid rgba(255, 255, 255, 0.85);
+                padding: 17px 15px;
+            }
+            QPushButton[btnClass='tile']:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #0284c7, stop:1 #4f46e5);
             }
             QPushButton[btnClass='nav'] {
                 border-radius: 14px;
@@ -1215,6 +1224,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 background-color: rgba(148, 163, 184, 0.45);
                 color: #e2e8f0;
             }
+            QPushButton[btnClass='nav']:hover {
+                background-color: rgba(30, 41, 59, 0.95);
+                border: 1px solid rgba(191, 219, 254, 0.7);
+            }
             QPushButton[btnClass='game'] {
                 border-radius: 20px;
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
@@ -1225,6 +1238,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 padding: 18px 28px;
             }
             QPushButton[btnClass='game']:hover {
+                border: 2px solid rgba(255, 255, 255, 0.9);
             }
         """
         )
