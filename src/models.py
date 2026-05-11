@@ -442,8 +442,8 @@ def get_purchase_recommendations(days: int = 30, coverage_days: int = 21, replen
         stock = int(row['stock'] or 0)
         min_stock = int(row['min_stock'] or 0)
         daily_rate = sold / days
-        forecast_target = round(daily_rate * replenish_cycle_days)
-        target_stock = max(min_stock, forecast_target)
+        forecast_qty = round(daily_rate * replenish_cycle_days)
+        target_stock = max(min_stock, forecast_qty)
         buy_qty = max(0, target_stock - stock)
         if sold == 0 and stock < min_stock:
             buy_qty = max(buy_qty, min_stock - stock)
@@ -455,6 +455,7 @@ def get_purchase_recommendations(days: int = 30, coverage_days: int = 21, replen
             'min_stock': min_stock,
             'sold': sold,
             'daily_rate': round(daily_rate, 2),
+            'forecast_qty': int(forecast_qty),
             'target_stock': int(target_stock),
             'buy_qty': int(buy_qty),
             'trend': trend,
