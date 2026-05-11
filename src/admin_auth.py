@@ -23,10 +23,6 @@ def verify_password(password: str) -> bool:
     return hashlib.sha256(password.encode()).hexdigest() == get_password_hash()
 
 
-def is_default_password() -> bool:
-    return get_password_hash() == _default_hash()
-
-
 def set_password(password: str) -> None:
     ADMIN_PW_FILE.parent.mkdir(parents=True, exist_ok=True)
 
