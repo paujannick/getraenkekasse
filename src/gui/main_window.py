@@ -80,41 +80,41 @@ class QuantityDialog(QtWidgets.QDialog):
 
         base_style = f"""
             #quantity_dialog {{
-                background-color: #0b1220;
+                background-color: #f4f6fb;
             }}
             #quantity_dialog QLabel#title_label {{
                 font-size: {style['title_font']};
                 font-weight: 700;
-                color: #f8fafc;
+                color: #0f172a;
             }}
             #quantity_dialog QLabel#info_label {{
                 font-size: {style['info_font']};
-                color: #cbd5e1;
+                color: #475569;
             }}
             #quantity_dialog QFrame#quantity_content {{
                 background-color: transparent;
             }}
             #quantity_dialog QFrame#quantity_frame {{
-                background-color: rgba(15, 23, 42, 0.94);
+                background-color: #ffffff;
                 border-radius: 24px;
                 padding: {style['frame_padding']};
-                border: 2px solid #334155;
+                border: 2px solid #e2e8f0;
             }}
             #quantity_dialog QLabel#quantity_value {{
                 font-size: {style['quantity_font']};
                 font-weight: 700;
-                color: #f8fafc;
+                color: #0f172a;
             }}
             #quantity_dialog QLabel#payment_title {{
                 font-size: {style['payment_title_font']};
                 font-weight: 700;
-                color: #e2e8f0;
+                color: #0f172a;
             }}
             #quantity_dialog QFrame#payment_frame {{
-                background-color: rgba(15, 23, 42, 0.94);
+                background-color: #ffffff;
                 border-radius: 24px;
                 padding: {style['payment_container_padding']};
-                border: 2px solid #334155;
+                border: 2px solid #e2e8f0;
             }}
             #quantity_dialog QPushButton[btnClass="quantity"] {{
                 border-radius: {style['quantity_btn_radius']};
@@ -147,15 +147,15 @@ class QuantityDialog(QtWidgets.QDialog):
             }}
             #quantity_dialog QPushButton[btnClass="action"] {{
                 border-radius: 16px;
-                background-color: #334155;
-                color: #f8fafc;
+                background-color: #e2e8f0;
+                color: #1f2937;
                 font-size: {style['action_font']};
                 font-weight: 600;
                 min-height: {style['action_height']};
                 padding: {style['action_padding']};
             }}
             #quantity_dialog QPushButton[btnClass="action"]:hover {{
-                background-color: #475569;
+                background-color: #cbd5f5;
             }}
             #quantity_dialog QPushButton[btnClass="action"][variant="cancel"] {{
                 background-color: #ef4444;
