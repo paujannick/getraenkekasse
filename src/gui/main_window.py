@@ -815,7 +815,7 @@ class AdminMenu(QtWidgets.QWidget):
         super().__init__(parent)
         layout = QtWidgets.QVBoxLayout(self)
 
-        self.stock_btn = QtWidgets.QPushButton("Bestandswarnungen")
+        self.stock_btn = QtWidgets.QPushButton("Einkaufen")
         self.topup_btn = QtWidgets.QPushButton("Konten aufladen")
         self.event_cards_btn = QtWidgets.QPushButton("Veranstaltungskarten")
         self.status_btn = QtWidgets.QPushButton("Status")
@@ -1096,7 +1096,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.addWidget(self.info_page)
 
         self.admin_menu = AdminMenu(self)
-        self.admin_menu.stock_btn.clicked.connect(self.show_stock_page)
+        self.admin_menu.stock_btn.clicked.connect(self.show_shopping_forecast)
         self.admin_menu.topup_btn.clicked.connect(self.show_topup_page)
         self.admin_menu.event_cards_btn.clicked.connect(self.show_event_cards_page)
         self.admin_menu.status_btn.clicked.connect(self.show_status)
@@ -1428,6 +1428,53 @@ class MainWindow(QtWidgets.QMainWindow):
     def show_stock_page(self) -> None:
         self.stock_page.reload()
         self.stack.setCurrentWidget(self.stock_page)
+
+    def show_shopping_forecast(self) -> None:
+        recs = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
+        recs = sorted(recs, key=lambda r: (-r['buy_qty'], -r['forecast_qty'], r['name'].lower()))
+
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle("Einkaufsliste mit Forecast")
+        dlg.setWindowState(QtCore.Qt.WindowFullScreen)
+        layout = QtWidgets.QVBoxLayout(dlg)
+
+        info = QtWidgets.QLabel("Zeitraum: Verkäufe der letzten 30 Tage, Forecast für 45 Tage")
+        layout.addWidget(info)
+
+        table = QtWidgets.QTableWidget(len(recs), 5)
+        table.setHorizontalHeaderLabels([
+            "Getränk", "Bestand", "Min. Bestand", "Forecast (45T)", "Empf. Mindest-Einkaufsmenge"
+        ])
+        table.verticalHeader().setVisible(False)
+        table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+
+        for row, rec in enumerate(recs):
+            values = [
+                rec['name'],
+                str(rec['stock']),
+                str(rec['min_stock']),
+                str(rec['forecast_qty']),
+                str(rec['buy_qty']),
+            ]
+            for col, value in enumerate(values):
+                item = QtWidgets.QTableWidgetItem(value)
+                if col > 0:
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                if rec['buy_qty'] > 0:
+                    item.setBackground(QtGui.QColor('#ffe2e2'))
+                table.setItem(row, col, item)
+
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        for col in range(1, 5):
+            header.setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeToContents)
+
+        layout.addWidget(table)
+        close_btn = QtWidgets.QPushButton("Schließen")
+        close_btn.clicked.connect(dlg.accept)
+        layout.addWidget(close_btn)
+        dlg.exec_()
 
     def show_topup_page(self) -> None:
         self.topup_page.info.setText("")
