@@ -1372,7 +1372,7 @@ class MainWindow(QtWidgets.QMainWindow):
     ) -> None:
         display_message = message
         if "Bitte Karte auflegen" in message or "Bitte Zielkarte auflegen" in message or "Bitte Admin-Karte auflegen" in message:
-            display_message = f"⬆️  Karte am oberen Leser auflegen\n\n{message}\n\n⬆️  Karte hier halten"
+            display_message = f"⬆️  Karte am oberen Leser auflegen\n\n{message}"
         self.info_label.setText(display_message)
         self._info_timer.stop()
         enable_game = allow_game and self._game_enabled and bool(game_context)

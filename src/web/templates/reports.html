@@ -37,4 +37,13 @@
   {% endfor %}
   </table>
 </div>
+
+<div class="card">
+  <h2>Einkaufsempfehlung</h2>
+  <table><tr><th>Artikel</th><th>Verkauft</th><th>Trend</th><th>Kaufen</th></tr>
+  {% for r in recommendations %}
+    <tr><td>{{ r.name }}</td><td>{{ r.sold }}</td><td>{{ r.trend }}</td><td>{{ r.buy_qty }}</td></tr>
+  {% endfor %}
+  </table>
+</div>
 {% endblock %}

@@ -71,7 +71,8 @@ def create_app() -> Flask:
         ).fetchone()
         total_balance = row['total'] if row else 0
         conn.close()
-        return render_template('index.html', to_buy=to_buy, total_balance=total_balance)
+        recommendations = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
+        return render_template('index.html', to_buy=to_buy, total_balance=total_balance, recommendations=recommendations[:5])
 
 
     @app.route('/dashboard')
@@ -104,13 +105,22 @@ def create_app() -> Flask:
             "FROM drinks ORDER BY stock ASC, name"
         ).fetchall()
         conn.close()
+        recommendations = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
         forecast = []
         for row in stock:
             ratio = row["ratio"]
             status = "kritisch" if row["stock"] <= 0 else ("niedrig" if row["stock"] < row["min_stock"] else "ok")
             forecast.append({"name": row["name"], "stock": row["stock"], "min_stock": row["min_stock"], "ratio": ratio, "status": status})
-        return render_template("reports.html", period=period, top_articles=top_articles, topups=topups, forecast=forecast)
+        return render_template("reports.html", period=period, top_articles=top_articles, topups=topups, forecast=forecast, recommendations=recommendations)
 
+
+
+    @app.route('/einkaufen')
+    @login_required
+    def einkaufen():
+        days = request.args.get('days', default=30, type=int)
+        recs = models.get_purchase_recommendations(days=days, coverage_days=21, replenish_cycle_days=max(45, days))
+        return render_template('shopping.html', days=days, recommendations=recs)
     @app.route('/dashboard/receipt')
     @login_required
     def dashboard_receipt():
