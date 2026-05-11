@@ -64,6 +64,74 @@ Das Admin-Passwort lässt sich im Web-Admin über den Punkt "Passwort" ändern.
 
 Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).
 
+
+## Start per `start.sh`
+
+Für den täglichen Betrieb auf dem Raspberry Pi ist `start.sh` der empfohlene Einstiegspunkt.
+Das Skript:
+
+- erstellt automatisch ein Logfile unter `logs/log_YYYY-MM-DD_HH-MM-SS.txt`,
+- startet den Web-Admin (`src.web.admin_server`) im Hintergrund,
+- startet anschließend die GUI im Vollbild (`src.app --fullscreen`),
+- beendet den Webserver automatisch, wenn die GUI geschlossen wird.
+
+Starten:
+
+```bash
+./start.sh
+```
+
+> Hinweis: Das Skript bricht bewusst ab, wenn keine grafische Oberfläche (`DISPLAY`) verfügbar ist.
+
+### Autostart (Raspberry Pi Desktop / LXDE)
+
+Damit die Kasse nach dem Booten automatisch startet, kann `start.sh` in den LXDE-Autostart eingetragen werden:
+
+1. Datei öffnen oder anlegen:
+   ```bash
+   nano ~/.config/lxsession/LXDE-pi/autostart
+   ```
+2. Diese Zeile ergänzen:
+   ```text
+   @/bin/bash /home/pi/getraenkekasse/start.sh
+   ```
+3. Pfad bei Bedarf an deinen Installationsordner anpassen und Raspberry Pi neu starten.
+
+Alternativ kann ein `systemd`-Service verwendet werden; wichtig ist in jedem Fall, dass `start.sh` in einer Desktop-Session mit gesetzter `DISPLAY`-Variable läuft.
+
+## Integrierte Backup-Funktion & Cron
+
+Das Projekt enthält bereits eine integrierte Datenbank-Backup-Funktion:
+
+- `update.sh` erstellt vor einem Update automatisch ein Backup der Datei `data/getraenkekasse.db`.
+- Die Backups werden als `data/getraenkekasse.db.bak.<timestamp>` gespeichert.
+- Es werden automatisch nur die 10 neuesten Backups aufbewahrt (ältere werden gelöscht).
+
+Manuelle Wiederherstellung eines Backups:
+
+```bash
+./restore_backup.sh data/getraenkekasse.db.bak.<timestamp>
+```
+
+
+### USB-Backup-Skript (wird bei Installation automatisch angelegt)
+
+Ab sofort legt `install.sh` automatisch das Skript `/usr/local/bin/backup_to_usb.sh` an und macht es ausführbar.
+Zusätzlich wird automatisch folgender Cronjob gesetzt:
+
+```cron
+0 3 * * * /usr/local/bin/backup_to_usb.sh
+```
+
+Damit wird das USB-Backup jeden Tag um **03:00 Uhr** ausgeführt.
+Das Skript sichert standardmäßig von:
+
+- Quelle: `/home/paul/Desktop/getraenkekasse/data`
+- Ziel: `/media/paul/backup`
+- Log: `/home/paul/backup.log`
+
+Wenn der USB-Stick nicht gemountet ist, wird ein Fehler ins Log geschrieben und der Lauf beendet.
+
 ## Update von älteren Versionen
 
 Um die neuen Funktionen (z.B. Auflade- und Bestandslog) ohne Datenverlust zu nutzen,
