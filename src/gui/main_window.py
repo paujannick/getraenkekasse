@@ -85,11 +85,11 @@ class QuantityDialog(QtWidgets.QDialog):
             #quantity_dialog QLabel#title_label {{
                 font-size: {style['title_font']};
                 font-weight: 700;
-                color: #000000;
+                color: #f8fafc;
             }}
             #quantity_dialog QLabel#info_label {{
                 font-size: {style['info_font']};
-                color: #000000;
+                color: #cbd5e1;
             }}
             #quantity_dialog QFrame#quantity_content {{
                 background-color: transparent;
@@ -103,12 +103,12 @@ class QuantityDialog(QtWidgets.QDialog):
             #quantity_dialog QLabel#quantity_value {{
                 font-size: {style['quantity_font']};
                 font-weight: 700;
-                color: #000000;
+                color: #f8fafc;
             }}
             #quantity_dialog QLabel#payment_title {{
                 font-size: {style['payment_title_font']};
                 font-weight: 700;
-                color: #000000;
+                color: #e2e8f0;
             }}
             #quantity_dialog QFrame#payment_frame {{
                 background-color: rgba(15, 23, 42, 0.94);
@@ -119,7 +119,7 @@ class QuantityDialog(QtWidgets.QDialog):
             #quantity_dialog QPushButton[btnClass="quantity"] {{
                 border-radius: {style['quantity_btn_radius']};
                 background-color: #1f2937;
-                color: #000000;
+                color: #ffffff;
                 font-size: {style['quantity_btn_font']};
                 min-width: {style['quantity_btn_size']};
                 min-height: {style['quantity_btn_size']};
@@ -128,7 +128,7 @@ class QuantityDialog(QtWidgets.QDialog):
             #quantity_dialog QPushButton[btnClass="payment"] {{
                 border-radius: {style['payment_radius']};
                 background-color: #2563eb;
-                color: #000000;
+                color: #ffffff;
                 font-size: {style['payment_font']};
                 font-weight: 600;
                 min-height: {style['payment_height']};
@@ -148,7 +148,7 @@ class QuantityDialog(QtWidgets.QDialog):
             #quantity_dialog QPushButton[btnClass="action"] {{
                 border-radius: 16px;
                 background-color: #334155;
-                color: #000000;
+                color: #f8fafc;
                 font-size: {style['action_font']};
                 font-weight: 600;
                 min-height: {style['action_height']};
@@ -159,7 +159,7 @@ class QuantityDialog(QtWidgets.QDialog):
             }}
             #quantity_dialog QPushButton[btnClass="action"][variant="cancel"] {{
                 background-color: #ef4444;
-                color: #000000;
+                color: #ffffff;
                 font-size: {style['cancel_font']};
                 min-height: {style['cancel_height']};
                 min-width: {style['cancel_width']};
@@ -571,7 +571,7 @@ class TicTacToeDialog(QtWidgets.QDialog):
                 padding: {container_padding}px;
             }}
             #tictactoe_info {{
-                color: #000000;
+                color: #f8fafc;
                 font-weight: 600;
             }}
             QPushButton[ttt="cell"] {{
@@ -1167,13 +1167,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStyleSheet(
             """
             QWidget {
-                color: #000000;
+                color: #e2e8f0;
             }
             QPushButton[btnClass='tile'] {
                 border-radius: 20px;
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #0ea5e9, stop:1 #6366f1);
-                color: #000000;
+                color: #0b1224;
                 font-size: 18px;
                 font-weight: 700;
                 padding: 18px 16px;
@@ -1182,22 +1182,22 @@ class MainWindow(QtWidgets.QMainWindow):
             QPushButton[btnClass='tile'][accent='info'] {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #22c55e, stop:1 #16a34a);
-                color: #000000;
+                color: #052e16;
             }
             QPushButton[btnClass='tile'][accent='secondary'] {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #06b6d4, stop:1 #0ea5e9);
-                color: #000000;
+                color: #05202f;
             }
             QPushButton[btnClass='tile'][state='warning'] {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #fbbf24, stop:1 #f59e0b);
-                color: #000000;
+                color: #3b2f0b;
             }
             QPushButton[btnClass='tile'][state='error'] {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #f87171, stop:1 #ef4444);
-                color: #000000;
+                color: #7f1d1d;
             }
             QPushButton[btnClass='tile']:hover {
                 border: 2px solid rgba(255, 255, 255, 0.85);
@@ -1210,7 +1210,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QPushButton[btnClass='nav'] {
                 border-radius: 14px;
                 background-color: rgba(15, 23, 42, 0.82);
-                color: #000000;
+                color: #e2e8f0;
                 font-size: 16px;
                 font-weight: 700;
                 padding: 10px 14px;
@@ -1218,11 +1218,11 @@ class MainWindow(QtWidgets.QMainWindow):
             }
             QPushButton[btnClass='nav'][accent='admin'] {
                 background-color: #ef4444;
-                color: #000000;
+                color: #fff;
             }
             QPushButton[btnClass='nav']:disabled {
                 background-color: rgba(148, 163, 184, 0.45);
-                color: #000000;
+                color: #e2e8f0;
             }
             QPushButton[btnClass='nav']:hover {
                 background-color: rgba(30, 41, 59, 0.95);
@@ -1232,7 +1232,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 border-radius: 20px;
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 #8b5cf6, stop:1 #c084fc);
-                color: #000000;
+                color: #1f0f3a;
                 font-size: 20px;
                 font-weight: 800;
                 padding: 18px 28px;
