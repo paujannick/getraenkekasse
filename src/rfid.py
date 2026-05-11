@@ -46,11 +46,18 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
         msg_box.setWindowTitle("RFID")
         msg_box.setText("Bitte Karte auflegen…")
         font = msg_box.font()
-        font.setPointSize(20)
+        font.setPointSize(28)
+        font.setBold(True)
         msg_box.setFont(font)
         msg_box.setStandardButtons(QtWidgets.QMessageBox.NoButton)
         msg_box.setWindowModality(QtCore.Qt.ApplicationModal)
-        msg_box.setWindowFlags(msg_box.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+        msg_box.setWindowFlags(
+            msg_box.windowFlags() | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint
+        )
+        msg_box.setStyleSheet(
+            "QMessageBox { background: white; } QLabel { color: black; font-weight: 700; }"
+        )
+        msg_box.showFullScreen()
         msg_box.show()
 
     start_time = time.time()

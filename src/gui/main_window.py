@@ -1072,8 +1072,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.info_label.setAlignment(QtCore.Qt.AlignCenter)
         font = self.info_label.font()
         font.setPointSize(21 if self._compact_display else 24)
+        font.setBold(True)
         self.info_label.setFont(font)
         self.info_label.setWordWrap(True)
+        self.info_label.setStyleSheet(
+            "QLabel { background: rgba(255,255,255,0.92); color: #000; border-radius: 18px; padding: 20px; }"
+        )
         info_layout.addWidget(self.info_label, alignment=QtCore.Qt.AlignCenter)
         self.game_button = QtWidgets.QPushButton("Tic Tac Toe spielen")
         game_font = self.game_button.font()
@@ -1366,7 +1370,10 @@ class MainWindow(QtWidgets.QMainWindow):
         game_context: dict[str, Any] | None = None,
         auto_return_ms: int | None = 4000,
     ) -> None:
-        self.info_label.setText(message)
+        display_message = message
+        if "Bitte Karte auflegen" in message or "Bitte Zielkarte auflegen" in message or "Bitte Admin-Karte auflegen" in message:
+            display_message = f"⬆️  Karte am oberen Leser auflegen\n\n{message}\n\n⬆️  Karte hier halten"
+        self.info_label.setText(display_message)
         self._info_timer.stop()
         enable_game = allow_game and self._game_enabled and bool(game_context)
         if enable_game:
@@ -1380,6 +1387,39 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.setCurrentWidget(self.info_page)
         if auto_return_ms is not None:
             self._info_timer.start(auto_return_ms)
+
+    def _show_big_message(self, title: str, message: str) -> None:
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle(title)
+        dlg.setWindowState(QtCore.Qt.WindowFullScreen)
+        layout = QtWidgets.QVBoxLayout(dlg)
+        layout.setContentsMargins(40, 40, 40, 40)
+        panel = QtWidgets.QFrame()
+        panel.setStyleSheet(
+            "QFrame { background: rgba(255,255,255,0.95); border-radius: 22px; }"
+        )
+        panel_layout = QtWidgets.QVBoxLayout(panel)
+        t = QtWidgets.QLabel(title)
+        t_font = t.font()
+        t_font.setPointSize(28 if self._compact_display else 36)
+        t_font.setBold(True)
+        t.setFont(t_font)
+        t.setAlignment(QtCore.Qt.AlignCenter)
+        text = QtWidgets.QLabel(message)
+        m_font = text.font()
+        m_font.setPointSize(22 if self._compact_display else 28)
+        m_font.setBold(True)
+        text.setFont(m_font)
+        text.setWordWrap(True)
+        text.setAlignment(QtCore.Qt.AlignCenter)
+        ok = QtWidgets.QPushButton("Bestätigen")
+        ok.setMinimumHeight(72 if self._compact_display else 92)
+        ok.clicked.connect(dlg.accept)
+        panel_layout.addWidget(t)
+        panel_layout.addWidget(text, 1)
+        panel_layout.addWidget(ok)
+        layout.addWidget(panel, 1)
+        dlg.exec_()
 
     def show_admin_menu(self) -> None:
         self.admin_menu.reload_web_qr()
@@ -1444,13 +1484,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
         uid = rfid.read_uid(show_dialog=False)
         if not uid:
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
+            self._show_big_message("Fehler", "Karte konnte nicht gelesen werden.")
             self.show_start_page()
             return
         user = models.get_user_by_uid(uid)
         if not user:
             led.indicate_error()
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+            self._show_big_message("Fehler", "Unbekannte Karte.")
             self.show_start_page()
             return
         led.indicate_success()
@@ -1556,13 +1596,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
             uid = rfid.read_uid(show_dialog=False)
             if not uid:
-                QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
+                self._show_big_message("Fehler", "Karte konnte nicht gelesen werden.")
                 self.show_start_page()
                 return
             user = models.get_user_by_uid(uid)
             if not user:
                 led.indicate_error()
-                QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+                self._show_big_message("Fehler", "Unbekannte Karte.")
                 self.show_start_page()
                 return
             total_price = 0
@@ -1624,7 +1664,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if dialog.event_user_id is not None:
             user = models.get_user(dialog.event_user_id)
             if not user:
-                QtWidgets.QMessageBox.warning(self, "Fehler", "Benutzer nicht gefunden")
+                self._show_big_message("Fehler", "Benutzer nicht gefunden.")
                 self.show_start_page()
                 return
             total_price = drink.price * quantity
@@ -1650,13 +1690,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self._show_info_message("Bitte Karte auflegen…", auto_return_ms=None)
         uid = rfid.read_uid(show_dialog=False)
         if not uid:
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Karte konnte nicht gelesen werden")
+            self._show_big_message("Fehler", "Karte konnte nicht gelesen werden.")
             self.show_start_page()
             return
         user = models.get_user_by_uid(uid)
         if not user:
             led.indicate_error()
-            QtWidgets.QMessageBox.warning(self, "Fehler", "Unbekannte Karte")
+            self._show_big_message("Fehler", "Unbekannte Karte.")
             self.show_start_page()
             return
         total_price = drink.price * quantity
@@ -1739,7 +1779,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if pin_dialog.exec_() != QtWidgets.QDialog.Accepted or \
                     pin_dialog.pin != models.get_admin_pin():
                 led.indicate_error()
-                QtWidgets.QMessageBox.warning(self, "Fehler", "Kein Zugang")
+                self._show_big_message("Fehler", "Kein Zugang.")
                 self.show_start_page()
                 return
         led.indicate_success()

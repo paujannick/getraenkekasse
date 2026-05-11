@@ -512,3 +512,50 @@ def get_monthly_stats(months: int = 12) -> tuple[list[dict[str, int]], dict[str,
         return stats, totals
     finally:
         conn.close()
+
+
+def get_period_clause(period: str) -> str:
+    """Return SQLite strftime clause for day/week/month grouping."""
+    if period == "day":
+        return "%Y-%m-%d"
+    if period == "week":
+        return "%Y-W%W"
+    return "%Y-%m"
+
+
+def get_report_metrics(start: str | None = None, end: str | None = None) -> dict[str, list[sqlite3.Row]]:
+    """Return top articles, out-of-stock history and topup volumes."""
+    where = []
+    params: list[str] = []
+    if start:
+        where.append("timestamp >= ?")
+        params.append(start)
+    if end:
+        where.append("timestamp <= ?")
+        params.append(end)
+    tx_where = f"WHERE {' AND '.join(where)}" if where else ""
+    topup_where = tx_where
+
+    with get_connection() as conn:
+        top_articles = conn.execute(
+            "SELECT d.name AS drink_name, SUM(t.quantity) AS quantity, "
+            "SUM(t.quantity * d.price) AS revenue "
+            "FROM transactions t JOIN drinks d ON d.id = t.drink_id "
+            f"{tx_where} GROUP BY d.id ORDER BY quantity DESC, revenue DESC LIMIT 10",
+            params,
+        ).fetchall()
+        out_of_stock = conn.execute(
+            "SELECT d.name AS drink_name, r.timestamp, d.stock "
+            "FROM restocks r JOIN drinks d ON d.id = r.drink_id "
+            "WHERE d.stock <= 0 ORDER BY r.timestamp DESC LIMIT 100"
+        ).fetchall()
+        topup_volume = conn.execute(
+            "SELECT SUM(amount) AS total_amount, COUNT(*) AS total_count FROM topups "
+            f"{topup_where}",
+            params,
+        ).fetchall()
+    return {
+        "top_articles": top_articles,
+        "out_of_stock": out_of_stock,
+        "topup_volume": topup_volume,
+    }
