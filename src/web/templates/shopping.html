@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <h1>Einkaufsliste</h1>
+  <form method="get" class="actions">
+    <label for="days">Verkaufszeitraum (Tage)</label>
+    <input type="number" min="7" max="180" step="1" id="days" name="days" value="{{ days }}">
+    <button type="submit">Berechnen</button>
+  </form>
+  <table>
+    <tr><th>Getränk</th><th>Bestand</th><th>Verkauft</th><th>Trend</th><th>Zielbestand</th><th>Kaufen</th></tr>
+    {% for r in recommendations %}
+    <tr class="{% if r.buy_qty > 0 %}negstock{% endif %}"><td>{{ r.name }}</td><td>{{ r.stock }}</td><td>{{ r.sold }}</td><td>{{ r.trend }}</td><td>{{ r.target_stock }}</td><td><strong>{{ r.buy_qty }}</strong></td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

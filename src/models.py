@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 import sqlite3
 from datetime import datetime
+import json
 from zoneinfo import ZoneInfo
 
 from .database import get_connection, get_setting, set_setting
@@ -419,6 +420,63 @@ def get_drinks_below_min(conn: Optional[sqlite3.Connection] = None) -> list[Drin
         if own and conn is not None:
             conn.close()
 
+
+
+
+def get_purchase_recommendations(days: int = 30, coverage_days: int = 21, replenish_cycle_days: int = 45) -> list[dict[str, int | float | str]]:
+    """Estimate buy quantities per drink from recent sales and reorder cycle."""
+    days = max(1, int(days))
+    coverage_days = max(1, int(coverage_days))
+    replenish_cycle_days = max(coverage_days, int(replenish_cycle_days))
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT d.id, d.name, d.stock, d.min_stock, COALESCE(SUM(t.quantity), 0) AS sold "
+            "FROM drinks d "
+            "LEFT JOIN transactions t ON t.drink_id = d.id AND DATE(t.timestamp) >= DATE('now', ?) "
+            "GROUP BY d.id ORDER BY d.name",
+            (f'-{days} day',),
+        ).fetchall()
+    recs = []
+    for row in rows:
+        sold = int(row['sold'] or 0)
+        stock = int(row['stock'] or 0)
+        min_stock = int(row['min_stock'] or 0)
+        daily_rate = sold / days
+        forecast_target = round(daily_rate * replenish_cycle_days)
+        target_stock = max(min_stock, forecast_target)
+        buy_qty = max(0, target_stock - stock)
+        if sold == 0 and stock < min_stock:
+            buy_qty = max(buy_qty, min_stock - stock)
+        trend = 'gut' if daily_rate >= 0.5 else ('ruhig' if sold == 0 else 'schwach')
+        recs.append({
+            'id': int(row['id']),
+            'name': row['name'],
+            'stock': stock,
+            'min_stock': min_stock,
+            'sold': sold,
+            'daily_rate': round(daily_rate, 2),
+            'target_stock': int(target_stock),
+            'buy_qty': int(buy_qty),
+            'trend': trend,
+            'is_low': stock < min_stock,
+        })
+    return recs
+
+
+def get_new_low_stock_recommendations(days: int = 30, coverage_days: int = 21, replenish_cycle_days: int = 45) -> list[dict[str, int | float | str]]:
+    """Return only newly low-stock drinks and persist notification state."""
+    recs = get_purchase_recommendations(days, coverage_days, replenish_cycle_days)
+    low_ids = {r['id'] for r in recs if r['is_low']}
+    raw = get_setting('low_stock_notified') or '[]'
+    try:
+        notified = set(int(x) for x in json.loads(raw))
+    except Exception:
+        notified = set()
+    new_low_ids = low_ids - notified
+    refreshed_notified = notified & low_ids
+    refreshed_notified |= new_low_ids
+    set_setting('low_stock_notified', json.dumps(sorted(refreshed_notified)))
+    return [r for r in recs if r['id'] in new_low_ids]
 
 
 def rfid_read_for_web() -> Optional[str]:

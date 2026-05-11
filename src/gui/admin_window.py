@@ -47,14 +47,22 @@ class AdminWindow(QtWidgets.QWidget):
         self.tabs.addTab(widget, "Getränke")
         self.drink_list = QtWidgets.QListWidget()
         layout.addWidget(self.drink_list)
+        self.shopping_btn = QtWidgets.QPushButton("Einkaufen")
+        self.shopping_btn.clicked.connect(self.show_shopping_forecast)
+        layout.addWidget(self.shopping_btn)
         self.reload_drinks()
 
     def reload_drinks(self):
         self.drink_list.clear()
+        rec = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
+        rec_map = {r['id']: r for r in rec}
         conn = database.get_connection()
         cur = conn.execute('SELECT * FROM drinks ORDER BY name')
         for row in cur.fetchall():
-            self.drink_list.addItem(f"{row['name']} - {row['price']/100:.2f} €")
+            r = rec_map.get(row['id'])
+            buy = r['buy_qty'] if r else 0
+            trend = r['trend'] if r else '-'
+            self.drink_list.addItem(f"{row['name']} - {row['price']/100:.2f} € | Bestand {row['stock']} | Forecast {trend} | Kaufen {buy}")
         conn.close()
 
     def _setup_log_tab(self):
@@ -127,3 +135,14 @@ class AdminWindow(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(dlg)
         layout.addWidget(label)
         dlg.exec_()
+
+
+    def show_shopping_forecast(self):
+        recs = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
+        lines = ["Einkaufsliste (30 Tage):", ""]
+        for r in recs:
+            if r['buy_qty'] > 0:
+                lines.append(f"- {r['name']}: kaufen {r['buy_qty']} (Bestand {r['stock']}, verkauft {r['sold']})")
+        if len(lines) == 2:
+            lines.append("Aktuell nichts dringend nachkaufen.")
+        QtWidgets.QMessageBox.information(self, "Einkaufen", "\n".join(lines))

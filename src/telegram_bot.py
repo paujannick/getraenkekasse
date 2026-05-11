@@ -108,14 +108,18 @@ class TelegramNotifier:
 
     def build_status(self) -> str:
         drinks = models.get_drinks_below_min()
+        recs = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
         stats, _ = models.get_monthly_stats(1)
         lines: list[str] = []
         if drinks:
-            lines.append('Nachzufüllende Getränke:')
+            lines.append('Einkaufszettel (knapp):')
+            rec_map = {r['id']: r for r in recs}
             for d in drinks:
-                lines.append(f"- {d.name}: {d.stock}/{d.min_stock}")
+                r = rec_map.get(d.id)
+                qty = r['buy_qty'] if r else max(0, d.min_stock - d.stock)
+                lines.append(f"- {d.name}: kaufen {qty}")
         else:
-            lines.append('Alle Getränke ausreichend vorhanden.')
+            lines.append('Kein Einkauf dringend nötig.')
         if stats:
             s = stats[-1]
             lines.append('')
@@ -128,6 +132,17 @@ class TelegramNotifier:
                 f"Barverkäufe: {s['cash_value']/100:.2f} € ({s['cash_count']})"
             )
         return '\n'.join(lines)
+
+
+    def send_low_stock_alert_once(self) -> None:
+        """Send one-time alert when a drink newly drops below minimum stock."""
+        new_low = models.get_new_low_stock_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
+        if not new_low:
+            return
+        lines = ['Neuer Engpass erkannt:']
+        for r in new_low:
+            lines.append(f"- {r['name']}: kaufen {r['buy_qty']} (Min {r['min_stock']}, Bestand {r['stock']})")
+        self.send_message('\n'.join(lines))
 
     def send_status(self) -> None:
         text = self.build_status()
@@ -156,6 +171,8 @@ class TelegramNotifier:
                 now = time.localtime()
                 month_tag = f"{now.tm_year:04d}-{now.tm_mon:02d}"
                 last_day = calendar.monthrange(now.tm_year, now.tm_mon)[1]
+
+                self.send_low_stock_alert_once()
 
                 if now.tm_mday == last_day and now.tm_hour == 13 and now.tm_min == 0:
                     if month_tag != self.last_month:
