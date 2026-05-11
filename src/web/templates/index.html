@@ -7,7 +7,6 @@
         {{ (total_balance/100)|round(2) }} €</p>
     <div class="actions">
         <a class="btn" href="{{ url_for('reports') }}">Reports & Forecast</a>
-        <a class="btn secondary" href="{{ url_for('einkaufen') }}">Einkaufen</a>
         <form method="post" action="{{ url_for('refresh') }}">
             <button type="submit" class="secondary">GUI aktualisieren</button>
         </form>
@@ -17,21 +16,6 @@
     </div>
 </div>
 
-{% if to_buy %}
-<div class="card">
-    <h2>Nachkaufen</h2>
-    <table>
-        <tr><th>Getränk</th><th>Bestand</th><th>Mindest</th></tr>
-        {% for d in to_buy %}
-        <tr class="{% if d.stock < d.min_stock %}negstock{% endif %}">
-            <td>{{ d.name }}</td>
-            <td>{{ d.stock }}</td>
-            <td>{{ d.min_stock }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-{% endif %}
 
 {% endblock %}
 

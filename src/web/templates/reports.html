@@ -10,7 +10,6 @@
       <option value="month" {% if period=='month' %}selected{% endif %}>Monat</option>
     </select>
     <button type="submit">Filtern</button>
-    <a class="btn secondary" href="{{ url_for('export_report_metrics', period=period) }}">CSV Kennzahlen</a>
   </form>
 </div>
 
@@ -34,15 +33,6 @@
   <table><tr><th>Artikel</th><th>Bestand</th><th>Min</th><th>Forecast</th></tr>
   {% for f in forecast %}
    <tr class="{% if f.status != 'ok' %}negstock{% endif %}"><td>{{ f.name }}</td><td>{{ f.stock }}</td><td>{{ f.min_stock }}</td><td>{{ f.status }}</td></tr>
-  {% endfor %}
-  </table>
-</div>
-
-<div class="card">
-  <h2>Einkaufsempfehlung</h2>
-  <table><tr><th>Artikel</th><th>Verkauft</th><th>Trend</th><th>Kaufen</th></tr>
-  {% for r in recommendations %}
-    <tr><td>{{ r.name }}</td><td>{{ r.sold }}</td><td>{{ r.trend }}</td><td>{{ r.buy_qty }}</td></tr>
   {% endfor %}
   </table>
 </div>

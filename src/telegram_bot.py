@@ -144,11 +144,12 @@ class TelegramNotifier:
             lines.append(f"- {r['name']}: kaufen {r['buy_qty']} (Min {r['min_stock']}, Bestand {r['stock']})")
         self.send_message('\n'.join(lines))
 
-    def send_status(self) -> None:
+    def send_status(self, include_files: bool = True) -> None:
         text = self.build_status()
         self.send_message(text)
-        self.send_logfile()
-        self.send_datafiles()
+        if include_files:
+            self.send_logfile()
+            self.send_datafiles()
 
     # --- Polling loop ---------------------------------------------------------
     def _poll(self) -> None:
@@ -177,7 +178,7 @@ class TelegramNotifier:
                 if now.tm_mday == last_day and now.tm_hour == 13 and now.tm_min == 0:
                     if month_tag != self.last_month:
                         self.last_month = month_tag
-                        self.send_status()
+                        self.send_status(include_files=False)
 
             except Exception:
                 pass
