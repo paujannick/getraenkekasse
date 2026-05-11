@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <h1>Reports / Lager & Forecast</h1>
+  <form method="get" class="actions">
+    <label for="period">Zeitraum</label>
+    <select name="period" id="period">
+      <option value="day" {% if period=='day' %}selected{% endif %}>Tag</option>
+      <option value="week" {% if period=='week' %}selected{% endif %}>Woche</option>
+      <option value="month" {% if period=='month' %}selected{% endif %}>Monat</option>
+    </select>
+    <button type="submit">Filtern</button>
+    <a class="btn secondary" href="{{ url_for('export_report_metrics', period=period) }}">CSV Kennzahlen</a>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Top-Artikel</h2>
+  <table><tr><th>Artikel</th><th>Menge</th><th>Umsatz (€)</th></tr>
+  {% for r in top_articles %}
+    <tr><td>{{ r.drink_name }}</td><td>{{ r.quantity }}</td><td>{{ '%.2f'|format((r.revenue or 0)/100) }}</td></tr>
+  {% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>Aufladevolumen</h2>
+  <p>Anzahl Aufladungen: <strong>{{ topups.count }}</strong></p>
+  <p>Volumen: <strong>{{ '%.2f'|format((topups.amount or 0)/100) }} €</strong></p>
+</div>
+
+<div class="card">
+  <h2>Lagerstatus / Forecast</h2>
+  <table><tr><th>Artikel</th><th>Bestand</th><th>Min</th><th>Forecast</th></tr>
+  {% for f in forecast %}
+   <tr class="{% if f.status != 'ok' %}negstock{% endif %}"><td>{{ f.name }}</td><td>{{ f.stock }}</td><td>{{ f.min_stock }}</td><td>{{ f.status }}</td></tr>
+  {% endfor %}
+  </table>
+</div>
+{% endblock %}

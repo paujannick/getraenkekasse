@@ -18,6 +18,14 @@ from .. import database, models
 from ..telegram_bot import notifier
 
 
+def _date_filter_clause(period: str) -> str:
+    if period == "day":
+        return "date('now', '-1 day')"
+    if period == "week":
+        return "date('now', '-7 day')"
+    return "date('now', '-1 month')"
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = 'change-me'
@@ -71,6 +79,37 @@ def create_app() -> Flask:
     def dashboard():
         stats, totals = models.get_monthly_stats()
         return render_template('dashboard.html', stats=stats, totals=totals)
+
+    @app.route('/reports')
+    @login_required
+    def reports():
+        period = request.args.get('period', default='month', type=str)
+        if period not in {'day', 'week', 'month'}:
+            period = 'month'
+        date_clause = _date_filter_clause(period)
+        conn = database.get_connection()
+        top_articles = conn.execute(
+            "SELECT d.name AS drink_name, SUM(t.quantity) AS quantity, "
+            "SUM(t.quantity * d.price) AS revenue "
+            "FROM transactions t JOIN drinks d ON d.id = t.drink_id "
+            f"WHERE DATE(t.timestamp) >= {date_clause} "
+            "GROUP BY d.id ORDER BY quantity DESC, revenue DESC LIMIT 10"
+        ).fetchall()
+        topups = conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) AS amount, COUNT(*) AS count "
+            f"FROM topups WHERE DATE(timestamp) >= {date_clause}"
+        ).fetchone()
+        stock = conn.execute(
+            "SELECT name, stock, min_stock, CASE WHEN min_stock > 0 THEN ROUND(stock * 1.0 / min_stock, 2) ELSE NULL END AS ratio "
+            "FROM drinks ORDER BY stock ASC, name"
+        ).fetchall()
+        conn.close()
+        forecast = []
+        for row in stock:
+            ratio = row["ratio"]
+            status = "kritisch" if row["stock"] <= 0 else ("niedrig" if row["stock"] < row["min_stock"] else "ok")
+            forecast.append({"name": row["name"], "stock": row["stock"], "min_stock": row["min_stock"], "ratio": ratio, "status": status})
+        return render_template("reports.html", period=period, top_articles=top_articles, topups=topups, forecast=forecast)
 
     @app.route('/dashboard/receipt')
     @login_required
@@ -744,25 +783,64 @@ def create_app() -> Flask:
     @app.route('/export/transactions_anonymized')
     @login_required
     def export_transactions_anonymized():
+        period = request.args.get('period', default='month', type=str)
+        date_clause = _date_filter_clause(period)
         conn = database.get_connection()
         cur = conn.execute(
             'SELECT t.timestamp, d.name as drink_name, t.quantity '
             'FROM transactions t '
             'JOIN drinks d ON d.id = t.drink_id '
+            f"WHERE DATE(t.timestamp) >= {date_clause} "
             'ORDER BY t.timestamp DESC'
         )
         rows = cur.fetchall()
         conn.close()
         out = io.StringIO()
         writer = csv.writer(out)
-        writer.writerow(['timestamp', 'drink', 'quantity'])
+        writer.writerow(['period', 'timestamp', 'drink', 'quantity'])
         for r in rows:
-            writer.writerow([r['timestamp'], r['drink_name'], r['quantity']])
+            writer.writerow([period, r['timestamp'], r['drink_name'], r['quantity']])
         resp = make_response(out.getvalue())
         resp.headers['Content-Type'] = 'text/csv'
         resp.headers['Content-Disposition'] = (
             'attachment; filename=transactions_anonymized.csv'
         )
+        return resp
+
+    @app.route('/export/report_metrics')
+    @login_required
+    def export_report_metrics():
+        period = request.args.get('period', default='month', type=str)
+        date_clause = _date_filter_clause(period)
+        conn = database.get_connection()
+        top_articles = conn.execute(
+            "SELECT d.name AS drink_name, SUM(t.quantity) AS quantity, "
+            "SUM(t.quantity * d.price) AS revenue "
+            "FROM transactions t JOIN drinks d ON d.id = t.drink_id "
+            f"WHERE DATE(t.timestamp) >= {date_clause} "
+            "GROUP BY d.id ORDER BY quantity DESC, revenue DESC LIMIT 10"
+        ).fetchall()
+        out_of_stock = conn.execute(
+            "SELECT d.name AS drink_name, COUNT(*) AS stockout_count "
+            "FROM drinks d WHERE d.stock <= 0 GROUP BY d.id ORDER BY stockout_count DESC"
+        ).fetchall()
+        topup_stats = conn.execute(
+            "SELECT COUNT(*) AS total_topups, COALESCE(SUM(amount), 0) AS topup_volume "
+            f"FROM topups WHERE DATE(timestamp) >= {date_clause}"
+        ).fetchone()
+        conn.close()
+
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['metric', 'name', 'value', 'value2', 'period'])
+        for row in top_articles:
+            writer.writerow(['top_article', row['drink_name'], row['quantity'], f"{row['revenue']/100:.2f}", period])
+        for row in out_of_stock:
+            writer.writerow(['out_of_stock_history', row['drink_name'], row['stockout_count'], '', period])
+        writer.writerow(['topup_volume', 'topups', topup_stats['total_topups'], f"{topup_stats['topup_volume']/100:.2f}", period])
+        resp = make_response(out.getvalue())
+        resp.headers['Content-Type'] = 'text/csv'
+        resp.headers['Content-Disposition'] = 'attachment; filename=report_metrics.csv'
         return resp
 
     @app.route('/export/inventory')

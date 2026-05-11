@@ -6,6 +6,7 @@
     <p>Guthaben aller Benutzer (ohne Veranstaltungskarten):
         {{ (total_balance/100)|round(2) }} €</p>
     <div class="actions">
+        <a class="btn" href="{{ url_for('reports') }}">Reports & Forecast</a>
         <form method="post" action="{{ url_for('refresh') }}">
             <button type="submit" class="secondary">GUI aktualisieren</button>
         </form>
