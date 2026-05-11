@@ -120,6 +120,7 @@ def create_app() -> Flask:
     def einkaufen():
         days = request.args.get('days', default=30, type=int)
         recs = models.get_purchase_recommendations(days=days, coverage_days=21, replenish_cycle_days=max(45, days))
+        recs = sorted(recs, key=lambda r: (-r['buy_qty'], -r['sold'], r['name'].lower()))
         return render_template('shopping.html', days=days, recommendations=recs)
     @app.route('/dashboard/receipt')
     @login_required
