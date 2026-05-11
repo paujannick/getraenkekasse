@@ -47,7 +47,7 @@ class AdminWindow(QtWidgets.QWidget):
         self.tabs.addTab(widget, "Getränke")
         self.drink_list = QtWidgets.QListWidget()
         layout.addWidget(self.drink_list)
-        self.shopping_btn = QtWidgets.QPushButton("Einkaufen")
+        self.shopping_btn = QtWidgets.QPushButton("Einkaufen (Forecast)")
         self.shopping_btn.clicked.connect(self.show_shopping_forecast)
         layout.addWidget(self.shopping_btn)
         self.reload_drinks()
@@ -139,10 +139,47 @@ class AdminWindow(QtWidgets.QWidget):
 
     def show_shopping_forecast(self):
         recs = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
-        lines = ["Einkaufsliste (30 Tage):", ""]
-        for r in recs:
-            if r['buy_qty'] > 0:
-                lines.append(f"- {r['name']}: kaufen {r['buy_qty']} (Bestand {r['stock']}, verkauft {r['sold']})")
-        if len(lines) == 2:
-            lines.append("Aktuell nichts dringend nachkaufen.")
-        QtWidgets.QMessageBox.information(self, "Einkaufen", "\n".join(lines))
+        recs = sorted(recs, key=lambda r: (-r['buy_qty'], -r['forecast_qty'], r['name'].lower()))
+
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle("Einkaufsliste mit Forecast")
+        dlg.setWindowState(QtCore.Qt.WindowFullScreen)
+        layout = QtWidgets.QVBoxLayout(dlg)
+
+        info = QtWidgets.QLabel("Zeitraum: Verkäufe der letzten 30 Tage, Forecast für 45 Tage")
+        layout.addWidget(info)
+
+        table = QtWidgets.QTableWidget(len(recs), 5)
+        table.setHorizontalHeaderLabels([
+            "Getränk", "Bestand", "Min. Bestand", "Forecast (45T)", "Empf. Mindest-Einkaufsmenge"
+        ])
+        table.verticalHeader().setVisible(False)
+        table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+
+        for row, r in enumerate(recs):
+            values = [
+                r['name'],
+                str(r['stock']),
+                str(r['min_stock']),
+                str(r['forecast_qty']),
+                str(r['buy_qty']),
+            ]
+            for col, value in enumerate(values):
+                item = QtWidgets.QTableWidgetItem(value)
+                if col > 0:
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                if r['buy_qty'] > 0:
+                    item.setBackground(QtGui.QColor('#ffe2e2'))
+                table.setItem(row, col, item)
+
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        for col in range(1, 5):
+            header.setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeToContents)
+
+        layout.addWidget(table)
+        close_btn = QtWidgets.QPushButton("Schließen")
+        close_btn.clicked.connect(dlg.accept)
+        layout.addWidget(close_btn)
+        dlg.exec_()
