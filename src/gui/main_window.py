@@ -887,18 +887,31 @@ class PurchasedPage(QtWidgets.QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.verticalHeader().setDefaultSectionSize(72)
         self.table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
-        layout.addWidget(self.table)
+        self.table.setStyleSheet(
+            "QTableWidget { gridline-color: #b9c0cb; }"
+            "QTableWidget::item { padding: 10px; }"
+        )
+        layout.addWidget(self.table, 1)
 
         scroll_row = QtWidgets.QHBoxLayout()
+        scroll_row.setSpacing(12)
         self.scroll_up_btn = QtWidgets.QPushButton("▲ Nach oben")
         self.scroll_down_btn = QtWidgets.QPushButton("▼ Nach unten")
+        for btn in (self.scroll_up_btn, self.scroll_down_btn):
+            btn.setMinimumHeight(64)
+            btn.setStyleSheet("font-size: 22px; font-weight: 600; background: #e2e8f0; color: #0f172a;")
         scroll_row.addWidget(self.scroll_up_btn)
         scroll_row.addWidget(self.scroll_down_btn)
         layout.addLayout(scroll_row)
 
         button_row = QtWidgets.QHBoxLayout()
+        button_row.setSpacing(12)
         self.book_btn = QtWidgets.QPushButton("Buchen")
         self.back_btn = QtWidgets.QPushButton("Zurück")
+        self.book_btn.setMinimumHeight(72)
+        self.back_btn.setMinimumHeight(72)
+        self.book_btn.setStyleSheet("font-size: 24px; font-weight: 700; background: #16a34a; color: white;")
+        self.back_btn.setStyleSheet("font-size: 24px; font-weight: 700; background: #334155; color: white;")
         button_row.addWidget(self.book_btn)
         button_row.addWidget(self.back_btn)
         layout.addLayout(button_row)
@@ -918,11 +931,16 @@ class PurchasedPage(QtWidgets.QWidget):
             spin = QtWidgets.QSpinBox()
             spin.setRange(0, 10000)
             spin.setValue(0)
-            spin.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
-            spin.setMinimumHeight(58)
-            font = spin.font(); font.setPointSize(20); spin.setFont(font)
+            spin.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+            spin.setMinimumHeight(62)
+            spin.setSingleStep(1)
+            font = spin.font(); font.setPointSize(24); spin.setFont(font)
+            spin.setStyleSheet(
+                "QSpinBox { background: #ffffff; color: #0f172a; padding: 4px 10px; border: 2px solid #94a3b8; border-radius: 10px; }"
+                "QSpinBox::up-button, QSpinBox::down-button { width: 42px; background: #cbd5e1; }"
+                "QSpinBox::up-button:hover, QSpinBox::down-button:hover { background: #94a3b8; }"
+            )
             spin.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
-            spin.lineEdit().setReadOnly(True)
             spin.mousePressEvent = lambda event, s=spin: self._open_touch_keyboard(s)
             self.table.setCellWidget(row, 2, spin)
 
