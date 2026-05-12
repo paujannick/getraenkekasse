@@ -943,12 +943,13 @@ class PurchasedPage(QtWidgets.QWidget):
             spin.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
             spin.mousePressEvent = lambda event, s=spin: self._open_touch_keyboard(s)
             open_pad_btn = QtWidgets.QPushButton("Zahlenfeld")
-            open_pad_btn.setMinimumHeight(58)
+            open_pad_btn.setMinimumHeight(46)
+            open_pad_btn.setMinimumWidth(118)
             btn_font = open_pad_btn.font()
-            btn_font.setPointSize(16)
+            btn_font.setPointSize(13)
             open_pad_btn.setFont(btn_font)
             open_pad_btn.setStyleSheet(
-                "QPushButton { background: #2563eb; color: white; border-radius: 10px; font-weight: 700; padding: 4px 10px; }"
+                "QPushButton { background: #2563eb; color: white; border-radius: 8px; font-weight: 700; padding: 2px 8px; }"
                 "QPushButton:pressed { background: #1d4ed8; }"
             )
             open_pad_btn.clicked.connect(lambda _, s=spin: self._open_touch_keyboard(s))
