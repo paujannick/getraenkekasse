@@ -988,7 +988,11 @@ class AdminMenu(QtWidgets.QWidget):
         self.quit_btn = QtWidgets.QPushButton("Beenden")
         self.back_btn = QtWidgets.QPushButton("Zurück")
 
-        for btn in (
+        grid = QtWidgets.QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(10)
+
+        buttons = (
             self.stock_btn,
             self.purchased_btn,
             self.topup_btn,
@@ -997,12 +1001,20 @@ class AdminMenu(QtWidgets.QWidget):
             self.web_btn,
             self.quit_btn,
             self.back_btn,
-        ):
+        )
+        for index, btn in enumerate(buttons):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
-            btn.setMinimumHeight(56)
-            layout.addWidget(btn)
+            btn.setMinimumHeight(72)
+            row, col = divmod(index, 2)
+            grid.addWidget(btn, row, col)
+
+        for col in range(2):
+            grid.setColumnStretch(col, 1)
+
+        layout.addLayout(grid)
+        layout.addStretch(1)
 
         self.reload_web_qr()
 
