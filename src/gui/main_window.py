@@ -887,7 +887,7 @@ class PurchasedPage(QtWidgets.QWidget):
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
         self.table.verticalHeader().setVisible(False)
-        self.table.verticalHeader().setDefaultSectionSize(72)
+        self.table.verticalHeader().setDefaultSectionSize(86)
         self.table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
         self.table.setStyleSheet(
             "QTableWidget { gridline-color: #b9c0cb; }"
@@ -934,15 +934,32 @@ class PurchasedPage(QtWidgets.QWidget):
             spin.setRange(0, 10000)
             spin.setValue(0)
             spin.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
-            spin.setMinimumHeight(62)
+            spin.setMinimumHeight(58)
             spin.setSingleStep(1)
-            font = spin.font(); font.setPointSize(24); spin.setFont(font)
+            font = spin.font(); font.setPointSize(20); spin.setFont(font)
             spin.setStyleSheet(
                 "QSpinBox { background: #ffffff; color: #0f172a; padding: 4px 10px; border: 2px solid #94a3b8; border-radius: 10px; }"
             )
             spin.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
             spin.mousePressEvent = lambda event, s=spin: self._open_touch_keyboard(s)
-            self.table.setCellWidget(row, 2, spin)
+            open_pad_btn = QtWidgets.QPushButton("Zahlenfeld")
+            open_pad_btn.setMinimumHeight(58)
+            btn_font = open_pad_btn.font()
+            btn_font.setPointSize(16)
+            open_pad_btn.setFont(btn_font)
+            open_pad_btn.setStyleSheet(
+                "QPushButton { background: #2563eb; color: white; border-radius: 10px; font-weight: 700; padding: 4px 10px; }"
+                "QPushButton:pressed { background: #1d4ed8; }"
+            )
+            open_pad_btn.clicked.connect(lambda _, s=spin: self._open_touch_keyboard(s))
+
+            cell = QtWidgets.QWidget()
+            cell_layout = QtWidgets.QHBoxLayout(cell)
+            cell_layout.setContentsMargins(0, 0, 0, 0)
+            cell_layout.setSpacing(8)
+            cell_layout.addWidget(spin, 1)
+            cell_layout.addWidget(open_pad_btn, 0)
+            self.table.setCellWidget(row, 2, cell)
 
     def _scroll_rows(self, delta: int) -> None:
         bar = self.table.verticalScrollBar()
@@ -956,7 +973,8 @@ class PurchasedPage(QtWidgets.QWidget):
     def book(self) -> None:
         booked = 0
         for row, drink_id in enumerate(self._drink_ids):
-            spin = self.table.cellWidget(row, 2)
+            cell = self.table.cellWidget(row, 2)
+            spin = cell.findChild(QtWidgets.QSpinBox) if isinstance(cell, QtWidgets.QWidget) else None
             qty = spin.value() if isinstance(spin, QtWidgets.QSpinBox) else 0
             if qty > 0:
                 models.update_drink_stock(drink_id, qty)
