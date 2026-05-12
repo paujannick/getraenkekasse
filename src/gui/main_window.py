@@ -837,23 +837,8 @@ class NumberInputDialog(QtWidgets.QDialog):
         ]
         for text, r, c in buttons:
             btn = QtWidgets.QPushButton(text)
-            bf = btn.font(); bf.setPointSize(19); btn.setFont(bf)
-            btn.setMinimumSize(98, 70)
-            grid.addWidget(btn, r, c)
-            if text.isdigit():
-                btn.clicked.connect(lambda _, t=text: self._append_digit(t))
-            elif text == '←':
-                btn.clicked.connect(lambda _=None: self.edit.backspace())
-            else:
-                btn.clicked.connect(self._clear)
-        layout.addLayout(grid)
-
-        btn_row = QtWidgets.QHBoxLayout()
-        ok_btn = QtWidgets.QPushButton("Bestätigen")
-        cancel_btn = QtWidgets.QPushButton("Abbrechen")
-        for btn in (ok_btn, cancel_btn):
-            bf = btn.font(); bf.setPointSize(16); btn.setFont(bf)
-            btn.setMinimumHeight(54)
+            bf = btn.font(); bf.setPointSize(17); btn.setFont(bf)
+            btn.setMinimumHeight(58)
             btn_row.addWidget(btn)
         ok_btn.clicked.connect(self.accept)
         cancel_btn.clicked.connect(self.reject)
@@ -910,10 +895,10 @@ class PurchasedPage(QtWidgets.QWidget):
         button_row.setSpacing(12)
         self.book_btn = QtWidgets.QPushButton("Buchen")
         self.back_btn = QtWidgets.QPushButton("Zurück")
-        self.book_btn.setMinimumHeight(54)
-        self.back_btn.setMinimumHeight(54)
-        self.book_btn.setStyleSheet("font-size: 18px; font-weight: 700; background: #16a34a; color: white;")
-        self.back_btn.setStyleSheet("font-size: 18px; font-weight: 700; background: #334155; color: white;")
+        self.book_btn.setMinimumHeight(58)
+        self.back_btn.setMinimumHeight(58)
+        self.book_btn.setStyleSheet("font-size: 19px; font-weight: 700; background: #16a34a; color: white;")
+        self.back_btn.setStyleSheet("font-size: 19px; font-weight: 700; background: #334155; color: white;")
         button_row.addWidget(self.book_btn)
         button_row.addWidget(self.back_btn)
         layout.addLayout(button_row)
