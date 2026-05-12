@@ -814,10 +814,12 @@ class NumberInputDialog(QtWidgets.QDialog):
     def __init__(self, value: int = 0, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         self.setWindowTitle("Menge eingeben")
-        self.setWindowState(QtCore.Qt.WindowMaximized)
+        self.setModal(True)
+        self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
+        self.setWindowState(QtCore.Qt.WindowFullScreen)
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(10)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
 
         self.edit = QtWidgets.QLineEdit(str(value), alignment=QtCore.Qt.AlignCenter)
         font = self.edit.font()
@@ -836,7 +838,7 @@ class NumberInputDialog(QtWidgets.QDialog):
         for text, r, c in buttons:
             btn = QtWidgets.QPushButton(text)
             bf = btn.font(); bf.setPointSize(24); btn.setFont(bf)
-            btn.setMinimumSize(110, 72)
+            btn.setMinimumSize(130, 96)
             grid.addWidget(btn, r, c)
             if text.isdigit():
                 btn.clicked.connect(lambda _, t=text: self._append_digit(t))
@@ -851,7 +853,7 @@ class NumberInputDialog(QtWidgets.QDialog):
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         for btn in (ok_btn, cancel_btn):
             bf = btn.font(); bf.setPointSize(20); btn.setFont(bf)
-            btn.setMinimumHeight(58)
+            btn.setMinimumHeight(72)
             btn_row.addWidget(btn)
         ok_btn.clicked.connect(self.accept)
         cancel_btn.clicked.connect(self.reject)
@@ -882,10 +884,8 @@ class PurchasedPage(QtWidgets.QWidget):
         self.table.setHorizontalHeaderLabels(["Getränk", "Bestand", "Gekauft"])
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Fixed)
-        self.table.setColumnWidth(1, 220)
-        self.table.setColumnWidth(2, 260)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
         self.table.verticalHeader().setVisible(False)
         self.table.verticalHeader().setDefaultSectionSize(72)
         self.table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
@@ -933,14 +933,12 @@ class PurchasedPage(QtWidgets.QWidget):
             spin = QtWidgets.QSpinBox()
             spin.setRange(0, 10000)
             spin.setValue(0)
-            spin.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+            spin.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
             spin.setMinimumHeight(62)
             spin.setSingleStep(1)
             font = spin.font(); font.setPointSize(24); spin.setFont(font)
             spin.setStyleSheet(
                 "QSpinBox { background: #ffffff; color: #0f172a; padding: 4px 10px; border: 2px solid #94a3b8; border-radius: 10px; }"
-                "QSpinBox::up-button, QSpinBox::down-button { width: 42px; background: #cbd5e1; }"
-                "QSpinBox::up-button:hover, QSpinBox::down-button:hover { background: #94a3b8; }"
             )
             spin.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
             spin.mousePressEvent = lambda event, s=spin: self._open_touch_keyboard(s)
@@ -990,7 +988,11 @@ class AdminMenu(QtWidgets.QWidget):
         self.quit_btn = QtWidgets.QPushButton("Beenden")
         self.back_btn = QtWidgets.QPushButton("Zurück")
 
-        for btn in (
+        grid = QtWidgets.QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(10)
+
+        buttons = (
             self.stock_btn,
             self.purchased_btn,
             self.topup_btn,
@@ -999,12 +1001,20 @@ class AdminMenu(QtWidgets.QWidget):
             self.web_btn,
             self.quit_btn,
             self.back_btn,
-        ):
+        )
+        for index, btn in enumerate(buttons):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
-            btn.setMinimumHeight(56)
-            layout.addWidget(btn)
+            btn.setMinimumHeight(72)
+            row, col = divmod(index, 2)
+            grid.addWidget(btn, row, col)
+
+        for col in range(2):
+            grid.setColumnStretch(col, 1)
+
+        layout.addLayout(grid)
+        layout.addStretch(1)
 
         self.reload_web_qr()
 
