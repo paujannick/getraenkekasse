@@ -814,8 +814,10 @@ class NumberInputDialog(QtWidgets.QDialog):
     def __init__(self, value: int = 0, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         self.setWindowTitle("Menge eingeben")
-        self.setWindowState(QtCore.Qt.WindowFullScreen)
+        self.setWindowState(QtCore.Qt.WindowMaximized)
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(10)
 
         self.edit = QtWidgets.QLineEdit(str(value), alignment=QtCore.Qt.AlignCenter)
         font = self.edit.font()
@@ -834,7 +836,7 @@ class NumberInputDialog(QtWidgets.QDialog):
         for text, r, c in buttons:
             btn = QtWidgets.QPushButton(text)
             bf = btn.font(); bf.setPointSize(24); btn.setFont(bf)
-            btn.setMinimumSize(120, 90)
+            btn.setMinimumSize(110, 72)
             grid.addWidget(btn, r, c)
             if text.isdigit():
                 btn.clicked.connect(lambda _, t=text: self._append_digit(t))
@@ -849,7 +851,7 @@ class NumberInputDialog(QtWidgets.QDialog):
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         for btn in (ok_btn, cancel_btn):
             bf = btn.font(); bf.setPointSize(20); btn.setFont(bf)
-            btn.setMinimumHeight(70)
+            btn.setMinimumHeight(58)
             btn_row.addWidget(btn)
         ok_btn.clicked.connect(self.accept)
         cancel_btn.clicked.connect(self.reject)
@@ -976,6 +978,8 @@ class AdminMenu(QtWidgets.QWidget):
     def __init__(self, parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(10)
 
         self.stock_btn = QtWidgets.QPushButton("Einkaufen")
         self.purchased_btn = QtWidgets.QPushButton("Eingekauft")
@@ -999,12 +1003,10 @@ class AdminMenu(QtWidgets.QWidget):
             f = btn.font()
             f.setPointSize(20)
             btn.setFont(f)
-            btn.setMinimumHeight(60)
+            btn.setMinimumHeight(56)
             layout.addWidget(btn)
 
         self.reload_web_qr()
-
-        layout.addStretch(1)
 
     def set_role(self, role: str) -> None:
         is_buyer = role == "buyer"
@@ -2006,7 +2008,11 @@ class MainWindow(QtWidgets.QMainWindow):
         uid = rfid.read_uid(show_dialog=False)
         user = models.get_user_by_uid(uid) if uid else None
         self._admin_role = "admin"
-        if not (user and user.is_admin):
+        if user and user.is_admin:
+            self._admin_role = "admin"
+        elif user and user.is_buyer:
+            self._admin_role = "buyer"
+        else:
             pin_dialog = PinDialog(self)
             if pin_dialog.exec_() != QtWidgets.QDialog.Accepted:
                 led.indicate_error()
