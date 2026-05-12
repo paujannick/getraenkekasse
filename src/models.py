@@ -109,6 +109,7 @@ class User:
     active: int = 1
     show_on_payment: int = 0
     is_admin: int = 0
+    is_buyer: int = 0
     valid_from: Optional[str] = None
     valid_until: Optional[str] = None
     created_at: Optional[str] = None
