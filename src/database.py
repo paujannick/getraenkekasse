@@ -22,6 +22,7 @@ _SCHEMA = {
         'active INTEGER NOT NULL DEFAULT 1, '
         'show_on_payment INTEGER NOT NULL DEFAULT 0, '
         'is_admin INTEGER NOT NULL DEFAULT 0, '
+        'is_buyer INTEGER NOT NULL DEFAULT 0, '
         'valid_from DATE, '
         'valid_until DATE, '
         'created_at DATETIME DEFAULT CURRENT_TIMESTAMP'
@@ -153,6 +154,10 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
     if "is_admin" not in cols:
         conn.execute(
             "ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0"
+        )
+    if "is_buyer" not in cols:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN is_buyer INTEGER NOT NULL DEFAULT 0"
         )
     if "valid_from" not in cols:
         conn.execute("ALTER TABLE users ADD COLUMN valid_from DATE")

@@ -683,6 +683,7 @@ def create_app() -> Flask:
             balance_euro = request.form.get('balance', type=float)
             is_event = 1 if request.form.get('is_event') else 0
             is_admin = 1 if request.form.get('is_admin') else 0
+            is_buyer = 1 if request.form.get('is_buyer') else 0
             active = 1 if request.form.get('active') else 0
             show_on_payment = 1 if request.form.get('show_on_payment') and is_event else 0
             valid_from = (request.form.get('valid_from') or '').strip() or None
@@ -691,7 +692,7 @@ def create_app() -> Flask:
                 valid_from = None
                 valid_until = None
             conn.execute(
-                'UPDATE users SET name=?, rfid_uid=?, balance=?, is_event=?, active=?, show_on_payment=?, is_admin=?, valid_from=?, valid_until=? WHERE id=?',
+                'UPDATE users SET name=?, rfid_uid=?, balance=?, is_event=?, active=?, show_on_payment=?, is_admin=?, is_buyer=?, valid_from=?, valid_until=? WHERE id=?',
                 (
                     name,
                     uid,
@@ -700,6 +701,7 @@ def create_app() -> Flask:
                     active,
                     show_on_payment,
                     is_admin,
+                    is_buyer,
                     valid_from,
                     valid_until,
                     user_id,
