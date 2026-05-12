@@ -837,8 +837,8 @@ class NumberInputDialog(QtWidgets.QDialog):
         ]
         for text, r, c in buttons:
             btn = QtWidgets.QPushButton(text)
-            bf = btn.font(); bf.setPointSize(24); btn.setFont(bf)
-            btn.setMinimumSize(130, 96)
+            bf = btn.font(); bf.setPointSize(19); btn.setFont(bf)
+            btn.setMinimumSize(98, 70)
             grid.addWidget(btn, r, c)
             if text.isdigit():
                 btn.clicked.connect(lambda _, t=text: self._append_digit(t))
@@ -852,8 +852,8 @@ class NumberInputDialog(QtWidgets.QDialog):
         ok_btn = QtWidgets.QPushButton("Bestätigen")
         cancel_btn = QtWidgets.QPushButton("Abbrechen")
         for btn in (ok_btn, cancel_btn):
-            bf = btn.font(); bf.setPointSize(20); btn.setFont(bf)
-            btn.setMinimumHeight(72)
+            bf = btn.font(); bf.setPointSize(16); btn.setFont(bf)
+            btn.setMinimumHeight(54)
             btn_row.addWidget(btn)
         ok_btn.clicked.connect(self.accept)
         cancel_btn.clicked.connect(self.reject)
@@ -910,10 +910,10 @@ class PurchasedPage(QtWidgets.QWidget):
         button_row.setSpacing(12)
         self.book_btn = QtWidgets.QPushButton("Buchen")
         self.back_btn = QtWidgets.QPushButton("Zurück")
-        self.book_btn.setMinimumHeight(72)
-        self.back_btn.setMinimumHeight(72)
-        self.book_btn.setStyleSheet("font-size: 24px; font-weight: 700; background: #16a34a; color: white;")
-        self.back_btn.setStyleSheet("font-size: 24px; font-weight: 700; background: #334155; color: white;")
+        self.book_btn.setMinimumHeight(54)
+        self.back_btn.setMinimumHeight(54)
+        self.book_btn.setStyleSheet("font-size: 18px; font-weight: 700; background: #16a34a; color: white;")
+        self.back_btn.setStyleSheet("font-size: 18px; font-weight: 700; background: #334155; color: white;")
         button_row.addWidget(self.book_btn)
         button_row.addWidget(self.back_btn)
         layout.addLayout(button_row)
@@ -943,12 +943,13 @@ class PurchasedPage(QtWidgets.QWidget):
             spin.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
             spin.mousePressEvent = lambda event, s=spin: self._open_touch_keyboard(s)
             open_pad_btn = QtWidgets.QPushButton("Zahlenfeld")
-            open_pad_btn.setMinimumHeight(58)
+            open_pad_btn.setMinimumHeight(46)
+            open_pad_btn.setMinimumWidth(118)
             btn_font = open_pad_btn.font()
-            btn_font.setPointSize(16)
+            btn_font.setPointSize(13)
             open_pad_btn.setFont(btn_font)
             open_pad_btn.setStyleSheet(
-                "QPushButton { background: #2563eb; color: white; border-radius: 10px; font-weight: 700; padding: 4px 10px; }"
+                "QPushButton { background: #2563eb; color: white; border-radius: 8px; font-weight: 700; padding: 2px 8px; }"
                 "QPushButton:pressed { background: #1d4ed8; }"
             )
             open_pad_btn.clicked.connect(lambda _, s=spin: self._open_touch_keyboard(s))
