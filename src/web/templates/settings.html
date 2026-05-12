@@ -2,6 +2,9 @@
 {% block content %}
 <div class="card">
     <h1>Einstellungen</h1>
+    {% if error %}
+    <p style="color:#b91c1c;font-weight:700;">{{ error }}</p>
+    {% endif %}
     <form method="post" enctype="multipart/form-data" class="form-section">
         <div class="form-grid">
             <div>
@@ -11,6 +14,10 @@
             <div>
                 <label for="admin_pin">Admin-PIN</label>
                 <input type="text" id="admin_pin" name="admin_pin" value="{{ admin_pin }}">
+            </div>
+            <div>
+                <label for="buyer_pin">Einkäufer-PIN</label>
+                <input type="text" id="buyer_pin" name="buyer_pin" value="{{ buyer_pin }}">
             </div>
         </div>
         <label class="toggle">
