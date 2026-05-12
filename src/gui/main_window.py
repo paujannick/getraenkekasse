@@ -808,6 +808,67 @@ class StockPage(QtWidgets.QWidget):
             self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(drink.min_stock)))
 
 
+class NumberInputDialog(QtWidgets.QDialog):
+    """Touch-friendly dialog to enter numeric values."""
+
+    def __init__(self, value: int = 0, parent: QtWidgets.QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Menge eingeben")
+        self.setWindowState(QtCore.Qt.WindowFullScreen)
+        layout = QtWidgets.QVBoxLayout(self)
+
+        self.edit = QtWidgets.QLineEdit(str(value), alignment=QtCore.Qt.AlignCenter)
+        font = self.edit.font()
+        font.setPointSize(28)
+        self.edit.setFont(font)
+        self.edit.setReadOnly(True)
+        layout.addWidget(self.edit)
+
+        grid = QtWidgets.QGridLayout()
+        buttons = [
+            ('1', 0, 0), ('2', 0, 1), ('3', 0, 2),
+            ('4', 1, 0), ('5', 1, 1), ('6', 1, 2),
+            ('7', 2, 0), ('8', 2, 1), ('9', 2, 2),
+            ('←', 3, 0), ('0', 3, 1), ('C', 3, 2),
+        ]
+        for text, r, c in buttons:
+            btn = QtWidgets.QPushButton(text)
+            bf = btn.font(); bf.setPointSize(24); btn.setFont(bf)
+            btn.setMinimumSize(120, 90)
+            grid.addWidget(btn, r, c)
+            if text.isdigit():
+                btn.clicked.connect(lambda _, t=text: self._append_digit(t))
+            elif text == '←':
+                btn.clicked.connect(lambda _=None: self.edit.backspace())
+            else:
+                btn.clicked.connect(self._clear)
+        layout.addLayout(grid)
+
+        btn_row = QtWidgets.QHBoxLayout()
+        ok_btn = QtWidgets.QPushButton("Bestätigen")
+        cancel_btn = QtWidgets.QPushButton("Abbrechen")
+        for btn in (ok_btn, cancel_btn):
+            bf = btn.font(); bf.setPointSize(20); btn.setFont(bf)
+            btn.setMinimumHeight(70)
+            btn_row.addWidget(btn)
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn.clicked.connect(self.reject)
+        layout.addLayout(btn_row)
+
+    def _append_digit(self, digit: str) -> None:
+        if self.edit.text() == '0':
+            self.edit.setText(digit)
+        else:
+            self.edit.setText(f"{self.edit.text()}{digit}")
+
+    def _clear(self) -> None:
+        self.edit.setText('0')
+
+    @property
+    def value(self) -> int:
+        return int(self.edit.text() or '0')
+
+
 class PurchasedPage(QtWidgets.QWidget):
     """Page to book purchased bottles (restock) from touchscreen."""
 
@@ -819,10 +880,22 @@ class PurchasedPage(QtWidgets.QWidget):
         self.table.setHorizontalHeaderLabels(["Getränk", "Bestand", "Gekauft"])
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Fixed)
+        self.table.setColumnWidth(1, 220)
+        self.table.setColumnWidth(2, 260)
         self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(72)
+        self.table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
         layout.addWidget(self.table)
+
+        scroll_row = QtWidgets.QHBoxLayout()
+        self.scroll_up_btn = QtWidgets.QPushButton("▲ Nach oben")
+        self.scroll_down_btn = QtWidgets.QPushButton("▼ Nach unten")
+        scroll_row.addWidget(self.scroll_up_btn)
+        scroll_row.addWidget(self.scroll_down_btn)
+        layout.addLayout(scroll_row)
+
         button_row = QtWidgets.QHBoxLayout()
         self.book_btn = QtWidgets.QPushButton("Buchen")
         self.back_btn = QtWidgets.QPushButton("Zurück")
@@ -830,6 +903,8 @@ class PurchasedPage(QtWidgets.QWidget):
         button_row.addWidget(self.back_btn)
         layout.addLayout(button_row)
         self.book_btn.clicked.connect(self.book)
+        self.scroll_up_btn.clicked.connect(lambda: self._scroll_rows(-3))
+        self.scroll_down_btn.clicked.connect(lambda: self._scroll_rows(3))
 
     def reload(self) -> None:
         recs = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
@@ -843,7 +918,22 @@ class PurchasedPage(QtWidgets.QWidget):
             spin = QtWidgets.QSpinBox()
             spin.setRange(0, 10000)
             spin.setValue(0)
+            spin.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+            spin.setMinimumHeight(58)
+            font = spin.font(); font.setPointSize(20); spin.setFont(font)
+            spin.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
+            spin.lineEdit().setReadOnly(True)
+            spin.mousePressEvent = lambda event, s=spin: self._open_touch_keyboard(s)
             self.table.setCellWidget(row, 2, spin)
+
+    def _scroll_rows(self, delta: int) -> None:
+        bar = self.table.verticalScrollBar()
+        bar.setValue(bar.value() + delta)
+
+    def _open_touch_keyboard(self, spin: QtWidgets.QSpinBox) -> None:
+        dlg = NumberInputDialog(spin.value(), self)
+        if dlg.exec_() == QtWidgets.QDialog.Accepted:
+            spin.setValue(min(max(dlg.value, spin.minimum()), spin.maximum()))
 
     def book(self) -> None:
         booked = 0
