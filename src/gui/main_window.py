@@ -837,21 +837,6 @@ class NumberInputDialog(QtWidgets.QDialog):
         ]
         for text, r, c in buttons:
             btn = QtWidgets.QPushButton(text)
-            bf = btn.font(); bf.setPointSize(20); btn.setFont(bf)
-            btn.setMinimumSize(104, 74)
-            grid.addWidget(btn, r, c)
-            if text.isdigit():
-                btn.clicked.connect(lambda _, t=text: self._append_digit(t))
-            elif text == '←':
-                btn.clicked.connect(lambda _=None: self.edit.backspace())
-            else:
-                btn.clicked.connect(self._clear)
-        layout.addLayout(grid)
-
-        btn_row = QtWidgets.QHBoxLayout()
-        ok_btn = QtWidgets.QPushButton("Bestätigen")
-        cancel_btn = QtWidgets.QPushButton("Abbrechen")
-        for btn in (ok_btn, cancel_btn):
             bf = btn.font(); bf.setPointSize(17); btn.setFont(bf)
             btn.setMinimumHeight(58)
             btn_row.addWidget(btn)
