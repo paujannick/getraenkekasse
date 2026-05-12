@@ -1397,11 +1397,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.next_button.clicked.connect(self.next_page)
 
 
-        spacer_row = rows
-        bottom = rows + 1
-        layout.setRowStretch(spacer_row, 1)
-        layout.addWidget(self.prev_button, bottom, 0, alignment=QtCore.Qt.AlignBottom)
-        layout.addWidget(self.next_button, bottom, 1, alignment=QtCore.Qt.AlignBottom)
+        bottom = rows
+        layout.addWidget(self.prev_button, bottom, 0, alignment=QtCore.Qt.AlignLeft)
+        layout.addWidget(self.next_button, bottom, 1, alignment=QtCore.Qt.AlignHCenter)
 
         self.admin_button = QtWidgets.QPushButton("Admin")
         f = self.admin_button.font()
@@ -1413,8 +1411,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_button.setProperty("accent", "admin")
         self._apply_button_style(self.admin_button)
         self.admin_button.clicked.connect(self._open_admin)
-        layout.addWidget(self.admin_button, bottom, 2,
-                         alignment=QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
+        layout.addWidget(
+            self.admin_button,
+            bottom,
+            2,
+            alignment=QtCore.Qt.AlignRight,
+        )
         layout.setRowStretch(bottom, 0)
 
         self.prev_button.setEnabled(self.current_page > 1)
