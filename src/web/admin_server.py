@@ -170,6 +170,7 @@ def create_app() -> Flask:
         conn = database.get_connection()
         current_limit = models.get_overdraft_limit(conn)
         current_pin = models.get_admin_pin(conn)
+        current_buyer_pin = models.get_buyer_pin(conn)
         current_game_enabled = models.is_game_enabled(conn)
         current_free_day = models.is_free_day_enabled(conn)
         data_dir = Path(__file__).resolve().parent.parent / 'data'
@@ -182,8 +183,26 @@ def create_app() -> Flask:
             if val is not None:
                 models.set_overdraft_limit(int(val * 100), conn)
             pin_val = request.form.get('admin_pin')
+            buyer_pin_val = request.form.get('buyer_pin')
             if pin_val is not None:
                 models.set_admin_pin(pin_val, conn)
+                current_pin = pin_val
+            if buyer_pin_val is not None:
+                if buyer_pin_val == current_pin:
+                    conn.close()
+                    return render_template(
+                        'settings.html', overdraft_limit=current_limit,
+                        admin_pin=current_pin, buyer_pin=buyer_pin_val,
+                        game_enabled=current_game_enabled,
+                        free_day_enabled=current_free_day,
+                        qr_code_exists=qr_path.exists(),
+                        background_exists=bg_path.exists(),
+                        thank_background_exists=thank_path.exists(),
+                        free_background_exists=free_path.exists(),
+                        error='Admin-PIN und Einkäufer-PIN dürfen nicht gleich sein.'
+                    )
+                models.set_buyer_pin(buyer_pin_val, conn)
+                current_buyer_pin = buyer_pin_val
             game_val = request.form.get('game_enabled')
             new_game_state = bool(game_val)
             models.set_game_enabled(new_game_state, conn)
@@ -214,12 +233,14 @@ def create_app() -> Flask:
         conn.close()
         return render_template('settings.html', overdraft_limit=current_limit,
                                admin_pin=current_pin,
+                               buyer_pin=current_buyer_pin,
                                game_enabled=current_game_enabled,
                                free_day_enabled=current_free_day,
                                qr_code_exists=qr_path.exists(),
                                background_exists=bg_path.exists(),
                                thank_background_exists=thank_path.exists(),
-                               free_background_exists=free_path.exists())
+                               free_background_exists=free_path.exists(),
+                               error=None)
 
     @app.route('/telegram', methods=['GET', 'POST'])
     @login_required

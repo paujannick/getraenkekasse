@@ -808,6 +808,60 @@ class StockPage(QtWidgets.QWidget):
             self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(drink.min_stock)))
 
 
+class PurchasedPage(QtWidgets.QWidget):
+    """Page to book purchased bottles (restock) from touchscreen."""
+
+    def __init__(self, parent: "MainWindow"):
+        super().__init__(parent)
+        self._main = parent
+        layout = QtWidgets.QVBoxLayout(self)
+        self.table = QtWidgets.QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["Getränk", "Bestand", "Gekauft"])
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        self.table.verticalHeader().setVisible(False)
+        layout.addWidget(self.table)
+        button_row = QtWidgets.QHBoxLayout()
+        self.book_btn = QtWidgets.QPushButton("Buchen")
+        self.back_btn = QtWidgets.QPushButton("Zurück")
+        button_row.addWidget(self.book_btn)
+        button_row.addWidget(self.back_btn)
+        layout.addLayout(button_row)
+        self.book_btn.clicked.connect(self.book)
+
+    def reload(self) -> None:
+        recs = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
+        recs = sorted(recs, key=lambda r: (-r['buy_qty'], -r['sold'], r['name'].lower()))
+        self.table.setRowCount(len(recs))
+        self._drink_ids: list[int] = []
+        for row, rec in enumerate(recs):
+            self._drink_ids.append(rec['id'])
+            self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(rec['name']))
+            self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(rec['stock'])))
+            spin = QtWidgets.QSpinBox()
+            spin.setRange(0, 10000)
+            spin.setValue(0)
+            self.table.setCellWidget(row, 2, spin)
+
+    def book(self) -> None:
+        booked = 0
+        for row, drink_id in enumerate(self._drink_ids):
+            spin = self.table.cellWidget(row, 2)
+            qty = spin.value() if isinstance(spin, QtWidgets.QSpinBox) else 0
+            if qty > 0:
+                models.update_drink_stock(drink_id, qty)
+                models.log_restock(drink_id, qty)
+                booked += qty
+        if booked == 0:
+            QtWidgets.QMessageBox.information(self, "Eingekauft", "Keine Menge eingegeben.")
+            return
+        led.indicate_success()
+        QtWidgets.QMessageBox.information(self, "Eingekauft", "Einkauf wurde gebucht.")
+        self._main.show_admin_menu()
+
+
 class AdminMenu(QtWidgets.QWidget):
     """Main admin menu with navigation buttons."""
 
@@ -816,6 +870,7 @@ class AdminMenu(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
 
         self.stock_btn = QtWidgets.QPushButton("Einkaufen")
+        self.purchased_btn = QtWidgets.QPushButton("Eingekauft")
         self.topup_btn = QtWidgets.QPushButton("Konten aufladen")
         self.event_cards_btn = QtWidgets.QPushButton("Veranstaltungskarten")
         self.status_btn = QtWidgets.QPushButton("Status")
@@ -825,6 +880,7 @@ class AdminMenu(QtWidgets.QWidget):
 
         for btn in (
             self.stock_btn,
+            self.purchased_btn,
             self.topup_btn,
             self.event_cards_btn,
             self.status_btn,
@@ -841,6 +897,14 @@ class AdminMenu(QtWidgets.QWidget):
         self.reload_web_qr()
 
         layout.addStretch(1)
+
+    def set_role(self, role: str) -> None:
+        is_buyer = role == "buyer"
+        self.topup_btn.setVisible(not is_buyer)
+        self.event_cards_btn.setVisible(not is_buyer)
+        self.status_btn.setVisible(not is_buyer)
+        self.web_btn.setVisible(not is_buyer)
+        self.quit_btn.setVisible(not is_buyer)
 
     def reload_web_qr(self) -> None:
         self.web_btn.setIcon(QtGui.QIcon())
@@ -1097,6 +1161,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.admin_menu = AdminMenu(self)
         self.admin_menu.stock_btn.clicked.connect(self.show_shopping_forecast)
+        self.admin_menu.purchased_btn.clicked.connect(self.show_purchased_page)
         self.admin_menu.topup_btn.clicked.connect(self.show_topup_page)
         self.admin_menu.event_cards_btn.clicked.connect(self.show_event_cards_page)
         self.admin_menu.status_btn.clicked.connect(self.show_status)
@@ -1108,6 +1173,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stock_page = StockPage(self)
         self.stock_page.back_btn.clicked.connect(self.show_admin_menu)
         self.stack.addWidget(self.stock_page)
+        self.purchased_page = PurchasedPage(self)
+        self.purchased_page.back_btn.clicked.connect(self.show_admin_menu)
+        self.stack.addWidget(self.purchased_page)
 
         self.topup_page = TopupPage(self)
         self.topup_page.back_btn.clicked.connect(self.show_admin_menu)
@@ -1117,6 +1185,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stack.addWidget(self.event_card_page)
 
         self._pending_game: dict[str, Any] | None = None
+        self._admin_role = "admin"
         self._sync_game_setting()
         self.show_start_page()
 
@@ -1423,11 +1492,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def show_admin_menu(self) -> None:
         self.admin_menu.reload_web_qr()
+        self.admin_menu.set_role(self._admin_role)
         self.stack.setCurrentWidget(self.admin_menu)
 
     def show_stock_page(self) -> None:
         self.stock_page.reload()
         self.stack.setCurrentWidget(self.stock_page)
+
+    def show_purchased_page(self) -> None:
+        self.purchased_page.reload()
+        self.stack.setCurrentWidget(self.purchased_page)
 
     def show_shopping_forecast(self) -> None:
         recs = models.get_purchase_recommendations(days=30, coverage_days=21, replenish_cycle_days=45)
@@ -1821,10 +1895,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self._show_info_message("Bitte Admin-Karte auflegen…", auto_return_ms=None)
         uid = rfid.read_uid(show_dialog=False)
         user = models.get_user_by_uid(uid) if uid else None
+        self._admin_role = "admin"
         if not (user and user.is_admin):
             pin_dialog = PinDialog(self)
-            if pin_dialog.exec_() != QtWidgets.QDialog.Accepted or \
-                    pin_dialog.pin != models.get_admin_pin():
+            if pin_dialog.exec_() != QtWidgets.QDialog.Accepted:
+                led.indicate_error()
+                self._show_big_message("Fehler", "Kein Zugang.")
+                self.show_start_page()
+                return
+            entered_pin = pin_dialog.pin
+            admin_pin = models.get_admin_pin()
+            buyer_pin = models.get_buyer_pin()
+            if entered_pin == admin_pin:
+                self._admin_role = "admin"
+            elif entered_pin == buyer_pin:
+                self._admin_role = "buyer"
+            else:
                 led.indicate_error()
                 self._show_big_message("Fehler", "Kein Zugang.")
                 self.show_start_page()

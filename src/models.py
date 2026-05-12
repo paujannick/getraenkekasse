@@ -44,6 +44,16 @@ def set_admin_pin(pin: str, conn: Optional[sqlite3.Connection] = None) -> None:
     set_setting('admin_pin', pin, conn)
 
 
+def get_buyer_pin(conn: Optional[sqlite3.Connection] = None) -> str:
+    """Return the buyer PIN used for the limited admin GUI."""
+    return get_setting('buyer_pin', conn) or '4321'
+
+
+def set_buyer_pin(pin: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    """Store the buyer PIN."""
+    set_setting('buyer_pin', pin, conn)
+
+
 def is_game_enabled(conn: Optional[sqlite3.Connection] = None) -> bool:
     """Return True if the Tic-Tac-Toe bonus game should be offered."""
     val = get_setting('tictactoe_enabled', conn)
