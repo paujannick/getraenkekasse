@@ -58,3 +58,35 @@ def test_storno_booking_restores_balance_and_stock(tmp_path, monkeypatch):
     assert new_balance == user['balance']
     assert new_stock == drink['stock']
     conn.close()
+
+
+def test_assign_rfid_to_pending_standard_user(tmp_path, monkeypatch):
+    conn = setup_db(tmp_path, monkeypatch)
+    conn.execute(
+        "INSERT INTO users (name, rfid_uid, balance, is_event, active) VALUES (?, NULL, ?, 0, 1)",
+        ("Charlie", 0),
+    )
+    conn.commit()
+    conn.close()
+
+    pending = models.get_unassigned_users()
+    user = next(u for u in pending if u.name == "Charlie")
+    assert models.assign_rfid_to_user(user.id, "NEWCARD123")
+
+    assigned = models.get_user_by_uid("NEWCARD123")
+    assert assigned is not None
+    assert assigned.name == "Charlie"
+    assert all(u.id != user.id for u in models.get_unassigned_users())
+
+
+def test_assign_rfid_rejects_already_assigned_uid(tmp_path, monkeypatch):
+    conn = setup_db(tmp_path, monkeypatch)
+    conn.execute(
+        "INSERT INTO users (name, rfid_uid, balance, is_event, active) VALUES (?, NULL, ?, 0, 1)",
+        ("Dana", 0),
+    )
+    pending_id = conn.execute("SELECT id FROM users WHERE name='Dana'").fetchone()["id"]
+    conn.close()
+
+    assert not models.assign_rfid_to_user(pending_id, "TESTCARD123")
+    assert models.get_user_by_uid("TESTCARD123").name == "Alice"

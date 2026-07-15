@@ -9,7 +9,7 @@
 {% for u in users %}
 <tr>
 <td>{{ u['name'] }}</td>
-<td>{{ u['rfid_uid'] }}</td>
+<td>{% if u['rfid_uid'] %}{{ u['rfid_uid'] }}{% else %}<strong>ohne RFID</strong>{% endif %}</td>
 
 <td>{{ (u['balance']/100)|round(2) }} €</td>
 <td><a href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a></td>
@@ -18,10 +18,11 @@
 {% endfor %}
 </table>
 <h2>Neu</h2>
+<p>Die UID kann leer bleiben. Solche Namen erscheinen beim Auflegen einer neuen Blanko-Karte in der Guthabenabfrage.</p>
 <form method="post" action="{{ url_for('user_add') }}">
     <input type="text" name="name" placeholder="Name">
 
-    <input type="text" name="uid" id="uid_new" placeholder="UID">
+    <input type="text" name="uid" id="uid_new" placeholder="UID (optional)">
     <button type="button" onclick="readUid('uid_new')">UID lesen</button>
     <input type="number" step="0.01" name="balance" placeholder="Startguthaben in Euro">
     <button type="submit">Hinzufügen</button>

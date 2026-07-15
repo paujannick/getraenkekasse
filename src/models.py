@@ -103,7 +103,7 @@ def set_telegram_chat(chat_id: str, conn: Optional[sqlite3.Connection] = None) -
 class User:
     id: int
     name: str
-    rfid_uid: str
+    rfid_uid: Optional[str]
     balance: int  # in cents
     is_event: int = 0
     active: int = 1
@@ -176,6 +176,49 @@ def get_event_payment_users() -> list[User]:
         print(f"Fehler beim Lesen der Veranstaltungskarten: {e}")
         return []
 
+
+
+def get_unassigned_users(limit: int = 10) -> list[User]:
+    """Return active standard users without an assigned RFID UID."""
+    try:
+        with get_connection() as conn:
+            cur = conn.execute(
+                'SELECT * FROM users WHERE is_event=0 AND active=1 '
+                'AND (rfid_uid IS NULL OR TRIM(rfid_uid) = "") '
+                'ORDER BY name LIMIT ?',
+                (limit,),
+            )
+            rows = cur.fetchall()
+        return [User(**row) for row in rows]
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Lesen der Benutzer ohne RFID: {e}")
+        return []
+
+
+def assign_rfid_to_user(user_id: int, uid: str) -> bool:
+    """Assign an RFID UID to a pending standard user."""
+    uid = (uid or '').strip()
+    if not uid:
+        return False
+    try:
+        with get_connection() as conn:
+            cur = conn.execute(
+                'UPDATE users SET rfid_uid = ?, active = 1, is_event = 0 '
+                'WHERE id = ? AND is_event = 0 AND active = 1 '
+                'AND (rfid_uid IS NULL OR TRIM(rfid_uid) = "")',
+                (uid, user_id),
+            )
+            conn.commit()
+            success = cur.rowcount == 1
+        if success:
+            from . import database
+            database.touch_refresh_flag()
+        return success
+    except sqlite3.IntegrityError:
+        return False
+    except sqlite3.Error as e:  # pragma: no cover
+        print(f"Fehler beim Verknüpfen der RFID-UID: {e}")
+        return False
 
 def update_balance(user_id: int, diff: int) -> bool:
     try:
