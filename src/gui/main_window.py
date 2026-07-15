@@ -1215,6 +1215,67 @@ class EventCardPage(QtWidgets.QWidget):
         self._main.show_admin_menu()
 
 
+class RfidAssignmentDialog(QtWidgets.QDialog):
+    """Fullscreen dialog to link an unknown RFID chip to a pending user."""
+
+    def __init__(self, users: list[models.User], parent: QtWidgets.QWidget | None = None):
+        super().__init__(parent)
+        self.selected_user_id: int | None = None
+        self.setWindowTitle("Chip verknüpfen")
+        self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
+        self.setWindowState(QtCore.Qt.WindowFullScreen)
+        self.setStyleSheet(
+            "QDialog { background-color: #f4f6fb; }"
+            "QLabel#title { font-size: 32px; font-weight: 700; color: #0f172a; }"
+            "QLabel#hint { font-size: 18px; color: #475569; }"
+            "QPushButton { border-radius: 18px; padding: 18px; font-size: 22px; font-weight: 600; }"
+            "QPushButton[userButton='true'] { background-color: #2563eb; color: white; text-align: left; }"
+            "QPushButton#cancel { background-color: #ef4444; color: white; }"
+        )
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(48, 36, 48, 36)
+        layout.setSpacing(18)
+
+        title = QtWidgets.QLabel("Neue Karte erkannt")
+        title.setObjectName("title")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(title)
+
+        hint = QtWidgets.QLabel("Bitte Namen auswählen, der mit dieser Karte verknüpft werden soll.")
+        hint.setObjectName("hint")
+        hint.setAlignment(QtCore.Qt.AlignCenter)
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+
+        list_frame = QtWidgets.QFrame()
+        list_layout = QtWidgets.QVBoxLayout(list_frame)
+        list_layout.setSpacing(10)
+        for user in users[:10]:
+            btn = QtWidgets.QPushButton(user.name)
+            btn.setProperty("userButton", True)
+            btn.setMinimumHeight(58)
+            btn.clicked.connect(lambda _checked=False, u=user: self._confirm_user(u))
+            list_layout.addWidget(btn)
+        layout.addWidget(list_frame, 1)
+
+        cancel = QtWidgets.QPushButton("Abbrechen")
+        cancel.setObjectName("cancel")
+        cancel.setMinimumHeight(70)
+        cancel.clicked.connect(self.reject)
+        layout.addWidget(cancel)
+
+    def _confirm_user(self, user: models.User) -> None:
+        box = QtWidgets.QMessageBox(self)
+        box.setWindowTitle("Chip verknüpfen")
+        box.setText(f"Karte mit {user.name} verknüpfen?")
+        link_button = box.addButton("Chip verknüpfen", QtWidgets.QMessageBox.AcceptRole)
+        box.addButton("Abbrechen", QtWidgets.QMessageBox.RejectRole)
+        box.exec_()
+        if box.clickedButton() == link_button:
+            self.selected_user_id = user.id
+            self.accept()
+
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -1755,8 +1816,26 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         user = models.get_user_by_uid(uid)
         if not user:
-            led.indicate_error()
-            self._show_big_message("Fehler", "Unbekannte Karte.")
+            pending_users = models.get_unassigned_users(limit=10)
+            if not pending_users:
+                led.indicate_error()
+                self._show_big_message("Fehler", "Unbekannte Karte. Keine offenen Namen vorhanden.")
+                self.show_start_page()
+                return
+
+            dialog = RfidAssignmentDialog(pending_users, self)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted and dialog.selected_user_id is not None:
+                if models.assign_rfid_to_user(dialog.selected_user_id, uid):
+                    led.indicate_success()
+                    user = models.get_user_by_uid(uid)
+                    if user:
+                        self._show_info_message(
+                            f"Chip verknüpft!\n{user.name}\nGuthaben: {user.balance/100:.2f} €",
+                            auto_return_ms=2000,
+                        )
+                        return
+                led.indicate_error()
+                self._show_big_message("Fehler", "Chip konnte nicht verknüpft werden.")
             self.show_start_page()
             return
         led.indicate_success()

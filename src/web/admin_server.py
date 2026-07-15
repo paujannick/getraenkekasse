@@ -517,17 +517,18 @@ def create_app() -> Flask:
     @app.route('/users/add', methods=['POST'])
     @login_required
     def user_add():
-        name = request.form.get('name')
-        uid = request.form.get('uid')
+        name = (request.form.get('name') or '').strip()
+        uid = (request.form.get('uid') or '').strip() or None
         balance_euro = request.form.get('balance', type=float)
         error: Optional[str] = None
-        if name and uid:
+        if name:
             conn = database.get_connection()
             try:
                 conn.execute(
                     'INSERT INTO users (name, rfid_uid, balance) VALUES (?, ?, ?)',
                     (name, uid, int(balance_euro * 100) if balance_euro is not None else 0))
                 conn.commit()
+                database.touch_refresh_flag()
             except sqlite3.IntegrityError:
                 error = 'RFID-UID bereits vergeben'
             finally:
