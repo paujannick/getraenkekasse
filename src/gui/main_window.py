@@ -1224,17 +1224,62 @@ class RfidAssignmentDialog(QtWidgets.QDialog):
         self.setWindowTitle("Chip verknüpfen")
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
         self.setWindowState(QtCore.Qt.WindowFullScreen)
+        screen = QtWidgets.QApplication.primaryScreen()
+        available_height = (
+            screen.availableGeometry().height()
+            if screen
+            else 480
+        )
+        compact = available_height <= 600
+        visible_users = users[:10]
+
+        top_bottom_margin = 12 if compact else 36
+        side_margin = 22 if compact else 48
+        layout_spacing = 8 if compact else 18
+        list_spacing = 5 if compact else 10
+        cancel_height = 44 if compact else 70
+        header_height = 68 if compact else 108
+        fixed_height = (
+            top_bottom_margin * 2
+            + layout_spacing * 3
+            + header_height
+            + cancel_height
+            + max(0, len(visible_users) - 1) * list_spacing
+        )
+        available_button_space = max(
+            len(visible_users) * (28 if compact else 58),
+            available_height - fixed_height,
+        )
+        user_button_height = available_button_space // max(1, len(visible_users))
+        if compact:
+            user_button_height = min(max(28, user_button_height), 44)
+        else:
+            user_button_height = max(58, user_button_height)
+
+        title_font = "26px" if compact else "32px"
+        hint_font = "15px" if compact else "18px"
+        button_radius = "12px" if compact else "18px"
+        button_padding = "8px 14px" if compact else "18px"
+        button_font = "16px" if compact else "22px"
+
         self.setStyleSheet(
             "QDialog { background-color: #f4f6fb; }"
-            "QLabel#title { font-size: 32px; font-weight: 700; color: #0f172a; }"
-            "QLabel#hint { font-size: 18px; color: #475569; }"
-            "QPushButton { border-radius: 18px; padding: 18px; font-size: 22px; font-weight: 600; }"
-            "QPushButton[userButton='true'] { background-color: #2563eb; color: white; text-align: left; }"
+            f"QLabel#title {{ font-size: {title_font}; font-weight: 700; color: #0f172a; }}"
+            f"QLabel#hint {{ font-size: {hint_font}; color: #475569; }}"
+            f"QPushButton {{ border-radius: {button_radius}; padding: {button_padding}; "
+            f"font-size: {button_font}; font-weight: 600; }}"
+            "QPushButton[userButton='true'] { background-color: #2563eb; "
+            "color: white; text-align: left; }"
             "QPushButton#cancel { background-color: #ef4444; color: white; }"
         )
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(48, 36, 48, 36)
-        layout.setSpacing(18)
+        layout.setContentsMargins(
+            side_margin,
+            top_bottom_margin,
+            side_margin,
+            top_bottom_margin,
+        )
+        layout.setSpacing(layout_spacing)
 
         title = QtWidgets.QLabel("Neue Karte erkannt")
         title.setObjectName("title")
@@ -1249,18 +1294,21 @@ class RfidAssignmentDialog(QtWidgets.QDialog):
 
         list_frame = QtWidgets.QFrame()
         list_layout = QtWidgets.QVBoxLayout(list_frame)
-        list_layout.setSpacing(10)
-        for user in users[:10]:
+        list_layout.setContentsMargins(0, 0, 0, 0)
+        list_layout.setSpacing(list_spacing)
+        for user in visible_users:
             btn = QtWidgets.QPushButton(user.name)
             btn.setProperty("userButton", True)
-            btn.setMinimumHeight(58)
+            btn.setMinimumHeight(user_button_height)
+            btn.setMaximumHeight(user_button_height)
             btn.clicked.connect(lambda _checked=False, u=user: self._confirm_user(u))
             list_layout.addWidget(btn)
         layout.addWidget(list_frame, 1)
 
         cancel = QtWidgets.QPushButton("Abbrechen")
         cancel.setObjectName("cancel")
-        cancel.setMinimumHeight(70)
+        cancel.setMinimumHeight(cancel_height)
+        cancel.setMaximumHeight(cancel_height)
         cancel.clicked.connect(self.reject)
         layout.addWidget(cancel)
 
