@@ -1221,6 +1221,7 @@ class RfidAssignmentDialog(QtWidgets.QDialog):
     def __init__(self, users: list[models.User], parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         self.selected_user_id: int | None = None
+        self._pending_user: models.User | None = None
         self.setWindowTitle("Chip verknüpfen")
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)
         self.setWindowState(QtCore.Qt.WindowFullScreen)
@@ -1281,19 +1282,19 @@ class RfidAssignmentDialog(QtWidgets.QDialog):
         )
         layout.setSpacing(layout_spacing)
 
-        title = QtWidgets.QLabel("Neue Karte erkannt")
-        title.setObjectName("title")
-        title.setAlignment(QtCore.Qt.AlignCenter)
-        layout.addWidget(title)
+        self._title = QtWidgets.QLabel("Neue Karte erkannt")
+        self._title.setObjectName("title")
+        self._title.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self._title)
 
-        hint = QtWidgets.QLabel("Bitte Namen auswählen, der mit dieser Karte verknüpft werden soll.")
-        hint.setObjectName("hint")
-        hint.setAlignment(QtCore.Qt.AlignCenter)
-        hint.setWordWrap(True)
-        layout.addWidget(hint)
+        self._hint = QtWidgets.QLabel("Bitte Namen auswählen, der mit dieser Karte verknüpft werden soll.")
+        self._hint.setObjectName("hint")
+        self._hint.setAlignment(QtCore.Qt.AlignCenter)
+        self._hint.setWordWrap(True)
+        layout.addWidget(self._hint)
 
-        list_frame = QtWidgets.QFrame()
-        list_layout = QtWidgets.QVBoxLayout(list_frame)
+        self._list_frame = QtWidgets.QFrame()
+        list_layout = QtWidgets.QVBoxLayout(self._list_frame)
         list_layout.setContentsMargins(0, 0, 0, 0)
         list_layout.setSpacing(list_spacing)
         for user in visible_users:
@@ -1303,25 +1304,70 @@ class RfidAssignmentDialog(QtWidgets.QDialog):
             btn.setMaximumHeight(user_button_height)
             btn.clicked.connect(lambda _checked=False, u=user: self._confirm_user(u))
             list_layout.addWidget(btn)
-        layout.addWidget(list_frame, 1)
+        layout.addWidget(self._list_frame, 1)
 
-        cancel = QtWidgets.QPushButton("Abbrechen")
-        cancel.setObjectName("cancel")
-        cancel.setMinimumHeight(cancel_height)
-        cancel.setMaximumHeight(cancel_height)
-        cancel.clicked.connect(self.reject)
-        layout.addWidget(cancel)
+        self._confirm_frame = QtWidgets.QFrame()
+        confirm_layout = QtWidgets.QVBoxLayout(self._confirm_frame)
+        confirm_layout.setContentsMargins(0, 0, 0, 0)
+        confirm_layout.setSpacing(layout_spacing)
+        confirm_layout.addStretch(1)
+
+        self._confirm_label = QtWidgets.QLabel()
+        self._confirm_label.setObjectName("title")
+        self._confirm_label.setAlignment(QtCore.Qt.AlignCenter)
+        self._confirm_label.setWordWrap(True)
+        confirm_layout.addWidget(self._confirm_label)
+
+        self._confirm_hint = QtWidgets.QLabel("Soll diese Karte wirklich mit diesem Namen verknüpft werden?")
+        self._confirm_hint.setObjectName("hint")
+        self._confirm_hint.setAlignment(QtCore.Qt.AlignCenter)
+        self._confirm_hint.setWordWrap(True)
+        confirm_layout.addWidget(self._confirm_hint)
+
+        confirm_button = QtWidgets.QPushButton("Chip verknüpfen")
+        confirm_button.setProperty("userButton", True)
+        confirm_button.setMinimumHeight(cancel_height)
+        confirm_button.clicked.connect(self._accept_selected_user)
+        confirm_layout.addWidget(confirm_button)
+
+        back_button = QtWidgets.QPushButton("Zurück zur Auswahl")
+        back_button.setObjectName("cancel")
+        back_button.setMinimumHeight(cancel_height)
+        back_button.clicked.connect(self._show_user_selection)
+        confirm_layout.addWidget(back_button)
+        confirm_layout.addStretch(1)
+        self._confirm_frame.hide()
+        layout.addWidget(self._confirm_frame, 1)
+
+        self._cancel = QtWidgets.QPushButton("Abbrechen")
+        self._cancel.setObjectName("cancel")
+        self._cancel.setMinimumHeight(cancel_height)
+        self._cancel.setMaximumHeight(cancel_height)
+        self._cancel.clicked.connect(self.reject)
+        layout.addWidget(self._cancel)
 
     def _confirm_user(self, user: models.User) -> None:
-        box = QtWidgets.QMessageBox(self)
-        box.setWindowTitle("Chip verknüpfen")
-        box.setText(f"Karte mit {user.name} verknüpfen?")
-        link_button = box.addButton("Chip verknüpfen", QtWidgets.QMessageBox.AcceptRole)
-        box.addButton("Abbrechen", QtWidgets.QMessageBox.RejectRole)
-        box.exec_()
-        if box.clickedButton() == link_button:
-            self.selected_user_id = user.id
-            self.accept()
+        self._pending_user = user
+        self._confirm_label.setText(f"Karte mit {user.name} verknüpfen?")
+        self._title.hide()
+        self._hint.hide()
+        self._list_frame.hide()
+        self._cancel.hide()
+        self._confirm_frame.show()
+
+    def _show_user_selection(self) -> None:
+        self._pending_user = None
+        self._confirm_frame.hide()
+        self._title.show()
+        self._hint.show()
+        self._list_frame.show()
+        self._cancel.show()
+
+    def _accept_selected_user(self) -> None:
+        if self._pending_user is None:
+            return
+        self.selected_user_id = self._pending_user.id
+        self.accept()
 
 
 class MainWindow(QtWidgets.QMainWindow):
