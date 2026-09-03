@@ -89,6 +89,13 @@
         <p id="modal-msg" class="text-muted"></p>
         <ul id="modal-items" style="list-style:none;padding:0;margin:0.5rem 0 0.75rem;font-size:1rem;text-align:left;"></ul>
         <p id="modal-balance" class="nums"></p>
+        <div id="modal-qr" hidden style="margin:.5rem 0 .75rem;">
+            <img id="modal-qr-img" alt="Self-Service-QR"
+                 style="width:140px;height:140px;background:white;padding:6px;border-radius:12px;">
+            <div class="text-muted" style="font-size:.75rem;margin-top:.25rem;">
+                📱 QR scannen für Konto­auszug
+            </div>
+        </div>
         <button class="btn primary large" onclick="closeModal()">OK</button>
     </div>
 </div>
@@ -99,6 +106,13 @@
         <h2 id="balance-name">–</h2>
         <div class="big nums" id="balance-value">–</div>
         <p class="text-muted">Getränk antippen zum Kaufen.</p>
+        <div id="balance-qr" hidden style="margin:.5rem 0 1rem;">
+            <img id="balance-qr-img" alt="Self-Service-QR"
+                 style="width:170px;height:170px;background:white;padding:8px;border-radius:12px;">
+            <div class="text-muted" style="font-size:.8rem;margin-top:.35rem;">
+                📱 Mit dem Handy scannen für Konto­auszug
+            </div>
+        </div>
         <button class="btn primary large" onclick="document.getElementById('balance-modal').removeAttribute('open')">OK</button>
     </div>
 </div>
@@ -393,7 +407,7 @@ catBtns.forEach(b => b.onclick = () => {
 });
 renderPage();
 
-function showModal(title, amount, msg, balance, level, items) {
+function showModal(title, amount, msg, balance, level, items, selfserviceUrl) {
     document.getElementById('modal-title').textContent = title;
     document.getElementById('modal-amount').textContent = amount;
     document.getElementById('modal-msg').textContent = msg || '';
@@ -408,11 +422,20 @@ function showModal(title, amount, msg, balance, level, items) {
             list.appendChild(li);
         });
     }
+    const qrWrap = document.getElementById('modal-qr');
+    const qrImg  = document.getElementById('modal-qr-img');
+    if (selfserviceUrl) {
+        qrImg.src = '/qr?url=' + encodeURIComponent(selfserviceUrl);
+        qrWrap.hidden = false;
+    } else {
+        qrWrap.hidden = true;
+    }
     const box = document.querySelector('#modal .box');
     box.style.borderTop = (level === 'error' ? '6px solid var(--danger)' : '6px solid var(--success)');
     document.getElementById('modal').setAttribute('open', '');
-    // Länger sichtbar, damit man den Kauf sieht:
-    setTimeout(() => document.getElementById('modal').removeAttribute('open'), 6000);
+    // Länger sichtbar wenn QR (zum Abfotografieren):
+    setTimeout(() => document.getElementById('modal').removeAttribute('open'),
+               selfserviceUrl ? 9000 : 6000);
 }
 function closeModal() { document.getElementById('modal').removeAttribute('open'); }
 
@@ -440,13 +463,13 @@ async function book(uid) {
                 `Danke, ${data.user_name}!`,
                 (data.total_cents/100).toFixed(2).replace('.', ',') + ' €',
                 'Buchung erfolgreich',
-                balStr, 'ok', snapshot,
+                balStr, 'ok', snapshot, data.selfservice_url,
             );
             const summary = snapshot.map(s => `${s.qty}× ${s.name}`).join(', ');
             pushRecent(data.user_name, data.total_cents, summary);
             cart.clear(); renderCart();
             // Bestand kurz später neu laden, aber Modal darf noch stehen.
-            setTimeout(() => window.location.reload(), 6500);
+            setTimeout(() => window.location.reload(), data.selfservice_url ? 9500 : 6500);
         } else if (data.error && data.error.toLowerCase().includes('unbekannt')) {
             // Karte unbekannt → könnte Admin-Karte sein
             try {
@@ -495,7 +518,7 @@ async function smartCardScan(uid) {
         if (info.kind === 'topup') { openTopup(); return; }
         if (info.kind === 'user' || info.kind === 'event') {
             if (cart.size > 0) { await book(uid); return; }
-            showBalance(info.name, info.balance_cents);
+            showBalance(info.name, info.balance_cents, info.selfservice_url);
             return;
         }
         // unbekannt: erst Admin-Karten-Login versuchen, sonst Zuordnung
@@ -521,14 +544,23 @@ async function smartCardScan(uid) {
 }
 
 // ================= Guthaben-Modal =================
-function showBalance(name, cents) {
+function showBalance(name, cents, selfserviceUrl) {
     document.getElementById('balance-name').textContent = 'Hallo, ' + name + '!';
     document.getElementById('balance-value').textContent =
         (cents/100).toFixed(2).replace('.', ',') + ' €';
+    const qrWrap = document.getElementById('balance-qr');
+    const qrImg  = document.getElementById('balance-qr-img');
+    if (selfserviceUrl) {
+        qrImg.src = '/qr?url=' + encodeURIComponent(selfserviceUrl);
+        qrWrap.hidden = false;
+    } else {
+        qrWrap.hidden = true;
+    }
     const m = document.getElementById('balance-modal');
     m.setAttribute('open', '');
     beep(880, 60);
-    setTimeout(() => m.removeAttribute('open'), 4000);
+    // Länger sichtbar wenn QR angezeigt wird (zum Abfotografieren).
+    setTimeout(() => m.removeAttribute('open'), selfserviceUrl ? 8000 : 4000);
 }
 
 // ================= Aufladen-Flow =================

@@ -573,6 +573,13 @@ def create_app() -> Flask:
         payload = {"ok": res.ok, "user_name": res.user_name, "total_cents": res.total_cents,
                    "new_balance_cents": res.new_balance_cents, "error": res.error,
                    "receipt_ref": res.receipt_ref}
+        # Self-Service-Link nur für Guthaben-Karten (kein Bar, kein Event).
+        if res.ok and uid and uid.upper() != "CASH":
+            user = models.get_user_by_uid(uid)
+            if user and not user.is_event:
+                payload["selfservice_url"] = _absolute_url(
+                    "selfservice.show", token=make_token(uid)
+                )
         return jsonify(payload), (200 if res.ok else 400)
 
     @app.get("/api/kiosk/recent")
@@ -590,11 +597,18 @@ def create_app() -> Flask:
             return jsonify({"kind": "topup", "uid": uid})
         user = models.get_user_by_uid(uid)
         if user:
-            return jsonify({
+            payload = {
                 "kind": "event" if user.is_event else "user",
                 "uid": uid, "name": user.name,
                 "balance_cents": user.balance,
-            })
+            }
+            # Self-Service-Link: nur für normale Guthaben-Nutzer (kein Event, kein CASH).
+            if not user.is_event and uid.upper() != "CASH":
+                token = make_token(uid)
+                payload["selfservice_url"] = _absolute_url(
+                    "selfservice.show", token=token
+                )
+            return jsonify(payload)
         # unbekannt: gibt es wartende Nutzer ohne UID?
         pending = models.get_unassigned_users(limit=20)
         return jsonify({
