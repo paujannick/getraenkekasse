@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from functools import wraps
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request
 
 from .. import audit, models
 from ..discounts import effective_price
@@ -170,5 +170,3 @@ def purchase():
 
 def register_api(app) -> None:
     app.register_blueprint(api_bp)
-    # 60 Anfragen pro Minute pro IP für Schreib-Endpunkte
-    limiter = current_app.extensions.get("limiter") if False else None  # noqa: F841

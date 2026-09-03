@@ -1,11 +1,11 @@
 """RFID UID Reader für MFRC522 — saubere UID-Abfrage ohne AUTH ERRORs."""
 
 from __future__ import annotations
-from typing import Optional
+
 import time
 
 try:
-    from PyQt5 import QtWidgets, QtCore  # type: ignore
+    from PyQt5 import QtCore, QtWidgets  # type: ignore
     _HAS_QT = True
 except Exception:  # pragma: no cover - kein Qt (Windows-Server-Betrieb)
     QtWidgets = None  # type: ignore
@@ -21,15 +21,15 @@ except Exception:  # pragma: no cover
     led = _NoLed()  # type: ignore
 
 try:
-    from mfrc522 import MFRC522
     import RPi.GPIO as GPIO
+    from mfrc522 import MFRC522
     GPIO.setwarnings(False)
 except Exception as e:  # pragma: no cover - hardware might be missing
     MFRC522 = None  # type: ignore
     GPIO = None  # type: ignore
     print(f"RFID-Initialisierung fehlgeschlagen: {e}")
 
-def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
+def read_uid(timeout: int = 10, show_dialog: bool = True) -> str | None:
     """Liest nur die UID mit MFRC522, zeigt GUI an, keine AUTH ERRORs mehr."""
 
     # Ohne Qt (z. B. Web-Admin unter Windows/Docker) fallen die Dialoge weg.
@@ -80,7 +80,7 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
         msg_box.show()
 
     start_time = time.time()
-    uid_hex: Optional[str] = None
+    uid_hex: str | None = None
 
     try:
         print("Bitte Karte auflegen...")

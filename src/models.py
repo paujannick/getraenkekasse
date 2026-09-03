@@ -1,13 +1,11 @@
-from dataclasses import dataclass
-from typing import Optional
-import sqlite3
-from datetime import datetime
 import json
+import sqlite3
+from dataclasses import dataclass
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from .database import get_connection, get_setting, set_setting
-
 from . import rfid
+from .database import get_connection, get_setting, set_setting
 
 # Maximum number of transactions to keep in the log
 MAX_TRANSACTIONS = 10000
@@ -21,7 +19,7 @@ def _now() -> str:
     return datetime.now(LOCAL_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def get_overdraft_limit(conn: Optional[sqlite3.Connection] = None) -> int:
+def get_overdraft_limit(conn: sqlite3.Connection | None = None) -> int:
     """Return allowed negative balance in cents."""
     val = get_setting('overdraft_limit', conn)
     try:
@@ -30,31 +28,31 @@ def get_overdraft_limit(conn: Optional[sqlite3.Connection] = None) -> int:
         return 0
 
 
-def set_overdraft_limit(limit_cents: int, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_overdraft_limit(limit_cents: int, conn: sqlite3.Connection | None = None) -> None:
     set_setting('overdraft_limit', str(int(limit_cents)), conn)
 
 
-def get_admin_pin(conn: Optional[sqlite3.Connection] = None) -> str:
+def get_admin_pin(conn: sqlite3.Connection | None = None) -> str:
     """Return the admin PIN used for the GUI."""
     return get_setting('admin_pin', conn) or '1234'
 
 
-def set_admin_pin(pin: str, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_admin_pin(pin: str, conn: sqlite3.Connection | None = None) -> None:
     """Store the admin PIN."""
     set_setting('admin_pin', pin, conn)
 
 
-def get_buyer_pin(conn: Optional[sqlite3.Connection] = None) -> str:
+def get_buyer_pin(conn: sqlite3.Connection | None = None) -> str:
     """Return the buyer PIN used for the limited admin GUI."""
     return get_setting('buyer_pin', conn) or '4321'
 
 
-def set_buyer_pin(pin: str, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_buyer_pin(pin: str, conn: sqlite3.Connection | None = None) -> None:
     """Store the buyer PIN."""
     set_setting('buyer_pin', pin, conn)
 
 
-def is_game_enabled(conn: Optional[sqlite3.Connection] = None) -> bool:
+def is_game_enabled(conn: sqlite3.Connection | None = None) -> bool:
     """Return True if the Tic-Tac-Toe bonus game should be offered."""
     val = get_setting('tictactoe_enabled', conn)
     if val is None:
@@ -62,56 +60,56 @@ def is_game_enabled(conn: Optional[sqlite3.Connection] = None) -> bool:
     return val != '0'
 
 
-def set_game_enabled(enabled: bool, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_game_enabled(enabled: bool, conn: sqlite3.Connection | None = None) -> None:
     """Persist whether the Tic-Tac-Toe bonus game is available."""
     set_setting('tictactoe_enabled', '1' if enabled else '0', conn)
 
 
-def is_free_day_enabled(conn: Optional[sqlite3.Connection] = None) -> bool:
+def is_free_day_enabled(conn: sqlite3.Connection | None = None) -> bool:
     """Return True if the free-day mode is enabled."""
     val = get_setting('free_day_enabled', conn)
     return val == '1'
 
 
-def set_free_day_enabled(enabled: bool, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_free_day_enabled(enabled: bool, conn: sqlite3.Connection | None = None) -> None:
     """Persist whether the free-day mode is enabled."""
     set_setting('free_day_enabled', '1' if enabled else '0', conn)
 
 
-def get_telegram_token(conn: Optional[sqlite3.Connection] = None) -> str:
+def get_telegram_token(conn: sqlite3.Connection | None = None) -> str:
     """Return the Telegram bot token."""
     return get_setting('telegram_token', conn) or ''
 
 
-def set_telegram_token(token: str, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_telegram_token(token: str, conn: sqlite3.Connection | None = None) -> None:
     """Store the Telegram bot token."""
     set_setting('telegram_token', token, conn)
 
 
-def get_topup_card(conn: Optional[sqlite3.Connection] = None) -> str:
+def get_topup_card(conn: sqlite3.Connection | None = None) -> str:
     """Optional: spezielle RFID-UID, die den Aufladen-Modus am Kiosk startet."""
     return (get_setting('topup_card_uid', conn) or '').strip()
 
 
-def set_topup_card(uid: str, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_topup_card(uid: str, conn: sqlite3.Connection | None = None) -> None:
     set_setting('topup_card_uid', (uid or '').strip(), conn)
 
 
-def get_usb_backup_path(conn: Optional[sqlite3.Connection] = None) -> str:
+def get_usb_backup_path(conn: sqlite3.Connection | None = None) -> str:
     """Optional: Zielpfad für USB-Backups (leer = deaktiviert)."""
     return (get_setting('usb_backup_path', conn) or '').strip()
 
 
-def set_usb_backup_path(path: str, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_usb_backup_path(path: str, conn: sqlite3.Connection | None = None) -> None:
     set_setting('usb_backup_path', (path or '').strip(), conn)
 
 
-def get_telegram_chat(conn: Optional[sqlite3.Connection] = None) -> str:
+def get_telegram_chat(conn: sqlite3.Connection | None = None) -> str:
     """Return the Telegram chat id for notifications."""
     return get_setting('telegram_chat', conn) or ''
 
 
-def set_telegram_chat(chat_id: str, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_telegram_chat(chat_id: str, conn: sqlite3.Connection | None = None) -> None:
     """Store the Telegram chat id."""
     set_setting('telegram_chat', chat_id, conn)
 
@@ -121,17 +119,17 @@ def set_telegram_chat(chat_id: str, conn: Optional[sqlite3.Connection] = None) -
 class User:
     id: int
     name: str
-    rfid_uid: Optional[str]
+    rfid_uid: str | None
     balance: int  # in cents
     is_event: int = 0
     active: int = 1
     show_on_payment: int = 0
     is_admin: int = 0
     is_buyer: int = 0
-    valid_from: Optional[str] = None
-    valid_until: Optional[str] = None
-    created_at: Optional[str] = None
-    deleted_at: Optional[str] = None
+    valid_from: str | None = None
+    valid_until: str | None = None
+    created_at: str | None = None
+    deleted_at: str | None = None
 
 
 @dataclass
@@ -139,13 +137,13 @@ class Drink:
     id: int
     name: str
     price: int  # in cents
-    image: Optional[str]
+    image: str | None
 
     stock: int
     min_stock: int
     page: int
-    category_id: Optional[int] = None
-    deleted_at: Optional[str] = None
+    category_id: int | None = None
+    deleted_at: str | None = None
 
 
 def _row(cls, row):
@@ -158,7 +156,7 @@ def _row(cls, row):
 
 
 
-def get_user_by_uid(uid: str) -> Optional[User]:
+def get_user_by_uid(uid: str) -> User | None:
     try:
         with get_connection() as conn:
             cur = conn.execute(
@@ -176,7 +174,7 @@ def get_user_by_uid(uid: str) -> Optional[User]:
         return None
 
 
-def get_user(user_id: int) -> Optional[User]:
+def get_user(user_id: int) -> User | None:
     """Return a user by their database id."""
     try:
         with get_connection() as conn:
@@ -313,7 +311,7 @@ def update_drink_stock(drink_id: int, diff: int) -> bool:
 
 
 
-def get_cash_user_id(conn: Optional[sqlite3.Connection] = None) -> int:
+def get_cash_user_id(conn: sqlite3.Connection | None = None) -> int:
     """Ensure a special user for cash payments exists and return its id."""
     own = False
     if conn is None:
@@ -430,7 +428,7 @@ def get_transaction_log(limit: int | None = None) -> list[sqlite3.Row]:
         return []
 
 
-def get_drink_by_id(drink_id: int) -> Optional[Drink]:
+def get_drink_by_id(drink_id: int) -> Drink | None:
     try:
         with get_connection() as conn:
             cur = conn.execute('SELECT * FROM drinks WHERE id = ?', (drink_id,))
@@ -444,7 +442,7 @@ def get_drink_by_id(drink_id: int) -> Optional[Drink]:
 
 
 
-def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = None, page: int | None = None) -> list[Drink]:
+def get_drinks(conn: sqlite3.Connection | None = None, limit: int | None = None, page: int | None = None) -> list[Drink]:
     own = False
     try:
         if conn is None:
@@ -470,7 +468,7 @@ def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = No
             conn.close()
 
 
-def get_max_page(conn: Optional[sqlite3.Connection] = None) -> int:
+def get_max_page(conn: sqlite3.Connection | None = None) -> int:
     """Return the highest page number in the drinks table."""
     own = False
     try:
@@ -488,7 +486,7 @@ def get_max_page(conn: Optional[sqlite3.Connection] = None) -> int:
             conn.close()
 
 
-def get_drinks_below_min(conn: Optional[sqlite3.Connection] = None) -> list[Drink]:
+def get_drinks_below_min(conn: sqlite3.Connection | None = None) -> list[Drink]:
     """Return drinks where stock is below the configured minimum."""
     own = False
     try:
@@ -564,7 +562,7 @@ def get_new_low_stock_recommendations(days: int = 30, coverage_days: int = 21, r
     return [r for r in recs if r['id'] in new_low_ids]
 
 
-def rfid_read_for_web() -> Optional[str]:
+def rfid_read_for_web() -> str | None:
     """Read a UID for the web interface using the normal reader dialog."""
     return rfid.read_uid()
 

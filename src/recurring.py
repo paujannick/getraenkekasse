@@ -11,7 +11,6 @@ import logging
 import sqlite3
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Optional
 
 from . import ledger
 from .database import get_connection
@@ -26,15 +25,15 @@ class Recurring:
     id: int
     name: str
     amount_cents: int
-    from_account_id: Optional[int]
-    to_account_id: Optional[int]
+    from_account_id: int | None
+    to_account_id: int | None
     kind: str
     interval: str
-    next_due: Optional[str]
-    last_posted: Optional[str]
+    next_due: str | None
+    last_posted: str | None
     active: int
     auto_post: int
-    note: Optional[str]
+    note: str | None
 
 
 def _row(r) -> Recurring:
@@ -52,7 +51,7 @@ def list_all() -> list[Recurring]:
     return [_row(r) for r in rows]
 
 
-def get(rec_id: int) -> Optional[Recurring]:
+def get(rec_id: int) -> Recurring | None:
     with get_connection() as conn:
         r = conn.execute(
             "SELECT * FROM recurring_expenses WHERE id=?", (int(rec_id),)
@@ -113,7 +112,7 @@ def _next(interval: str, today: date) -> date:
     return today  # manual – nicht auto-fortschreiben
 
 
-def post_once(rec_id: int, actor: str | None = None) -> Optional[int]:
+def post_once(rec_id: int, actor: str | None = None) -> int | None:
     """Bucht die Vorlage einmal (Buchung + next_due-Update). Liefert Ledger-ID."""
     rec = get(rec_id)
     if not rec or not rec.active:
@@ -135,7 +134,7 @@ def post_once(rec_id: int, actor: str | None = None) -> Optional[int]:
     return entry_id
 
 
-def run_due(now: Optional[datetime] = None, actor: str = "scheduler") -> list[int]:
+def run_due(now: datetime | None = None, actor: str = "scheduler") -> list[int]:
     """Alle fälligen automatischen Vorlagen buchen. Rückgabe: Liste angewandter IDs."""
     now = now or datetime.now()
     today_iso = now.date().isoformat()
