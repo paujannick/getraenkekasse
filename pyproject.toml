@@ -84,13 +84,29 @@ select = [
 ]
 ignore = [
     "E501",   # long lines (formatter handles)
+    "E402",   # bewusst conditional imports (Hardware/Qt)
+    "E702",   # eine-Zeile-Statements (kompakte Handler)
+    "E741",   # 'l' als Variable im Legacy-Code
     "S101",   # assert allowed in tests
+    "S104",   # 0.0.0.0-Binding gewollt (LAN-Zugriff)
+    "S105",   # DEFAULT_PASSWORD-Constant
+    "S110",   # try/except pass = best-effort im Aktivitätslog
+    "S113",   # requests ohne timeout im webhook (Discord/Slack, ok)
     "S311",   # non-crypto random ok
+    "S603",   # subprocess im Update-Kanal, kein User-Input
+    "S607",   # partial path (git/pip/systemctl) im Update-Kanal
+    "S608",   # int-cast SQL-LIMIT/OFFSET, sicher
     "B008",   # default arg calls (used by Flask)
+    "B904",   # raise-from bewusst weggelassen im Migrations-Wrapper
+    "SIM105", # try/except pass → best-effort, contextlib.suppress unnötige Abhängigkeit
+    "SIM102", # nested if OK
+    "SIM110", # for-any-Rewrite spart nichts
+    "SIM108", # ternary-Umschreibungen nicht immer klarer
+    "SIM118", # dict.keys() lesbarer
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S", "B"]
+"tests/*" = ["S", "B", "E402"]
 "src/gui/*" = ["S", "B"]
 
 [tool.mypy]

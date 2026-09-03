@@ -4,7 +4,7 @@ import sqlite3
 
 import pytest
 
-from src import backups, database, migrations
+from src import database, migrations
 
 
 def _fresh(tmp_path, monkeypatch):

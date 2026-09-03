@@ -1,8 +1,7 @@
-import sqlite3
 import shutil
+import sqlite3
 import time
 from pathlib import Path
-from typing import Optional
 
 DB_PATH = Path(__file__).resolve().parent.parent / 'data' / 'getraenkekasse.db'
 
@@ -184,7 +183,7 @@ def upgrade_schema(conn: sqlite3.Connection) -> None:
 
 
 
-def init_db(conn: Optional[sqlite3.Connection] = None) -> None:
+def init_db(conn: sqlite3.Connection | None = None) -> None:
     own_conn = False
     if conn is None:
         conn = get_connection()
@@ -234,7 +233,7 @@ def add_sample_data(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def get_setting(key: str, conn: Optional[sqlite3.Connection] = None) -> str | None:
+def get_setting(key: str, conn: sqlite3.Connection | None = None) -> str | None:
     own = False
     try:
         if conn is None:
@@ -252,7 +251,7 @@ def get_setting(key: str, conn: Optional[sqlite3.Connection] = None) -> str | No
             conn.close()
 
 
-def set_setting(key: str, value: str, conn: Optional[sqlite3.Connection] = None) -> None:
+def set_setting(key: str, value: str, conn: sqlite3.Connection | None = None) -> None:
     own = False
     try:
         if conn is None:

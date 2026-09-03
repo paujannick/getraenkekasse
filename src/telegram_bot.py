@@ -1,10 +1,9 @@
+import calendar  # <--- hinzugefügt
+import csv
+import io
 import threading
 import time
 from pathlib import Path
-from typing import Optional
-import io
-import csv
-import calendar   # <--- hinzugefügt
 
 import requests
 
@@ -22,7 +21,7 @@ class TelegramNotifier:
         self.chat_id: str = ''
         self.offset: int = 0
         self.last_month: str = ''
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.running = False
         self.reload_settings()
 

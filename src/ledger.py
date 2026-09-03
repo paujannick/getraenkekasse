@@ -35,9 +35,8 @@ import sqlite3
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional
 
-from . import audit, security
+from . import audit
 from .database import DB_PATH, get_connection
 
 _LOG = logging.getLogger(__name__)
@@ -68,7 +67,7 @@ class Account:
     kind: str
     system: int
     sort_order: int
-    note: Optional[str]
+    note: str | None
     hidden: int = 0
 
 
@@ -77,21 +76,21 @@ class LedgerEntry:
     id: int
     timestamp: str
     kind: str
-    from_account_id: Optional[int]
-    to_account_id: Optional[int]
+    from_account_id: int | None
+    to_account_id: int | None
     amount_cents: int
-    ref: Optional[str]
-    actor: Optional[str]
-    note: Optional[str]
-    receipt_path: Optional[str]
-    reversed_of: Optional[int]
+    ref: str | None
+    actor: str | None
+    note: str | None
+    receipt_path: str | None
+    reversed_of: int | None
 
 
 # ---------------------------------------------------------------------------
 # Konto-Verwaltung
 # ---------------------------------------------------------------------------
 
-def list_accounts(kind: Optional[str] = None, *, include_hidden: bool = False) -> list[Account]:
+def list_accounts(kind: str | None = None, *, include_hidden: bool = False) -> list[Account]:
     q = "SELECT * FROM accounts WHERE 1=1 "
     params: list = []
     if not include_hidden:
@@ -108,7 +107,7 @@ def list_accounts(kind: Optional[str] = None, *, include_hidden: bool = False) -
     return [Account(**{k: r[k] for k in r.keys() if k in Account.__dataclass_fields__}) for r in rows]
 
 
-def get_account(id_or_code) -> Optional[Account]:
+def get_account(id_or_code) -> Account | None:
     with get_connection() as conn:
         if isinstance(id_or_code, int) or (isinstance(id_or_code, str) and id_or_code.isdigit()):
             r = conn.execute("SELECT * FROM accounts WHERE id=?", (int(id_or_code),)).fetchone()
@@ -175,7 +174,7 @@ def balances() -> list[tuple[Account, int]]:
 # Buchen
 # ---------------------------------------------------------------------------
 
-def _receipt_target(original_name: str) -> Optional[Path]:
+def _receipt_target(original_name: str) -> Path | None:
     from werkzeug.utils import secure_filename
     clean = secure_filename(original_name or "")
     if not clean:
@@ -187,7 +186,7 @@ def _receipt_target(original_name: str) -> Optional[Path]:
     return RECEIPT_DIR / f"{uuid.uuid4().hex}{ext}"
 
 
-def save_receipt(file_storage) -> Optional[str]:
+def save_receipt(file_storage) -> str | None:
     """Speichert einen Beleg aus einem Flask-``FileStorage`` und liefert den Pfad."""
     if not file_storage or not getattr(file_storage, "filename", ""):
         return None

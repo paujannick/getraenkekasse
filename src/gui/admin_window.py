@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from PyQt5 import QtCore, QtWidgets, QtGui
-from pathlib import Path
 import platform
+from pathlib import Path
 
-from .. import database
-from .. import models
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+from .. import database, models
 
 
 class AdminWindow(QtWidgets.QWidget):

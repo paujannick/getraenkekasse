@@ -10,7 +10,6 @@ import io
 import json
 import logging
 import os
-import shlex
 import sqlite3
 import subprocess
 import time
@@ -20,7 +19,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import (
-    Blueprint,
     Flask,
     Response,
     abort,
@@ -44,12 +42,10 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from .. import (
     activity,
     admin_auth,
-    admins as admins_mod,
     audit,
     backups,
     database,
     discounts,
-    kiosk as kiosk_mod,
     ledger,
     logging_setup,
     migrations,
@@ -60,6 +56,12 @@ from .. import (
     scheduler,
     security,
     webhooks,
+)
+from .. import (
+    admins as admins_mod,
+)
+from .. import (
+    kiosk as kiosk_mod,
 )
 from ..api.routes import register_api
 from ..api.selfservice import make_token, selfservice_bp
@@ -326,7 +328,7 @@ def create_app() -> Flask:
                         rows = []
                 for r in rows:
                     last = int(r["id"])
-                    yield f"event: activity\ndata: {json.dumps(dict(r))}\n\n".encode("utf-8")
+                    yield f"event: activity\ndata: {json.dumps(dict(r))}\n\n".encode()
                 _LAST_ACT_ID["id"] = last
                 time.sleep(2.0)
                 yield b": keepalive\n\n"

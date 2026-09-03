@@ -20,11 +20,11 @@ import os
 import queue
 import threading
 import time
-from typing import Iterable
+from collections.abc import Iterable
 
 _LOG = logging.getLogger(__name__)
 
-_QUEUE: "queue.Queue[str]" = queue.Queue(maxsize=64)
+_QUEUE: queue.Queue[str] = queue.Queue(maxsize=64)
 _STARTED = False
 _LOCK = threading.Lock()
 
@@ -92,7 +92,7 @@ def sse_stream() -> Iterable[bytes]:
         try:
             uid = _QUEUE.get(timeout=1.0)
             payload = json.dumps({"uid": uid, "ts": time.time()})
-            yield f"event: rfid\ndata: {payload}\n\n".encode("utf-8")
+            yield f"event: rfid\ndata: {payload}\n\n".encode()
             last = time.time()
         except queue.Empty:
             if time.time() - last >= keepalive_every:
