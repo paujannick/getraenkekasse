@@ -1,0 +1,47 @@
+{% extends '_layout.html' %}
+{% block title %}Konto: {{ account.name }}{% endblock %}
+{% block content %}
+<h1>{{ account.name }} <span class="badge muted">{{ account.kind }}</span></h1>
+<p class="subheader"><a href="{{ url_for('ledger_view') }}">← Kassenbuch</a></p>
+
+<div class="grid cols-2 mb-4">
+    <div class="stat">
+        <span class="label">Aktueller Saldo</span>
+        <span class="value nums {% if balance < 0 %}text-danger{% endif %}">{{ '%+.2f'|format(balance/100) }} €</span>
+    </div>
+    <div class="stat">
+        <span class="label">Kontocode</span>
+        <span class="value"><code>{{ account.code }}</code></span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Bewegungen</h2>
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Zeit</th><th>Kind</th><th>Gegenkonto</th><th class="text-right">Bewegung</th><th>Notiz</th><th>Beleg</th></tr></thead>
+        <tbody>
+        {% for e in entries %}
+        {% set to_us = e['to_account_id'] == account.id %}
+        <tr>
+            <td class="text-muted">{{ e['timestamp'][:16] }}</td>
+            <td><span class="badge muted">{{ kinds.get(e['kind'], e['kind']) }}</span></td>
+            <td>
+                {% if to_us %}
+                    {{ e['from_name'] or '– extern –' }}
+                {% else %}
+                    {{ e['to_name'] or '– extern –' }}
+                {% endif %}
+            </td>
+            <td class="text-right nums {% if to_us %}text-success{% else %}text-danger{% endif %}">
+                {{ ('+' if to_us else '-') + '%.2f'|format(e['amount_cents']/100) }} €
+            </td>
+            <td class="text-muted">{{ e['note'] or e['ref'] or '' }}</td>
+            <td>{% if e['receipt_path'] %}<a class="btn small" href="{{ url_for('ledger_receipt', entry_id=e['id']) }}" target="_blank">Beleg</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

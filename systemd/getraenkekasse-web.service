@@ -1,0 +1,26 @@
+[Unit]
+Description=Getränkekasse Web-Admin (Waitress)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=paul
+Group=paul
+WorkingDirectory=/home/paul/getraenkekasse
+EnvironmentFile=-/home/paul/getraenkekasse/.env
+ExecStart=/home/paul/getraenkekasse/venv/bin/python -m src.web.admin_server
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/home/paul/getraenkekasse/logs/web.log
+StandardError=append:/home/paul/getraenkekasse/logs/web.err
+
+# Härtung
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/paul/getraenkekasse/data /home/paul/getraenkekasse/logs
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

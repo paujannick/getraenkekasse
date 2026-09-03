@@ -1,15 +1,27 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Telegram-Bot{% endblock %}
 {% block content %}
-<h1>Telegram Einstellungen</h1>
-<form method="post">
-    <label>Bot Token:<br>
-        <input type="text" name="token" value="{{ token }}">
-    </label><br>
-    <label>Chat ID:<br>
-        <input type="text" name="chat_id" value="{{ chat_id }}">
-    </label><br>
-    <button type="submit" name="action" value="save">Speichern</button>
-    <button type="submit" name="action" value="publish">Publish</button>
+<h1>Telegram-Bot</h1>
+{% if info %}<div class="stat" style="background:var(--success-soft);color:var(--success);margin-bottom:1rem;"><span class="value">{{ info }}</span></div>{% endif %}
+
+<div class="card" style="max-width:640px;">
+<form method="post" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div><label>Bot-Token</label><input type="text" name="token" value="{{ token }}" placeholder="123456:ABC…"></div>
+    <div><label>Chat-ID</label><input type="text" name="chat_id" value="{{ chat_id }}" placeholder="-1001234…"></div>
+    <div style="grid-column:1/-1;display:flex;gap:.5rem;">
+        <button class="primary" name="action" value="save" type="submit">Speichern</button>
+        <button class="btn" name="action" value="publish" type="submit">Jetzt Status senden</button>
+    </div>
 </form>
-{% if info %}<p class="info">{{ info }}</p>{% endif %}
+</div>
+
+<div class="card">
+    <h2>So bekommst du Token &amp; Chat-ID</h2>
+    <ol class="text-muted">
+        <li>In Telegram <code>@BotFather</code> anschreiben, neuen Bot anlegen → Token.</li>
+        <li>Bot in eine Gruppe/DM einladen.</li>
+        <li><code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> im Browser aufrufen → <code>chat.id</code> notieren.</li>
+    </ol>
+</div>
 {% endblock %}

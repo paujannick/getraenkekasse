@@ -3,9 +3,22 @@
 from __future__ import annotations
 from typing import Optional
 import time
-from PyQt5 import QtWidgets, QtCore
 
-from . import led
+try:
+    from PyQt5 import QtWidgets, QtCore  # type: ignore
+    _HAS_QT = True
+except Exception:  # pragma: no cover - kein Qt (Windows-Server-Betrieb)
+    QtWidgets = None  # type: ignore
+    QtCore = None  # type: ignore
+    _HAS_QT = False
+
+try:
+    from . import led
+except Exception:  # pragma: no cover
+    class _NoLed:
+        def indicate_waiting(self) -> None: ...
+        def off(self) -> None: ...
+    led = _NoLed()  # type: ignore
 
 try:
     from mfrc522 import MFRC522
@@ -18,6 +31,10 @@ except Exception as e:  # pragma: no cover - hardware might be missing
 
 def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     """Liest nur die UID mit MFRC522, zeigt GUI an, keine AUTH ERRORs mehr."""
+
+    # Ohne Qt (z. B. Web-Admin unter Windows/Docker) fallen die Dialoge weg.
+    if not _HAS_QT:
+        show_dialog = False
 
     if MFRC522 is None:
         print("RFID-Reader nicht verfügbar")
@@ -34,11 +51,13 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
         return None
     led.indicate_waiting()
 
-    app = QtWidgets.QApplication.instance()
+    app = None
     created_app = False
-    if app is None:
-        app = QtWidgets.QApplication([])
-        created_app = True
+    if _HAS_QT:
+        app = QtWidgets.QApplication.instance()
+        if app is None:
+            app = QtWidgets.QApplication([])
+            created_app = True
 
     msg_box = None
     if show_dialog:
@@ -66,7 +85,8 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     try:
         print("Bitte Karte auflegen...")
         while time.time() - start_time < timeout:
-            app.processEvents()
+            if app is not None:
+                app.processEvents()
 
             (status, tag_type) = reader.MFRC522_Request(reader.PICC_REQIDL)
 
@@ -90,8 +110,9 @@ def read_uid(timeout: int = 10, show_dialog: bool = True) -> Optional[str]:
     finally:
         if msg_box:
             msg_box.close()
-            app.processEvents()
-        if created_app:
+            if app is not None:
+                app.processEvents()
+        if created_app and app is not None:
             app.quit()
         if GPIO:
             GPIO.cleanup()

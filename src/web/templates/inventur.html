@@ -1,0 +1,42 @@
+{% extends '_layout.html' %}
+{% block title %}Inventur{% endblock %}
+{% block content %}
+<h1>Inventur</h1>
+<p class="subheader">Ist-Bestand pro Getränk eintragen. Delta wird protokolliert; Verluste werden als Restock mit negativer Menge gebucht.</p>
+
+<form method="post" action="{{ url_for('inventur_submit') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="card">
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Getränk</th><th class="text-right">Soll (System)</th><th style="width:9rem;">Ist gezählt</th><th class="text-right">Delta</th></tr></thead>
+            <tbody>
+            {% for d in drinks %}
+            <tr>
+                <td>{{ d['name'] }}</td>
+                <td class="text-right nums" id="soll-{{ d['id'] }}">{{ d['stock'] }}</td>
+                <td>
+                    <input type="number" name="ist_{{ d['id'] }}" value="{{ d['stock'] }}" min="0"
+                           style="text-align:right;" oninput="updateDelta({{ d['id'] }}, this.value, {{ d['stock'] }})">
+                </td>
+                <td class="text-right nums" id="delta-{{ d['id'] }}">0</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <div class="card-actions">
+            <button class="primary" type="submit">Inventur buchen</button>
+            <a class="btn ghost" href="{{ url_for('drinks') }}">Abbrechen</a>
+        </div>
+    </div>
+</form>
+<script>
+function updateDelta(id, val, soll) {
+    const d = parseInt(val, 10) - soll;
+    const el = document.getElementById('delta-' + id);
+    el.textContent = (d >= 0 ? '+' : '') + d;
+    el.style.color = d < 0 ? 'var(--danger)' : (d > 0 ? 'var(--success)' : '');
+}
+</script>
+{% endblock %}

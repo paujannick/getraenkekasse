@@ -1,0 +1,78 @@
+{% extends '_layout.html' %}
+{% block title %}Wiederkehrende Ausgaben{% endblock %}
+{% block content %}
+<h1>Wiederkehrende Buchungen</h1>
+<p class="subheader">Vorlagen für Miete, Wartung, Beiträge etc. Auto-Buchen erfolgt automatisch am Fälligkeitstag; manuelles Buchen jederzeit möglich.</p>
+
+<div class="card">
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Name</th><th class="text-right">Betrag</th><th>Intervall</th><th>Nächste Fälligkeit</th><th>Von → Nach</th><th>Auto</th><th>Aktiv</th><th></th></tr></thead>
+        <tbody>
+        {% for r in items %}
+        <tr>
+            <td><strong>{{ r.name }}</strong>{% if r.note %}<br><span class="text-muted" style="font-size:.8rem;">{{ r.note }}</span>{% endif %}</td>
+            <td class="text-right nums">{{ '%.2f'|format(r.amount_cents/100) }} €</td>
+            <td>{{ r.interval }}</td>
+            <td>{{ r.next_due or '–' }}</td>
+            <td class="text-muted" style="font-size:.85rem;">{{ r.from_account_id or '–' }} → {{ r.to_account_id or '–' }}</td>
+            <td>{% if r.auto_post %}<span class="badge success">auto</span>{% else %}<span class="badge muted">manuell</span>{% endif %}</td>
+            <td>
+                <form method="post" action="{{ url_for('recurring_toggle', rec_id=r.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="active" value="{{ 0 if r.active else 1 }}">
+                    <button class="btn small" type="submit">{{ 'an' if r.active else 'aus' }}</button>
+                </form>
+            </td>
+            <td class="row-actions">
+                <form method="post" action="{{ url_for('recurring_post', rec_id=r.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="primary small" type="submit">Jetzt buchen</button>
+                </form>
+                <form method="post" action="{{ url_for('recurring_delete', rec_id=r.id) }}" onsubmit="return confirm('Vorlage löschen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">×</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-muted">Noch keine Vorlagen.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Neue Vorlage</h2>
+    <form method="post" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label>Name</label><input name="name" required></div>
+        <div><label>Betrag (€)</label><input type="number" step="0.01" name="amount" required></div>
+        <div>
+            <label>Intervall</label>
+            <select name="interval">
+                {% for i in intervals %}<option value="{{ i }}" {% if i=='monthly' %}selected{% endif %}>{{ i }}</option>{% endfor %}
+            </select>
+        </div>
+        <div><label>Nächste Fälligkeit</label><input type="date" name="next_due"></div>
+        <div>
+            <label>Von-Konto</label>
+            <select name="from_account_id">
+                <option value="">– extern –</option>
+                {% for a in accounts %}<option value="{{ a.id }}" {% if a.code=='main_cash' %}selected{% endif %}>{{ a.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Nach-Konto</label>
+            <select name="to_account_id">
+                <option value="">– extern –</option>
+                {% for a in accounts %}<option value="{{ a.id }}" {% if a.code=='expenses_other' %}selected{% endif %}>{{ a.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div style="grid-column:1/-1;"><label>Notiz</label><input name="note"></div>
+        <div><label class="toggle"><input type="checkbox" name="auto_post" checked> Automatisch buchen am Fälligkeitstag</label></div>
+        <div style="align-self:end;"><button class="primary" type="submit">Vorlage anlegen</button></div>
+    </form>
+</div>
+{% endblock %}

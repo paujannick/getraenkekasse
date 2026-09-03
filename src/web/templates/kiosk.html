@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Kasse</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="kiosk">
+<div class="kiosk-wrap">
+    <div class="kiosk-header">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+            <strong style="font-size:1.4rem;">🥤 Getränkekasse</strong>
+            <span class="badge muted" id="clock"></span>
+        </div>
+        <div class="kiosk-cats" id="cats">
+            <button class="active" data-cat="all">Alle</button>
+            {% for c in categories %}
+            <button data-cat="{{ c['id'] }}">{{ c['name'] }}</button>
+            {% endfor %}
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+            <span class="badge" id="rfid-dot">RFID</span>
+            <button class="btn small ghost" onclick="openWishes()" title="Wunsch abgeben">💡</button>
+            <button class="btn small ghost" onclick="openAdminLogin()" title="Kiosk-Admin">🔐</button>
+            {% if dev_mode %}
+            <button class="btn small" onclick="simulateUid(prompt('UID simulieren:', 'TESTCARD123')||'')">Sim</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="kiosk-drinks-area">
+        <button class="page-arrow" id="page-prev" onclick="pagePrev()" aria-label="Zurück">◀</button>
+        <div class="kiosk-grid" id="grid">
+            {% for d in drinks %}
+            <button class="drink-btn {% if d['stock']<=0 %}oos{% elif d['stock']<d['min_stock'] %}warn{% endif %}"
+                    data-id="{{ d['id'] }}" data-cat="{{ d['category_id'] or 'all' }}"
+                    data-price="{{ d['price'] }}" data-name="{{ d['name']|escape }}"
+                    {% if d['stock']<=0 %}disabled{% endif %}
+                    onclick="addToCart({{ d['id'] }}, '{{ d['name']|escape }}', {{ d['effective'] }})">
+                {% if d['discount_percent'] %}<span class="badge">-{{ d['discount_percent'] }}%</span>{% endif %}
+                <div class="dname">{{ d['name'] }}</div>
+                <div class="price nums">
+                    {% if d['discount_percent'] %}
+                    <s style="opacity:0.5;">{{ ('%.2f'|format(d['price']/100)).replace('.', ',') }} €</s>
+                    <strong>{{ ('%.2f'|format(d['effective']/100)).replace('.', ',') }} €</strong>
+                    {% else %}
+                    {{ ('%.2f'|format(d['price']/100)).replace('.', ',') }} €
+                    {% endif %}
+                </div>
+            </button>
+            {% endfor %}
+        </div>
+        <button class="page-arrow" id="page-next" onclick="pageNext()" aria-label="Weiter">▶</button>
+    </div>
+    <div class="page-dots" id="page-dots"></div>
+
+    <div class="kiosk-cart">
+        <div class="items" id="cart-items">
+            <span style="opacity:0.6;">Getränk antippen und Zahlungsart wählen oder Karte auflegen.</span>
+        </div>
+        <div class="total nums" id="cart-total">0,00 €</div>
+        <button class="btn" onclick="clearCart()">Leeren</button>
+    </div>
+
+    <!-- Zahlungsleiste -->
+    <div class="pay-bar">
+        <button class="pay-btn cash" onclick="payCash()">
+            <span class="ico">💵</span><span>Bar bezahlen</span>
+        </button>
+        <button class="pay-btn card" onclick="promptCard()">
+            <span class="ico">💳</span><span>Guthaben-Karte auflegen</span>
+        </button>
+        {% for e in event_cards %}
+        <button class="pay-btn event" onclick="payEvent('{{ e.uid|e }}', '{{ e.name|e }}')">
+            <span class="ico">🎉</span>
+            <span style="font-size:1.1rem;line-height:1.15;">{{ e.name }}</span>
+            <span class="nums" style="font-size:.95rem;opacity:.85;">{{ ('%.2f'|format(e.spent/100)).replace('.', ',') }} €</span>
+        </button>
+        {% endfor %}
+    </div>
+
+</div>
+
+<div class="kiosk-modal" id="modal">
+    <div class="box">
+        <h2 id="modal-title">Buchung</h2>
+        <div class="big nums" id="modal-amount">–</div>
+        <p id="modal-msg" class="text-muted"></p>
+        <ul id="modal-items" style="list-style:none;padding:0;margin:0.5rem 0 0.75rem;font-size:1rem;text-align:left;"></ul>
+        <p id="modal-balance" class="nums"></p>
+        <button class="btn primary large" onclick="closeModal()">OK</button>
+    </div>
+</div>
+
+<!-- Guthaben-Anzeige -->
+<div class="kiosk-modal" id="balance-modal">
+    <div class="box">
+        <h2 id="balance-name">–</h2>
+        <div class="big nums" id="balance-value">–</div>
+        <p class="text-muted">Getränk antippen zum Kaufen.</p>
+        <button class="btn primary large" onclick="document.getElementById('balance-modal').removeAttribute('open')">OK</button>
+    </div>
+</div>
+
+<!-- Aufladen-Ablauf -->
+<div class="kiosk-modal" id="topup-modal">
+    <div class="box">
+        <h2 id="topup-title">Guthaben aufladen</h2>
+        <div id="topup-step-amount">
+            <p class="text-muted">Betrag wählen:</p>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;">
+                <button class="btn primary" onclick="topupPickAmount(500)" style="min-height:56px;font-size:1.3rem;">5 €</button>
+                <button class="btn primary" onclick="topupPickAmount(1000)" style="min-height:56px;font-size:1.3rem;">10 €</button>
+                <button class="btn primary" onclick="topupPickAmount(2000)" style="min-height:56px;font-size:1.3rem;">20 €</button>
+                <button class="btn primary" onclick="topupPickAmount(5000)" style="min-height:56px;font-size:1.3rem;">50 €</button>
+            </div>
+            <button class="btn ghost mt-4" onclick="topupCustom()" style="width:100%;">Anderer Betrag …</button>
+            <button class="btn mt-2" onclick="closeTopup()" style="width:100%;">Abbrechen</button>
+        </div>
+        <div id="topup-step-card" hidden>
+            <p style="font-size:1.15rem;">Ziel-Karte auflegen …</p>
+            <div class="big nums" id="topup-amount-display">–</div>
+            <button class="btn mt-2" onclick="closeTopup()" style="width:100%;">Abbrechen</button>
+        </div>
+        <div id="topup-step-done" hidden>
+            <p class="text-success" style="font-size:1.2rem;">Aufgeladen!</p>
+            <div class="big nums" id="topup-new-balance">–</div>
+            <button class="btn primary" onclick="closeTopup()" style="width:100%;">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- Kartenzuordnung -->
+<div class="kiosk-modal" id="assign-modal">
+    <div class="box">
+        <h2>Karte zuordnen</h2>
+        <p class="text-muted">Neue UID: <code id="assign-uid"></code></p>
+        <div id="assign-list" style="max-height:200px;overflow-y:auto;text-align:left;"></div>
+        <button class="btn mt-2" onclick="closeAssign()" style="width:100%;">Abbrechen</button>
+    </div>
+</div>
+
+<!-- PIN-Login (Kiosk-Admin) -->
+<div class="kiosk-modal" id="pin-modal">
+    <div class="box" style="max-width:340px;">
+        <h2>Kiosk-Admin</h2>
+        <p class="text-muted">PIN eingeben oder Admin-Karte auflegen.</p>
+        <div class="numpad-display" id="pin-display">– – – –</div>
+        <div class="numpad">
+            <button onclick="pinDigit('1')">1</button>
+            <button onclick="pinDigit('2')">2</button>
+            <button onclick="pinDigit('3')">3</button>
+            <button onclick="pinDigit('4')">4</button>
+            <button onclick="pinDigit('5')">5</button>
+            <button onclick="pinDigit('6')">6</button>
+            <button onclick="pinDigit('7')">7</button>
+            <button onclick="pinDigit('8')">8</button>
+            <button onclick="pinDigit('9')">9</button>
+            <button class="del" onclick="pinDel()">←</button>
+            <button onclick="pinDigit('0')">0</button>
+            <button class="act" onclick="pinSubmit()">OK</button>
+        </div>
+        <button class="btn ghost mt-2" onclick="closePin()" style="width:100%;">Abbrechen</button>
+    </div>
+</div>
+
+<!-- Kiosk-Admin-Menü -->
+<div class="kiosk-modal" id="kadmin-modal">
+    <div class="box" style="max-width:420px;">
+        <h2 id="kadmin-title">Admin</h2>
+        <div class="kadmin-grid">
+            <button class="kadmin-tile" onclick="kadminOpenTopup()">
+                <span class="ico">💶</span><span>Aufladen</span>
+            </button>
+            <button class="kadmin-tile" onclick="kadminOpenAssign()">
+                <span class="ico">🎫</span><span>Karte zuweisen</span>
+            </button>
+            <button class="kadmin-tile" onclick="kadminOpenAmount()">
+                <span class="ico">💷</span><span>Freier Betrag</span>
+            </button>
+            <button class="kadmin-tile" onclick="kadminShowQR()">
+                <span class="ico">📱</span><span>Web-QR</span>
+            </button>
+            <button class="kadmin-tile" onclick="location.href='/login'">
+                <span class="ico">🖥️</span><span>Web-Admin</span>
+            </button>
+            <button class="kadmin-tile" onclick="closeKadmin()">
+                <span class="ico">↩️</span><span>Zurück</span>
+            </button>
+        </div>
+        <p class="text-muted mt-4" style="text-align:center;font-size:.85rem;">Angemeldet als <strong id="kadmin-role">–</strong></p>
+    </div>
+</div>
+
+<!-- Web-QR-Modal (Handy) -->
+<div class="kiosk-modal" id="qr-modal">
+    <div class="box">
+        <h2>Handy-Zugriff</h2>
+        <p class="text-muted">QR mit dem Handy scannen (im gleichen WLAN):</p>
+        <img src="/qr" alt="QR" style="width:200px;background:white;padding:8px;border-radius:12px;">
+        <p class="nums mt-2" style="font-family:var(--font-mono);word-break:break-all;">{{ public_base_url() }}</p>
+        <button class="btn primary" onclick="document.getElementById('qr-modal').removeAttribute('open')" style="width:100%;">OK</button>
+    </div>
+</div>
+
+<!-- Freibetrag-Eingabe (Zifferntastatur mit Cent) -->
+<div class="kiosk-modal" id="amount-modal">
+    <div class="box" style="max-width:340px;">
+        <h2 id="amount-title">Betrag</h2>
+        <div class="numpad-display" id="amount-display">0,00 €</div>
+        <div class="numpad">
+            <button onclick="amountDigit('1')">1</button>
+            <button onclick="amountDigit('2')">2</button>
+            <button onclick="amountDigit('3')">3</button>
+            <button onclick="amountDigit('4')">4</button>
+            <button onclick="amountDigit('5')">5</button>
+            <button onclick="amountDigit('6')">6</button>
+            <button onclick="amountDigit('7')">7</button>
+            <button onclick="amountDigit('8')">8</button>
+            <button onclick="amountDigit('9')">9</button>
+            <button class="del" onclick="amountDel()">←</button>
+            <button onclick="amountDigit('0')">0</button>
+            <button class="act" onclick="amountSubmit()">OK</button>
+        </div>
+        <button class="btn ghost mt-2" onclick="closeAmount()" style="width:100%;">Abbrechen</button>
+    </div>
+</div>
+
+<div class="kiosk-modal" id="wish-modal">
+    <div class="box" style="max-width:600px;text-align:left;">
+        <h2 style="text-align:center;">💡 Getränke-Wunsch</h2>
+        <p class="text-muted" style="text-align:center;">Karte auflegen und für einen Wunsch stimmen. 1 Stimme pro Woche und Karte.</p>
+        <ul id="wish-list" style="list-style:none;padding:0;margin:1rem 0 0;"></ul>
+        <div style="display:flex;gap:.5rem;margin-top:1rem;">
+            <input id="wish-new" placeholder="Eigener Wunsch (z. B. Fritz-Kola)" style="flex:1;">
+            <button class="btn" onclick="proposeWish()">Vorschlagen</button>
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:1rem;">
+            <button class="btn ghost" onclick="closeWishes()">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<div class="attract" id="attract">
+    <div style="position:absolute;top:2rem;right:3rem;font-size:1.4rem;opacity:0.8;" id="attract-datetime"></div>
+    <div style="position:absolute;top:2rem;left:3rem;font-size:1.1rem;opacity:0.85;" id="attract-weather"></div>
+
+    <h1 id="attract-clock" style="font-size:clamp(2.5rem, 12vw, 6rem);margin:0;letter-spacing:0.02em;">--:--</h1>
+    <p style="margin-top:0.5rem;">🥤 Getränkekasse</p>
+
+    <div id="attract-slides" style="margin-top:2.5rem;min-height:6rem;">
+        <div class="slide" data-slide="hint">Getränk antippen oder Karte auflegen</div>
+        {% if attract_lines %}
+        <div class="slide" data-slide="top" hidden>
+            <div style="font-size:1.4rem;margin-bottom:0.75rem;">Top-Getränke der Woche</div>
+            <ul style="list-style:none;padding:0;font-size:1.15rem;">
+            {% for line in attract_lines %}<li style="opacity:0.85;margin:.25rem 0;">{{ line }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        <div class="slide" data-slide="wish" hidden>
+            <div style="font-size:1.4rem;">💡 Wunsch-Getränk fehlt?</div>
+            <div style="opacity:0.85;">Über den 💡-Button oben rechts abstimmen.</div>
+        </div>
+        <div class="slide" data-slide="topup" hidden>
+            <div style="font-size:1.4rem;">💶 Guthaben aufladen</div>
+            <div style="opacity:0.85;">Karte auflegen und Personal ansprechen.</div>
+        </div>
+    </div>
+
+    <div style="margin-top:2.5rem;display:flex;align-items:center;gap:1.5rem;">
+        <img src="/qr?path=/kiosk" alt="QR" style="width:170px;height:170px;background:white;border-radius:16px;padding:8px;">
+        <div style="text-align:left;">
+            <div style="opacity:0.8;font-size:1.05rem;">Im WLAN auch mit dem Handy:</div>
+            <div class="nums" style="font-family:var(--font-mono);font-size:1.35rem;font-weight:700;">{{ public_base_url() }}</div>
+        </div>
+    </div>
+</div>
+
+<script>
+'use strict';
+const cart = new Map(); // id -> {name, price, qty}
+const catBtns = document.querySelectorAll('#cats button');
+const drinkBtns = document.querySelectorAll('.drink-btn');
+const clock = document.getElementById('clock');
+const rfidDot = document.getElementById('rfid-dot');
+const attract = document.getElementById('attract');
+let lastAction = Date.now();
+let audioCtx = null;
+
+function beep(freq = 660, dur = 90) {
+    try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.value = 0.05;
+        o.connect(g).connect(audioCtx.destination);
+        o.start();
+        setTimeout(() => { o.stop(); }, dur);
+    } catch (_) {}
+}
+
+function tickClock() {
+    const d = new Date();
+    clock.textContent = d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+}
+setInterval(tickClock, 5000); tickClock();
+
+function renderCart() {
+    const items = document.getElementById('cart-items');
+    items.innerHTML = '';
+    let total = 0;
+    if (cart.size === 0) {
+        items.innerHTML = '<span style="opacity:0.6;">Getränk antippen, dann Karte auflegen.</span>';
+    } else {
+        cart.forEach((v, id) => {
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.innerHTML = `${v.qty}× ${v.name} <span class="del">✕</span>`;
+            chip.onclick = () => { removeFromCart(id); };
+            items.appendChild(chip);
+            total += v.qty * v.price;
+        });
+    }
+    document.getElementById('cart-total').textContent = (total/100).toFixed(2).replace('.', ',') + ' €';
+    lastAction = Date.now();
+    hideAttract();
+}
+
+function addToCart(id, name, price) {
+    const existing = cart.get(id);
+    if (existing) existing.qty++;
+    else cart.set(id, {name, price, qty: 1});
+    renderCart();
+    beep(880, 60);
+}
+
+function removeFromCart(id) {
+    const existing = cart.get(id);
+    if (!existing) return;
+    if (existing.qty > 1) existing.qty--;
+    else cart.delete(id);
+    renderCart();
+    beep(440, 60);
+}
+
+function clearCart() { cart.clear(); renderCart(); }
+
+let activeCat = 'all';
+let currentPage = 0;
+const pageSize = 8; // 4 Spalten × 2 Reihen — passt bei 5" perfekt
+
+function drinksForCat() {
+    return Array.from(drinkBtns).filter(d => activeCat === 'all' || d.dataset.cat === activeCat);
+}
+function renderPage() {
+    const visible = drinksForCat();
+    const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
+    if (currentPage >= totalPages) currentPage = totalPages - 1;
+    if (currentPage < 0) currentPage = 0;
+    drinkBtns.forEach(d => d.style.display = 'none');
+    const start = currentPage * pageSize;
+    visible.slice(start, start + pageSize).forEach(d => d.style.display = '');
+    // Pfeile ein/aus
+    const prev = document.getElementById('page-prev');
+    const next = document.getElementById('page-next');
+    if (totalPages <= 1) { prev.style.visibility = 'hidden'; next.style.visibility = 'hidden'; }
+    else { prev.style.visibility = ''; next.style.visibility = ''; }
+    prev.disabled = currentPage <= 0;
+    next.disabled = currentPage >= totalPages - 1;
+    // Punkte
+    const dots = document.getElementById('page-dots');
+    dots.innerHTML = '';
+    for (let i = 0; i < totalPages; i++) {
+        const d = document.createElement('span');
+        d.className = 'page-dot' + (i === currentPage ? ' active' : '');
+        d.onclick = () => { currentPage = i; renderPage(); };
+        dots.appendChild(d);
+    }
+}
+function pagePrev() { currentPage--; renderPage(); lastAction = Date.now(); hideAttract(); }
+function pageNext() { currentPage++; renderPage(); lastAction = Date.now(); hideAttract(); }
+
+catBtns.forEach(b => b.onclick = () => {
+    catBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    activeCat = b.dataset.cat;
+    currentPage = 0;
+    renderPage();
+    lastAction = Date.now();
+});
+renderPage();
+
+function showModal(title, amount, msg, balance, level, items) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-amount').textContent = amount;
+    document.getElementById('modal-msg').textContent = msg || '';
+    document.getElementById('modal-balance').textContent = balance || '';
+    const list = document.getElementById('modal-items');
+    list.innerHTML = '';
+    if (Array.isArray(items)) {
+        items.forEach(it => {
+            const li = document.createElement('li');
+            li.style.cssText = 'display:flex;justify-content:space-between;padding:.15rem 0;';
+            li.innerHTML = `<span>${it.qty}× ${it.name}</span><span class="nums">${(it.subtotal/100).toFixed(2).replace('.', ',')} €</span>`;
+            list.appendChild(li);
+        });
+    }
+    const box = document.querySelector('#modal .box');
+    box.style.borderTop = (level === 'error' ? '6px solid var(--danger)' : '6px solid var(--success)');
+    document.getElementById('modal').setAttribute('open', '');
+    // Länger sichtbar, damit man den Kauf sieht:
+    setTimeout(() => document.getElementById('modal').removeAttribute('open'), 6000);
+}
+function closeModal() { document.getElementById('modal').removeAttribute('open'); }
+
+// (Letzte Käufe entfernt für maximale Touch-Fläche. Storno über Kiosk-Admin.)
+function pushRecent() { /* no-op */ }
+
+async function book(uid) {
+    if (cart.size === 0) { beep(220, 200); return; }
+    // Snapshot vor dem Leeren, damit wir die Items für Modal/History haben.
+    const items = Array.from(cart.entries()).map(([drink_id, v]) => ({drink_id, quantity: v.qty}));
+    const snapshot = Array.from(cart.entries()).map(([id, v]) => ({
+        id, name: v.name, qty: v.qty, subtotal: v.qty * v.price,
+    }));
+    try {
+        const r = await fetch('/api/kiosk/book', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({uid, items}),
+        });
+        const data = await r.json();
+        if (data.ok) {
+            beep(1200, 180);
+            const balStr = data.new_balance_cents != null ? `Guthaben: ${(data.new_balance_cents/100).toFixed(2).replace('.', ',')} €` : '';
+            showModal(
+                `Danke, ${data.user_name}!`,
+                (data.total_cents/100).toFixed(2).replace('.', ',') + ' €',
+                'Buchung erfolgreich',
+                balStr, 'ok', snapshot,
+            );
+            const summary = snapshot.map(s => `${s.qty}× ${s.name}`).join(', ');
+            pushRecent(data.user_name, data.total_cents, summary);
+            cart.clear(); renderCart();
+            // Bestand kurz später neu laden, aber Modal darf noch stehen.
+            setTimeout(() => window.location.reload(), 6500);
+        } else if (data.error && data.error.toLowerCase().includes('unbekannt')) {
+            // Karte unbekannt → könnte Admin-Karte sein
+            try {
+                const body = new FormData(); body.append('uid', uid);
+                const r2 = await fetch('/login/rfid', {method: 'POST', body});
+                const auth = await r2.json();
+                if (auth.ok) {
+                    showModal('Willkommen', '', 'Admin-Login erkannt – öffne Verwaltung…', '', 'ok');
+                    setTimeout(() => { window.location.href = auth.next || '/'; }, 1200);
+                    return;
+                }
+            } catch (_) {}
+            beep(180, 300);
+            showModal('Karte unbekannt', '', 'Bitte an der Anmeldung registrieren.', '', 'error');
+        } else {
+            beep(180, 300);
+            showModal('Fehler', '', data.error || 'Buchung fehlgeschlagen', '', 'error');
+        }
+    } catch (e) {
+        beep(180, 300);
+        showModal('Fehler', '', String(e), '', 'error');
+    }
+}
+
+async function payCash() {
+    if (cart.size === 0) { beep(220, 200); return; }
+    await book('CASH');
+}
+
+async function payEvent(uid, name) {
+    if (cart.size === 0) { beep(220, 200); return; }
+    // Wie im Bestand: ein Klick bucht direkt (kein Bestätigungsdialog).
+    await book(uid);
+}
+
+// ================= Smarte Karten-Erkennung =================
+// Wenn Karte gelesen wird und kein Modal blockiert:
+//  - Aufladekarte? → Aufladen-Menü
+//  - Bekannter Nutzer? → wenn Warenkorb: buchen; sonst Guthaben zeigen
+//  - Unbekannt + wartende Nutzer? → Zuordnungs-Dialog
+//  - Sonst: „Karte unbekannt", ggf. Admin-Karte prüfen (Login)
+async function smartCardScan(uid) {
+    try {
+        const r = await fetch('/api/kiosk/card/' + encodeURIComponent(uid));
+        const info = await r.json();
+        if (info.kind === 'topup') { openTopup(); return; }
+        if (info.kind === 'user' || info.kind === 'event') {
+            if (cart.size > 0) { await book(uid); return; }
+            showBalance(info.name, info.balance_cents);
+            return;
+        }
+        // unbekannt: erst Admin-Karten-Login versuchen, sonst Zuordnung
+        try {
+            const body = new FormData(); body.append('uid', uid);
+            const r2 = await fetch('/login/rfid', {method: 'POST', body});
+            const j = await r2.json();
+            if (j.ok) {
+                showModal('Willkommen', '', 'Admin erkannt – öffne Web-Admin…', '', 'ok', null);
+                setTimeout(() => location.href = j.next || '/', 1200);
+                return;
+            }
+        } catch (_) {}
+        if (info.pending && info.pending.length > 0) {
+            openAssign(uid, info.pending);
+        } else {
+            beep(220, 200);
+            showModal('Karte unbekannt', '', 'Bitte an der Anmeldung registrieren.', '', 'error', null);
+        }
+    } catch (e) {
+        gkToast(String(e), {level:'error'});
+    }
+}
+
+// ================= Guthaben-Modal =================
+function showBalance(name, cents) {
+    document.getElementById('balance-name').textContent = 'Hallo, ' + name + '!';
+    document.getElementById('balance-value').textContent =
+        (cents/100).toFixed(2).replace('.', ',') + ' €';
+    const m = document.getElementById('balance-modal');
+    m.setAttribute('open', '');
+    beep(880, 60);
+    setTimeout(() => m.removeAttribute('open'), 4000);
+}
+
+// ================= Aufladen-Flow =================
+let topupAmount = 0;
+let topupWaitingCard = false;
+function openTopup() {
+    topupAmount = 0; topupWaitingCard = false;
+    document.getElementById('topup-step-amount').hidden = false;
+    document.getElementById('topup-step-card').hidden = true;
+    document.getElementById('topup-step-done').hidden = true;
+    document.getElementById('topup-modal').setAttribute('open', '');
+}
+function closeTopup() {
+    topupAmount = 0; topupWaitingCard = false;
+    document.getElementById('topup-modal').removeAttribute('open');
+}
+function topupPickAmount(cents) {
+    topupAmount = cents;
+    document.getElementById('topup-amount-display').textContent =
+        (cents/100).toFixed(2).replace('.', ',') + ' €';
+    document.getElementById('topup-step-amount').hidden = true;
+    document.getElementById('topup-step-card').hidden = false;
+    topupWaitingCard = true;
+}
+function topupCustom() {
+    openAmount('Aufladung – Betrag', (cents) => {
+        if (cents > 0) topupPickAmount(cents);
+    });
+}
+async function topupApplyToCard(uid) {
+    const r = await fetch('/api/kiosk/topup', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({uid, amount_cents: topupAmount, via_topup_card: '1'}),
+    });
+    const d = await r.json();
+    topupWaitingCard = false;
+    if (d.ok) {
+        beep(1200, 120);
+        document.getElementById('topup-step-card').hidden = true;
+        document.getElementById('topup-step-done').hidden = false;
+        document.getElementById('topup-title').textContent = 'Danke, ' + d.user_name;
+        document.getElementById('topup-new-balance').textContent =
+            (d.balance_cents/100).toFixed(2).replace('.', ',') + ' €';
+        setTimeout(closeTopup, 3500);
+    } else {
+        beep(220, 200);
+        gkToast(d.error || 'Fehler', {level:'error'});
+        topupWaitingCard = true;
+    }
+}
+
+// ================= Kartenzuordnung =================
+let assignUid = null;
+function openAssign(uid, pending) {
+    assignUid = uid;
+    document.getElementById('assign-uid').textContent = uid;
+    const list = document.getElementById('assign-list');
+    list.innerHTML = '';
+    pending.forEach(u => {
+        const btn = document.createElement('button');
+        btn.className = 'btn'; btn.style.cssText = 'width:100%;margin:.3rem 0;min-height:50px;font-size:1rem;';
+        btn.textContent = u.name;
+        btn.onclick = () => assignPickUser(u.id);
+        list.appendChild(btn);
+    });
+    document.getElementById('assign-modal').setAttribute('open', '');
+}
+function closeAssign() {
+    assignUid = null;
+    document.getElementById('assign-modal').removeAttribute('open');
+}
+async function assignPickUser(userId) {
+    const pin = prompt('Admin-PIN zur Bestätigung:');
+    if (!pin) return;
+    const r = await fetch('/api/kiosk/assign_card', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: userId, uid: assignUid, pin}),
+    });
+    const d = await r.json();
+    if (d.ok) { beep(1200, 100); gkToast('Karte zugeordnet', {level:'success'}); closeAssign(); }
+    else { beep(220, 200); gkToast(d.error || 'Fehler', {level:'error'}); }
+}
+
+// ================= PIN-Login (Kiosk-Admin) =================
+let pinBuf = '';
+let pinWaitingCard = false;
+let kioskRole = null;
+function openAdminLogin() {
+    pinBuf = ''; renderPin();
+    pinWaitingCard = true;
+    document.getElementById('pin-modal').setAttribute('open', '');
+}
+function closePin() {
+    pinBuf = ''; pinWaitingCard = false;
+    document.getElementById('pin-modal').removeAttribute('open');
+}
+function renderPin() {
+    const d = document.getElementById('pin-display');
+    d.textContent = pinBuf ? '•'.repeat(pinBuf.length) : '– – – –';
+}
+function pinDigit(x) { if (pinBuf.length < 12) { pinBuf += x; renderPin(); } }
+function pinDel() { pinBuf = pinBuf.slice(0, -1); renderPin(); }
+async function pinSubmit() {
+    if (!pinBuf) return;
+    const r = await fetch('/api/kiosk/pin_check', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pin: pinBuf}),
+    });
+    const d = await r.json();
+    if (d.ok) {
+        kioskRole = d.role;
+        closePin();
+        openKadmin();
+    } else {
+        beep(220, 200); pinBuf = ''; renderPin();
+        gkToast('PIN falsch', {level:'error'});
+    }
+}
+async function pinTryCard(uid) {
+    // Karte an PIN-Popup → als Admin-Karte prüfen
+    try {
+        const body = new FormData(); body.append('uid', uid);
+        const r = await fetch('/login/rfid', {method:'POST', body});
+        const j = await r.json();
+        if (j.ok) { closePin(); kioskRole = 'admin'; openKadmin(); return; }
+    } catch(_) {}
+    beep(220, 200); gkToast('Karte kein Admin', {level:'error'});
+}
+
+// ================= Kiosk-Admin-Menü =================
+function openKadmin() {
+    document.getElementById('kadmin-role').textContent = kioskRole || 'admin';
+    document.getElementById('kadmin-modal').setAttribute('open', '');
+}
+function closeKadmin() {
+    kioskRole = null;
+    document.getElementById('kadmin-modal').removeAttribute('open');
+}
+function kadminOpenTopup() { closeKadmin(); openTopup(); }
+function kadminOpenAssign() {
+    closeKadmin();
+    gkToast('Neue Karte auflegen, um sie zuzuweisen.', {level:'success'});
+}
+function kadminOpenAmount() {
+    closeKadmin();
+    openAmount('Aufladen – Betrag frei', (cents) => {
+        if (cents > 0) { topupPickAmount(cents); document.getElementById('topup-modal').setAttribute('open', ''); }
+    });
+}
+function kadminShowQR() {
+    closeKadmin();
+    document.getElementById('qr-modal').setAttribute('open', '');
+}
+
+// ================= Freibetrag-Eingabe =================
+let amountBuf = '';
+let amountCallback = null;
+function openAmount(title, cb) {
+    amountBuf = ''; amountCallback = cb;
+    document.getElementById('amount-title').textContent = title || 'Betrag';
+    renderAmount();
+    document.getElementById('amount-modal').setAttribute('open', '');
+}
+function closeAmount() {
+    amountBuf = ''; amountCallback = null;
+    document.getElementById('amount-modal').removeAttribute('open');
+}
+function amountDigit(x) { if (amountBuf.length < 8) { amountBuf += x; renderAmount(); } }
+function amountDel() { amountBuf = amountBuf.slice(0, -1); renderAmount(); }
+function renderAmount() {
+    const cents = parseInt(amountBuf || '0', 10);
+    document.getElementById('amount-display').textContent =
+        (cents/100).toFixed(2).replace('.', ',') + ' €';
+}
+function amountSubmit() {
+    const cents = parseInt(amountBuf || '0', 10);
+    closeAmount();
+    if (amountCallback) amountCallback(cents);
+}
+
+function promptCard() {
+    if (cart.size === 0) {
+        showModal('Karte auflegen', '', 'Karte auflegen, um Guthaben zu sehen.', '', 'ok', null);
+    } else {
+        showModal('Karte auflegen', '', 'Bitte Guthaben-Karte auf den RFID-Leser legen.', '', 'ok', null);
+    }
+    // Modal schließt automatisch, smartCardScan übernimmt den Scan.
+}
+
+function simulateUid(uid) {
+    if (!uid) return;
+    fetch('/api/kiosk/simulate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({uid})
+    });
+}
+
+// SSE für RFID-Events
+try {
+    const src = new EventSource('/events/rfid');
+    src.addEventListener('open', () => rfidDot.className = 'badge success', {once: false});
+    src.onerror = () => rfidDot.className = 'badge danger';
+    src.addEventListener('rfid', async (e) => {
+        const data = JSON.parse(e.data);
+        rfidDot.className = 'badge success';
+        // Priorität: aktiver Modus (Wunsch, Aufladen, Zuordnen, Login), sonst normal
+        if (wishMode && pendingWishId) {
+            const r = await fetch('/api/wishes/vote', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({wish_id: pendingWishId, uid: data.uid}),
+            });
+            const j = await r.json();
+            if (j.ok) { beep(1200, 100); gkToast('Danke, Stimme gezählt!', {level:'success'}); }
+            else if (j.error === 'already_voted') { beep(240, 200); gkToast('Diese Woche schon abgestimmt.', {level:'warn'}); }
+            else { beep(200, 200); gkToast('Fehler', {level:'error'}); }
+            pendingWishId = null;
+            await refreshWishes();
+            return;
+        }
+        if (topupWaitingCard) {
+            await topupApplyToCard(data.uid);
+            return;
+        }
+        if (pinWaitingCard) {
+            await pinTryCard(data.uid);
+            return;
+        }
+        await smartCardScan(data.uid);
+    });
+} catch (_) {
+    rfidDot.className = 'badge danger';
+}
+
+// Attract-Mode nach 60 s Inaktivität
+const attractClock = document.getElementById('attract-clock');
+const attractDt = document.getElementById('attract-datetime');
+const attractWeather = document.getElementById('attract-weather');
+const slides = Array.from(document.querySelectorAll('#attract-slides .slide'));
+let slideIdx = 0;
+function tickAttract() {
+    const d = new Date();
+    if (attractClock) attractClock.textContent = d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+    if (attractDt) attractDt.textContent = d.toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'long'});
+}
+function rotateSlides() {
+    if (!slides.length) return;
+    slides.forEach(s => s.hidden = true);
+    slides[slideIdx % slides.length].hidden = false;
+    slideIdx++;
+}
+setInterval(tickAttract, 1000); tickAttract();
+setInterval(rotateSlides, 6000); rotateSlides();
+
+// Wetter via open-meteo (optional – nur wenn window.__GK_LAT/LON gesetzt).
+async function loadWeather() {
+    const lat = window.__GK_LAT || {{ (weather_lat|default(0)) }};
+    const lon = window.__GK_LON || {{ (weather_lon|default(0)) }};
+    if (!lat || !lon || !attractWeather) return;
+    try {
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`);
+        const d = await r.json();
+        const t = d.current?.temperature_2m;
+        if (t != null) attractWeather.textContent = `☁️ ${t.toFixed(0)} °C`;
+    } catch (_) {}
+}
+loadWeather(); setInterval(loadWeather, 30 * 60 * 1000);
+
+function hideAttract() { attract.removeAttribute('open'); }
+function showAttract() { attract.setAttribute('open', ''); }
+setInterval(() => {
+    if (cart.size === 0 && Date.now() - lastAction > 60000) showAttract();
+}, 5000);
+document.addEventListener('click', () => { lastAction = Date.now(); hideAttract(); });
+document.addEventListener('touchstart', () => { lastAction = Date.now(); hideAttract(); });
+
+renderCart();
+
+// ================= Wunsch-Modus =================
+let wishMode = false;
+let pendingWishId = null;
+async function refreshWishes() {
+    const r = await fetch('/api/wishes');
+    const items = await r.json();
+    const list = document.getElementById('wish-list');
+    list.innerHTML = '';
+    if (!items.length) {
+        list.innerHTML = '<li class="text-muted" style="text-align:center;padding:1rem;">Noch keine Wünsche.</li>';
+        return;
+    }
+    items.forEach(w => {
+        const li = document.createElement('li');
+        li.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:.5rem .75rem;border-radius:12px;background:rgba(0,0,0,.03);margin-bottom:.35rem;';
+        const btn = pendingWishId === w.id ? '<span class="badge success">Karte auflegen…</span>'
+                                          : `<button class="btn small primary" onclick="startVote(${w.id})">👍 ${w.votes}</button>`;
+        li.innerHTML = `<strong>${w.name}</strong>${btn}`;
+        list.appendChild(li);
+    });
+}
+window.openWishes = async function () {
+    wishMode = true; pendingWishId = null;
+    await refreshWishes();
+    document.getElementById('wish-modal').setAttribute('open', '');
+};
+window.closeWishes = function () {
+    wishMode = false; pendingWishId = null;
+    document.getElementById('wish-modal').removeAttribute('open');
+};
+window.startVote = async function (id) {
+    pendingWishId = id;
+    await refreshWishes();
+    gkToast('Karte auflegen, um zu stimmen', {level: 'success'});
+};
+window.proposeWish = async function () {
+    const name = document.getElementById('wish-new').value.trim();
+    if (!name) return;
+    const r = await fetch('/api/wishes/propose', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name}),
+    });
+    document.getElementById('wish-new').value = '';
+    await refreshWishes();
+};
+
+// gkToast benutzt die App-Toast-Komponente; falls nicht geladen (Kiosk hat kein layout), fake mit alert
+if (typeof gkToast === 'undefined') {
+    window.gkToast = (m, opts) => { console.log('[toast]', m); };
+}
+
+// ================= Barcode-Scanner =================
+// USB-HID-Scanner tippen einfach Ziffern + Enter. Wir puffern zwischen Enter-Anschlägen.
+(function () {
+    let buffer = '';
+    let lastKey = 0;
+    document.addEventListener('keydown', async (e) => {
+        // Innerhalb von Eingabefeldern (Prompt/Suchfeld) nicht abfangen.
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        const now = Date.now();
+        if (now - lastKey > 500) buffer = '';
+        lastKey = now;
+        if (e.key === 'Enter') {
+            const code = buffer.trim();
+            buffer = '';
+            if (code.length >= 3 && /^[0-9A-Za-z-]+$/.test(code)) {
+                try {
+                    const r = await fetch('/api/kiosk/scan/' + encodeURIComponent(code));
+                    if (r.ok) {
+                        const d = await r.json();
+                        if (d.ok) { addToCart(d.drink.id, d.drink.name, d.drink.price); return; }
+                    }
+                    beep(220, 200);
+                    showModal('Unbekannter Code', code, 'Barcode/ID nicht gefunden', '', 'error');
+                } catch (_) {}
+            }
+        } else if (e.key.length === 1) {
+            buffer += e.key;
+        }
+    });
+})();
+</script>
+</body>
+</html>

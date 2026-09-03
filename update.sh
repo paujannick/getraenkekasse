@@ -1,39 +1,40 @@
-#!/bin/bash
-set -e
-
-# Always operate relative to script location
+#!/usr/bin/env bash
+# Aktualisiert den Code, erneuert Abhängigkeiten und Backup vor Migration.
+set -euo pipefail
 cd "$(dirname "$0")"
 
-# Pull latest changes if repository has remote
 if git config --get remote.origin.url > /dev/null 2>&1; then
-  git pull --ff-only
+    echo "==> git pull"
+    git pull --ff-only
 fi
 
-# Backup existing database
-DB_PATH="data/getraenkekasse.db"
-if [ -f "$DB_PATH" ]; then
-  python3 - <<'PY'
-import src.database as d
-d.backup_database()
+echo "==> Backup vor Migration"
+if [ -f data/getraenkekasse.db ]; then
+    python3 - <<'PY'
+from src import backups
+info = backups.create_backup()
+print(f"backup: {info.path} ({info.size} bytes)")
 PY
 fi
 
-# Create venv if missing and install requirements
 if [ ! -d venv ]; then
-  python3 -m venv venv --system-site-packages
+    python3 -m venv venv --system-site-packages
 fi
+# shellcheck disable=SC1091
 source venv/bin/activate
 
 pip install --upgrade pip setuptools wheel
 
-pip install --upgrade -r requirements.txt
+if [ -f requirements-pi.txt ] && command -v raspi-config >/dev/null 2>&1; then
+    pip install --upgrade -r requirements-pi.txt
+else
+    pip install --upgrade -r requirements.txt
+fi
 
-# Create any new database tables without touching existing data
+echo "==> Migration"
 venv/bin/python - <<'PY'
-import src.database as d
-conn = d.get_connection()
-d.init_db(conn)
-conn.close()
+from src import database
+database.init_db()
 PY
 
-echo "Update completed"
+echo "==> Update abgeschlossen"

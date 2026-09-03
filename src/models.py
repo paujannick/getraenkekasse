@@ -88,6 +88,24 @@ def set_telegram_token(token: str, conn: Optional[sqlite3.Connection] = None) ->
     set_setting('telegram_token', token, conn)
 
 
+def get_topup_card(conn: Optional[sqlite3.Connection] = None) -> str:
+    """Optional: spezielle RFID-UID, die den Aufladen-Modus am Kiosk startet."""
+    return (get_setting('topup_card_uid', conn) or '').strip()
+
+
+def set_topup_card(uid: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    set_setting('topup_card_uid', (uid or '').strip(), conn)
+
+
+def get_usb_backup_path(conn: Optional[sqlite3.Connection] = None) -> str:
+    """Optional: Zielpfad für USB-Backups (leer = deaktiviert)."""
+    return (get_setting('usb_backup_path', conn) or '').strip()
+
+
+def set_usb_backup_path(path: str, conn: Optional[sqlite3.Connection] = None) -> None:
+    set_setting('usb_backup_path', (path or '').strip(), conn)
+
+
 def get_telegram_chat(conn: Optional[sqlite3.Connection] = None) -> str:
     """Return the Telegram chat id for notifications."""
     return get_setting('telegram_chat', conn) or ''
@@ -113,6 +131,7 @@ class User:
     valid_from: Optional[str] = None
     valid_until: Optional[str] = None
     created_at: Optional[str] = None
+    deleted_at: Optional[str] = None
 
 
 @dataclass
@@ -125,6 +144,17 @@ class Drink:
     stock: int
     min_stock: int
     page: int
+    category_id: Optional[int] = None
+    deleted_at: Optional[str] = None
+
+
+def _row(cls, row):
+    """sqlite3.Row → dataclass, ignoriert unbekannte Spalten (Forwards-Compat)."""
+    if row is None:
+        return None
+    keys = set(getattr(cls, "__dataclass_fields__", {}).keys())
+    data = {k: row[k] for k in row.keys() if k in keys}
+    return cls(**data)
 
 
 
@@ -139,7 +169,7 @@ def get_user_by_uid(uid: str) -> Optional[User]:
             )
             row = cur.fetchone()
         if row:
-            return User(**row)
+            return _row(User, row)
         return None
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen des Benutzers: {e}")
@@ -153,7 +183,7 @@ def get_user(user_id: int) -> Optional[User]:
             cur = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,))
             row = cur.fetchone()
         if row:
-            return User(**row)
+            return _row(User, row)
         return None
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen des Benutzers: {e}")
@@ -171,7 +201,7 @@ def get_event_payment_users() -> list[User]:
                 'ORDER BY name'
             )
             rows = cur.fetchall()
-        return [User(**row) for row in rows]
+        return [_row(User, row) for row in rows]
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen der Veranstaltungskarten: {e}")
         return []
@@ -189,7 +219,7 @@ def get_unassigned_users(limit: int = 10) -> list[User]:
                 (limit,),
             )
             rows = cur.fetchall()
-        return [User(**row) for row in rows]
+        return [_row(User, row) for row in rows]
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen der Benutzer ohne RFID: {e}")
         return []
@@ -406,7 +436,7 @@ def get_drink_by_id(drink_id: int) -> Optional[Drink]:
             cur = conn.execute('SELECT * FROM drinks WHERE id = ?', (drink_id,))
             row = cur.fetchone()
         if row:
-            return Drink(**row)
+            return _row(Drink, row)
         return None
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen des Getränks: {e}")
@@ -430,7 +460,7 @@ def get_drinks(conn: Optional[sqlite3.Connection] = None, limit: int | None = No
         if limit is not None:
             query += f' LIMIT {int(limit)}'
         cur = conn.execute(query, params)
-        rows = [Drink(**row) for row in cur.fetchall()]
+        rows = [_row(Drink, row) for row in cur.fetchall()]
         return rows
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen der Getränke: {e}")
@@ -466,7 +496,7 @@ def get_drinks_below_min(conn: Optional[sqlite3.Connection] = None) -> list[Drin
             conn = get_connection()
             own = True
         cur = conn.execute('SELECT * FROM drinks WHERE stock < min_stock ORDER BY name')
-        return [Drink(**row) for row in cur.fetchall()]
+        return [_row(Drink, row) for row in cur.fetchall()]
     except sqlite3.Error as e:  # pragma: no cover
         print(f"Fehler beim Lesen der Mindestbestände: {e}")
         return []

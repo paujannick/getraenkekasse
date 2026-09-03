@@ -1,0 +1,53 @@
+{% extends '_layout.html' %}
+{% block title %}Webhooks{% endblock %}
+{% block content %}
+<h1>Webhooks</h1>
+<p class="subheader">Benachrichtigungen an Discord oder Slack – z. B. bei knappen Beständen.</p>
+
+<div class="card">
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Aktiv</th><th></th></tr></thead>
+        <tbody>
+        {% for h in hooks %}
+        <tr>
+            <td>{{ h.name }}</td>
+            <td style="max-width:32ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><code>{{ h.url }}</code></td>
+            <td>{{ h.events }}</td>
+            <td>
+                <form method="post" action="{{ url_for('webhook_toggle', hook_id=h.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="active" value="{{ 0 if h.active else 1 }}">
+                    <button type="submit" class="{{ 'primary' if h.active else 'ghost' }} small">
+                        {{ 'an' if h.active else 'aus' }}
+                    </button>
+                </form>
+            </td>
+            <td>
+                <form method="post" action="{{ url_for('webhook_delete', hook_id=h.id) }}" onsubmit="return confirm('Wirklich löschen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Neuen Webhook anlegen</h2>
+    <form method="post" action="{{ url_for('webhook_add') }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label>Name</label><input name="name" required></div>
+        <div style="grid-column:span 2;"><label>Webhook-URL (Discord/Slack)</label><input name="url" required></div>
+        <div>
+            <label>Events</label>
+            <label class="toggle"><input type="checkbox" name="events" value="low_stock" checked> low_stock</label>
+            <label class="toggle"><input type="checkbox" name="events" value="purchase_over_x"> großer Kauf (&gt;20 €)</label>
+        </div>
+        <div style="align-self:end;"><button class="primary" type="submit">Anlegen</button></div>
+    </form>
+</div>
+{% endblock %}

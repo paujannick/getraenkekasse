@@ -1,17 +1,34 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Einkaufsliste{% endblock %}
 {% block content %}
+<h1>Einkaufsliste</h1>
+<p class="subheader">Empfehlung basiert auf Absatz der letzten <strong>{{ days }}</strong> Tage und Mindestbestand. Zum Verbuchen den Einkauf im <a href="{{ url_for('einkauf_view') }}">Einkaufsmodus</a> anlegen.</p>
+
 <div class="card">
-  <h1>Einkaufsliste</h1>
-  <form method="get" class="actions">
-    <label for="days">Verkaufszeitraum (Tage)</label>
-    <input type="number" min="7" max="180" step="1" id="days" name="days" value="{{ days }}">
-    <button type="submit">Berechnen</button>
-  </form>
-  <table>
-    <tr><th>Getränk</th><th>Bestand</th><th>Verkauft</th><th>Trend</th><th>Zielbestand</th><th>Kaufen</th></tr>
-    {% for r in recommendations %}
-    <tr class="{% if r.buy_qty > 0 %}negstock{% endif %}"><td>{{ r.name }}</td><td>{{ r.stock }}</td><td>{{ r.sold }}</td><td>{{ r.trend }}</td><td>{{ r.target_stock }}</td><td><strong>{{ r.buy_qty }}</strong></td></tr>
-    {% endfor %}
-  </table>
+    <form method="get" class="form-row">
+        <label style="margin-bottom:0;">Zeitraum (Tage)</label>
+        <input type="number" name="days" value="{{ days }}" min="1" max="365" style="max-width:6rem;">
+        <button class="btn small" type="submit">Neu berechnen</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Getränk</th><th class="text-right">Bestand</th><th class="text-right">Min</th><th class="text-right">Verkauft</th><th class="text-right">Empfehlung</th><th>Trend</th></tr></thead>
+        <tbody>
+        {% for r in recommendations %}
+        <tr>
+            <td><strong>{{ r.name }}</strong></td>
+            <td class="text-right nums">{{ r.stock }}</td>
+            <td class="text-right nums">{{ r.min_stock }}</td>
+            <td class="text-right nums">{{ r.sold }}</td>
+            <td class="text-right nums"><span class="badge {% if r.is_low %}danger{% elif r.buy_qty > 0 %}warn{% else %}muted{% endif %}">{{ r.buy_qty }}</span></td>
+            <td>{{ r.trend }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
 </div>
 {% endblock %}

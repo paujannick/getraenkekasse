@@ -240,7 +240,11 @@ def get_setting(key: str, conn: Optional[sqlite3.Connection] = None) -> str | No
         if conn is None:
             conn = get_connection()
             own = True
-        cur = conn.execute('SELECT value FROM config WHERE key=?', (key,))
+        try:
+            cur = conn.execute('SELECT value FROM config WHERE key=?', (key,))
+        except sqlite3.OperationalError:
+            # config-Tabelle noch nicht angelegt – toleranter Import erlaubt.
+            return None
         row = cur.fetchone()
         return row['value'] if row else None
     finally:

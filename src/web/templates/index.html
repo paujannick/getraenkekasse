@@ -1,21 +1,141 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Übersicht{% endblock %}
 {% block content %}
-<div class="card">
-    <h1>Adminbereich</h1>
-    <p>Willkommen!</p>
-    <p>Guthaben aller Benutzer (ohne Veranstaltungskarten):
-        {{ (total_balance/100)|round(2) }} €</p>
-    <div class="actions">
-        <a class="btn" href="{{ url_for('reports') }}">Reports & Forecast</a>
-        <form method="post" action="{{ url_for('refresh') }}">
-            <button type="submit" class="secondary">GUI aktualisieren</button>
-        </form>
-        <form method="post" action="{{ url_for('stop') }}" onsubmit="return confirm('Anwendung wirklich beenden?');">
-            <button type="submit" class="danger">Beenden</button>
-        </form>
+<h1>Willkommen zurück{% if session.user %}, {{ session.user }}{% endif %}</h1>
+<p class="subheader">Live-Übersicht deiner Kasse. Neue Verkäufe erscheinen automatisch unten.</p>
+
+<!-- Schnellaktionen -->
+<div class="grid cols-4 mb-4">
+    <a class="card" href="{{ url_for('kiosk_view') }}" style="text-decoration:none;">
+        <div class="stat" style="border:none;background:linear-gradient(120deg,var(--accent-soft),transparent);">
+            <span class="label">Verkauf</span>
+            <span class="value">🛒 Kasse öffnen</span>
+        </div>
+    </a>
+    <a class="card" href="{{ url_for('topup') }}" style="text-decoration:none;">
+        <div class="stat" style="border:none;background:linear-gradient(120deg,var(--success-soft),transparent);">
+            <span class="label">Guthaben</span>
+            <span class="value">💶 Aufladen</span>
+        </div>
+    </a>
+    <a class="card" href="{{ url_for('drinks') }}" style="text-decoration:none;">
+        <div class="stat" style="border:none;background:linear-gradient(120deg,var(--warn-soft),transparent);">
+            <span class="label">Sortiment</span>
+            <span class="value">🍹 Getränke</span>
+        </div>
+    </a>
+    <a class="card" href="{{ url_for('kassensturz_view') if 'kassensturz_view' in url_map_endpoints else url_for('reports') }}" style="text-decoration:none;">
+        <div class="stat" style="border:none;background:linear-gradient(120deg,#e0e9ff,transparent);">
+            <span class="label">Buchhaltung</span>
+            <span class="value">💰 Kassensturz</span>
+        </div>
+    </a>
+</div>
+
+<!-- Kennzahlen -->
+<div class="grid cols-3 mb-4">
+    <div class="stat">
+        <span class="label">Kunden-Guthaben (Summe)</span>
+        <span class="value nums">{{ '%.2f'|format(total_balance/100) }} €</span>
+    </div>
+    <div class="stat">
+        <span class="label">Getränke unter Mindestbestand</span>
+        <span class="value {% if to_buy %}text-danger{% else %}text-success{% endif %}">
+            {{ to_buy|length }}
+        </span>
+    </div>
+    <div class="stat">
+        <span class="label">Aktive Rabatte</span>
+        <span class="value" id="discount-count">–</span>
     </div>
 </div>
 
+<div class="grid cols-2">
+    <div class="card">
+        <h2>Einkaufsliste</h2>
+        {% if recommendations %}
+        <ul style="list-style:none;padding:0;margin:0;">
+        {% for r in recommendations %}
+        <li style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border);">
+            <span><strong>{{ r.name }}</strong>
+                <span class="text-muted">Bestand {{ r.stock }} / Min {{ r.min_stock }}</span>
+            </span>
+            <span class="badge {% if r.is_low %}danger{% else %}muted{% endif %}">kaufen {{ r.buy_qty }}</span>
+        </li>
+        {% endfor %}
+        </ul>
+        <div class="card-actions">
+            <a class="btn" href="{{ url_for('einkaufen') }}">Ganze Liste</a>
+        </div>
+        {% else %}
+        <p class="text-muted">Alles gut gefüllt – keine Empfehlung.</p>
+        {% endif %}
+    </div>
 
+    <div class="card">
+        <h2>Aktivität (live)</h2>
+        <ul id="activity-list" style="list-style:none;padding:0;margin:0;max-height:380px;overflow-y:auto;">
+        {% for a in recent %}
+        <li style="padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;">
+            <span>
+                <span class="badge muted">{{ a['kind'] }}</span>
+                <strong style="margin:0 0.35rem;">{{ a['actor'] or 'System' }}</strong>
+                <span class="text-muted">{{ a['target'] or '' }}</span>
+            </span>
+            <span class="nums text-muted">
+                {% if a['amount_cents'] is not none and a['amount_cents'] != 0 %}
+                {{ '%+.2f'|format(a['amount_cents']/100) }} €
+                {% endif %}
+            </span>
+        </li>
+        {% else %}
+        <li class="text-muted">Noch keine Aktivität.</li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Bestand-Warnungen</h2>
+    {% if to_buy %}
+    <div class="grid cols-3">
+    {% for d in to_buy %}
+        <div class="stat" style="background:var(--warn-soft);color:var(--warn);">
+            <span class="label">{{ d.name }}</span>
+            <span class="value">{{ d.stock }} / {{ d.min_stock }}</span>
+            <form method="post" action="{{ url_for('drink_restock', drink_id=d.id) }}" class="mt-2" style="display:flex;gap:.35rem;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="number" name="amount" value="{{ (d.min_stock - d.stock) if d.stock < d.min_stock else 10 }}" min="1" style="max-width:80px;">
+                <button class="primary small" type="submit">Auffüllen</button>
+            </form>
+        </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-success">🎉 Alle Bestände über dem Minimum.</p>
+    {% endif %}
+</div>
+
+<script>
+// Aktive Rabatte zählen
+fetch('/api/discounts/count').then(r => r.json()).then(d => {
+    document.getElementById('discount-count').textContent = d.count;
+}).catch(() => {
+    document.getElementById('discount-count').textContent = '0';
+});
+// Live-Aktivität
+try {
+    const src = new EventSource('/events/activity');
+    src.addEventListener('activity', (e) => {
+        const a = JSON.parse(e.data);
+        const li = document.createElement('li');
+        li.style.cssText = 'padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:1rem;animation:toast-in 0.3s;';
+        const amount = a.amount_cents ? (((a.amount_cents>0?'+':'') + (a.amount_cents/100).toFixed(2)).replace('.', ',') + ' €') : '';
+        li.innerHTML = `<span><span class="badge muted">${a.kind}</span><strong style="margin:0 0.35rem;">${a.actor || 'System'}</strong><span class="text-muted">${a.target || ''}</span></span><span class="nums text-muted">${amount}</span>`;
+        const list = document.getElementById('activity-list');
+        list.insertBefore(li, list.firstChild);
+        while (list.children.length > 30) list.lastChild.remove();
+    });
+} catch (_) {}
+</script>
 {% endblock %}
-

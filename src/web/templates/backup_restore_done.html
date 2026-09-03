@@ -1,0 +1,18 @@
+{% extends '_layout.html' %}
+{% block title %}Backup eingespielt{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px;margin:2rem auto;text-align:center;">
+    <h1>✅ Backup eingespielt</h1>
+    <p class="text-muted">Quelle: <code>{{ source }}</code></p>
+    {% if pre_backup %}
+    <p class="text-muted">Vorheriger Stand gesichert als <code>{{ pre_backup }}</code>.</p>
+    {% endif %}
+    <p>Bitte den Web-Admin-Service einmal neu starten, damit alle Caches sauber sind:</p>
+    <pre style="background:var(--bg-sunken);padding:.75rem;border-radius:12px;text-align:left;">
+sudo systemctl restart getraenkekasse-web</pre>
+    <div class="mt-4">
+        <a class="btn primary" href="{{ url_for('index') }}">Zur Startseite</a>
+        <a class="btn ghost" href="{{ url_for('backup_view') }}">Zurück zu Backups</a>
+    </div>
+</div>
+{% endblock %}

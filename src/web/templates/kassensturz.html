@@ -1,0 +1,61 @@
+{% extends '_layout.html' %}
+{% block title %}Kassensturz{% endblock %}
+{% block content %}
+<h1>Kassensturz</h1>
+<p class="subheader">Wähle das Konto (z. B. Terminal-Bargeld oder Hauptkasse), zähle das Bargeld und trage den Ist-Wert ein. Eine Differenz wird automatisch als Ausgleichsbuchung im Kassenbuch angelegt.</p>
+
+<div class="card">
+    <form method="get" class="form-grid">
+        <div>
+            <label>Konto</label>
+            <select name="account" onchange="this.form.submit()">
+                {% for a in accounts %}
+                <option value="{{ a.code }}" {% if chosen and a.code==chosen.code %}selected{% endif %}>{{ a.name }} ({{ a.kind }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="stat">
+            <span class="label">Soll (aktueller Saldo)</span>
+            <span class="value nums">{{ '%.2f'|format(target/100) }} €</span>
+            <span class="text-muted">{% if since %}letzter Sturz: {{ since[:16] }}{% else %}Erststurz{% endif %}</span>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Neuen Kassensturz eintragen</h2>
+    <form method="post" action="{{ url_for('kassensturz_submit') }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="account_id" value="{{ chosen.id if chosen }}">
+        <div><label>Ist-Kassenbestand (€)</label><input name="actual" type="number" step="0.01" required></div>
+        <div><label>Kassierer</label><input name="cashier" value="{{ session.get('user') }}"></div>
+        <div style="grid-column:1/-1;"><label>Notiz</label><input name="note"></div>
+        <div style="align-self:end;"><button class="primary" type="submit">Sturz eintragen</button></div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Historie</h2>
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Datum</th><th>Konto</th><th>Kassierer</th><th class="text-right">Soll</th><th class="text-right">Ist</th><th class="text-right">Differenz</th><th>Notiz</th><th></th></tr></thead>
+        <tbody>
+        {% for h in history %}
+        <tr>
+            <td>{{ h['timestamp'] }}</td>
+            <td>{{ h['account_name'] or '–' }}</td>
+            <td>{{ h['cashier'] or '–' }}</td>
+            <td class="text-right nums">{{ '%.2f'|format((h['target_cents'] or 0)/100) }} €</td>
+            <td class="text-right nums">{{ '%.2f'|format((h['actual_cents'] or 0)/100) }} €</td>
+            <td class="text-right nums {% if (h['diff_cents'] or 0) < 0 %}text-danger{% elif (h['diff_cents'] or 0) > 0 %}text-success{% endif %}">
+                {{ '%+.2f'|format((h['diff_cents'] or 0)/100) }} €
+            </td>
+            <td>{{ h['note'] or '' }}</td>
+            <td><a class="btn small" href="{{ url_for('kassensturz_pdf', closing_id=h['id']) }}" target="_blank">PDF</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

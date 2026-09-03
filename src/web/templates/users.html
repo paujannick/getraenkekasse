@@ -1,64 +1,176 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Nutzer{% endblock %}
 {% block content %}
-<h1>Benutzer</h1>
-{% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
-<table>
+<h1>Nutzer</h1>
+<p class="subheader">Direkt in der Tabelle editieren, mehrere gleichzeitig aktivieren/deaktivieren, QR-Code für Self-Service ausdrucken.</p>
+{% if error %}<div class="sec-banner">{{ error }}</div>{% endif %}
 
-<tr><th>Name</th><th>UID</th><th>Guthaben</th><th colspan="2">Aktion</th></tr>
+<div class="card">
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+        <input type="search" id="filter" placeholder="Filtern nach Name/UID…" style="max-width:280px;">
+        <span class="text-muted" id="visible-count"></span>
+        <span class="right"></span>
+        <form method="post" action="{{ url_for('users_bulk') }}" style="display:flex;gap:.35rem;align-items:center;" id="bulk-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="ids" id="bulk-ids">
+            <select name="action">
+                <option value="activate">Aktivieren</option>
+                <option value="deactivate">Deaktivieren</option>
+            </select>
+            <button class="primary small" type="submit">Auf Auswahl anwenden</button>
+        </form>
+    </div>
 
-{% for u in users %}
-<tr>
-<td>{{ u['name'] }}</td>
-<td>{% if u['rfid_uid'] %}{{ u['rfid_uid'] }}{% else %}<strong>ohne RFID</strong>{% endif %}</td>
+    <div class="table-wrap">
+    <table id="users-table">
+        <thead>
+        <tr>
+            <th style="width:2rem;"><input type="checkbox" id="select-all"></th>
+            <th data-sort="name" style="cursor:pointer;">Name</th>
+            <th>UID</th>
+            <th data-sort="bal" style="cursor:pointer;text-align:right;">Guthaben (€)</th>
+            <th data-sort="active" style="cursor:pointer;text-align:center;">Aktiv</th>
+            <th>Aktionen</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for u in users %}
+        <tr data-name="{{ u['name']|lower }}" data-uid="{{ (u['rfid_uid'] or '')|lower }}"
+            data-bal="{{ u['balance'] }}" data-active="{{ u['active'] }}">
+            <td><input type="checkbox" class="bulk" value="{{ u['id'] }}"></td>
+            <td>
+                <a href="{{ url_for('user_details', user_id=u['id']) }}" style="text-decoration:underline;"><strong>{{ u['name'] }}</strong></a>
+                {% if u['is_admin'] %}<span class="badge">Admin</span>{% endif %}
+                {% if u['is_buyer'] %}<span class="badge muted">Einkäufer</span>{% endif %}
+            </td>
+            <td>
+                {% if u['rfid_uid'] %}<code style="font-size:.85rem;">{{ u['rfid_uid'] }}</code>
+                {% else %}<span class="badge warn">ohne RFID</span>{% endif %}
+            </td>
+            <td class="text-right">
+                <input class="inline nums" type="number" step="0.01"
+                       value="{{ '%.2f'|format(u['balance']/100) }}"
+                       hx-post="{{ url_for('user_inline') }}" hx-trigger="change" hx-swap="none"
+                       hx-vals='{"id": {{ u["id"] }}, "field": "balance"}'
+                       name="value" style="max-width:7rem;text-align:right;">
+            </td>
+            <td class="text-center">
+                <label class="toggle">
+                    <input type="checkbox" {% if u['active'] %}checked{% endif %}
+                           hx-post="{{ url_for('user_inline') }}" hx-trigger="change" hx-swap="none"
+                           hx-vals='js:{ "id": {{ u["id"] }}, "field": "active", "value": event.target.checked ? "1" : "0" }'
+                           name="value">
+                </label>
+            </td>
+            <td class="row-actions">
+                <a class="btn small" href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a>
+                {% if u['rfid_uid'] %}
+                <a class="btn small ghost" href="{{ url_for('user_qr', user_id=u['id']) }}" target="_blank" title="Self-Service-QR">QR</a>
+                {% endif %}
+                <form method="post" action="{{ url_for('user_delete', user_id=u['id']) }}" onsubmit="return confirm('In den Papierkorb verschieben?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
 
-<td>{{ (u['balance']/100)|round(2) }} €</td>
-<td><a href="{{ url_for('user_edit', user_id=u['id']) }}">Bearbeiten</a></td>
-<td><a href="{{ url_for('user_delete', user_id=u['id']) }}" onclick="return confirm('Benutzer wirklich löschen?');">Löschen</a></td>
-</tr>
-{% endfor %}
-</table>
-<h2>Neu</h2>
-<p>Die UID kann leer bleiben. Solche Namen erscheinen beim Auflegen einer neuen Blanko-Karte in der Guthabenabfrage.</p>
-<form method="post" action="{{ url_for('user_add') }}">
-    <input type="text" name="name" placeholder="Name">
+<div class="card">
+    <h2>Neuen Nutzer anlegen</h2>
+    <p class="hint">Ohne UID landet der Nutzer als „ohne RFID" – er kann später zugewiesen werden.</p>
+    <form method="post" action="{{ url_for('user_add') }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label>Name</label><input name="name" required></div>
+        <div>
+            <label>RFID-UID (optional)</label>
+            <div class="form-row">
+                <input type="text" name="uid" id="uid_new">
+                <button class="btn small" type="button" onclick="readUid('uid_new')">Lesen</button>
+            </div>
+        </div>
+        <div><label>Startguthaben (€)</label><input type="number" step="0.01" name="balance" value="0"></div>
+        <div style="align-self:end;"><button class="primary" type="submit">Anlegen</button></div>
+    </form>
+</div>
 
-    <input type="text" name="uid" id="uid_new" placeholder="UID (optional)">
-    <button type="button" onclick="readUid('uid_new')">UID lesen</button>
-    <input type="number" step="0.01" name="balance" placeholder="Startguthaben in Euro">
-    <button type="submit">Hinzufügen</button>
-</form>
-
-<h2>Guthaben aufladen</h2>
-<p>Für eine komfortable Ansicht siehe <a href="{{ url_for('topup') }}">Aufladen</a>.</p>
-<form method="post" action="{{ url_for('users_topup') }}">
-    <input type="text" name="uid" id="uid_topup" placeholder="UID">
-    <button type="button" onclick="readUid('uid_topup')">UID lesen</button>
-    <span id="name_topup"></span>
-    <input type="number" step="0.01" name="amount" placeholder="Betrag in Euro">
-    <button type="submit">Aufladen</button>
-</form>
+<div class="card">
+    <h2>Guthaben aufladen (Direktzugriff)</h2>
+    <form method="post" action="{{ url_for('users_topup') }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div>
+            <label>Karte lesen</label>
+            <div class="form-row">
+                <input type="text" name="uid" id="uid_topup">
+                <button class="btn small" type="button" onclick="readUid('uid_topup')">Lesen</button>
+            </div>
+            <span class="text-muted" id="name_topup"></span>
+        </div>
+        <div><label>Betrag (€)</label><input type="number" step="0.01" name="amount"></div>
+        <div style="align-self:end;"><button class="primary" type="submit">Aufladen (bar)</button></div>
+    </form>
+</div>
 
 <script>
-function updateName() {
-    var uid = document.getElementById('uid_topup').value;
-    if(!uid) { document.getElementById('name_topup').innerText = ''; return; }
-    fetch('{{ url_for('user_name') }}?uid=' + encodeURIComponent(uid)).then(r => r.json()).then(data => {
-        document.getElementById('name_topup').innerText = data.name || 'Unbekannt';
+// Filter
+const filter = document.getElementById('filter');
+const table = document.getElementById('users-table');
+function applyFilter() {
+    const q = filter.value.trim().toLowerCase();
+    let visible = 0;
+    table.querySelectorAll('tbody tr').forEach(row => {
+        const hit = !q || row.dataset.name.includes(q) || row.dataset.uid.includes(q);
+        row.style.display = hit ? '' : 'none'; if (hit) visible++;
     });
+    document.getElementById('visible-count').textContent = visible + ' sichtbar';
 }
-document.getElementById('uid_topup').addEventListener('change', updateName);
-function readUid(targetId) {
-    fetch('{{ url_for('read_uid') }}').then(r => r.json()).then(data => {
-        if(data.error){
-            alert(data.error);
-            return;
+filter.addEventListener('input', applyFilter); applyFilter();
+
+// Sortierung
+let sortState = { field: null, dir: 1 };
+table.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const f = th.dataset.sort;
+        sortState.dir = (sortState.field === f) ? -sortState.dir : 1;
+        sortState.field = f;
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort((a, b) => {
+            const va = a.dataset[f] || '';
+            const vb = b.dataset[f] || '';
+            const na = parseFloat(va), nb = parseFloat(vb);
+            if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortState.dir;
+            return va.localeCompare(vb) * sortState.dir;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+    });
+});
+
+// Bulk
+const selectAll = document.getElementById('select-all');
+selectAll.addEventListener('change', () => {
+    document.querySelectorAll('input.bulk').forEach(cb => { cb.checked = selectAll.checked; });
+});
+document.getElementById('bulk-form').addEventListener('submit', (e) => {
+    const ids = Array.from(document.querySelectorAll('input.bulk:checked')).map(cb => cb.value);
+    if (!ids.length) { e.preventDefault(); gkToast('Nichts ausgewählt', {level:'warn'}); return; }
+    document.getElementById('bulk-ids').value = ids.join(',');
+});
+
+// UID-Lesen
+function readUid(id) {
+    fetch('{{ url_for("read_uid") }}').then(r => r.json()).then(data => {
+        if (data.error) { gkToast(data.error, {level:'error'}); return; }
+        document.getElementById(id).value = data.uid;
+        if (id === 'uid_topup') {
+            fetch('{{ url_for("user_name") }}?uid=' + encodeURIComponent(data.uid))
+                .then(r=>r.json())
+                .then(d => document.getElementById('name_topup').textContent = d.name || 'Unbekannt');
         }
-        var el = document.getElementById(targetId);
-        el.value = data.uid;
-        if(targetId === 'uid_topup') updateName();
     });
 }
 </script>
-
-
 {% endblock %}

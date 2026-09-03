@@ -1,0 +1,60 @@
+{% extends '_layout.html' %}
+{% block title %}Einkauf verbuchen{% endblock %}
+{% block content %}
+<h1>Wareneinkauf</h1>
+<p class="subheader">Getränke pro Position eintragen, Beleg hochladen, mit einem Klick den Kassenbuch-Aufwand + die Bestände aktualisieren.</p>
+
+<div class="card">
+<form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-grid mb-4">
+        <div><label>Beleg (PDF/Bild)</label><input type="file" name="receipt" accept=".pdf,image/*"></div>
+        <div style="grid-column:span 2;"><label>Notiz (Lieferant, Rechnungsnr.)</label><input name="note"></div>
+    </div>
+    <p class="text-muted" style="margin-top:-0.5rem;">Zahlung erfolgt automatisch aus der Hauptkasse und wird als <em>Sonstige Ausgabe</em> verbucht.</p>
+
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Getränk</th><th class="text-right">Bestand</th><th style="width:6rem;">Menge</th><th style="width:8rem;">Einkaufspreis (€)</th></tr></thead>
+        <tbody>
+        {% for d in drinks %}
+        <tr>
+            <td>{{ d['name'] }}</td>
+            <td class="text-right nums">{{ d['stock'] }} / {{ d['min_stock'] }}</td>
+            <td><input type="number" name="qty_{{ d['id'] }}" min="0" value="0" style="text-align:right;"></td>
+            <td><input type="number" step="0.01" name="cost_{{ d['id'] }}" min="0" value="0" style="text-align:right;"></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    <div class="card-actions">
+        <button class="primary" type="submit">Einkauf buchen</button>
+        <a class="btn ghost" href="{{ url_for('drinks') }}">Abbrechen</a>
+    </div>
+</form>
+</div>
+
+<div class="card">
+    <h2>Letzte Einkäufe</h2>
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Zeit</th><th class="text-right">Betrag</th><th>Von</th><th>Notiz</th><th>Beleg</th></tr></thead>
+        <tbody>
+        {% for e in recent %}
+        <tr>
+            <td class="text-muted">{{ e['timestamp'][:16] }}</td>
+            <td class="text-right nums">{{ '%.2f'|format(e['amount_cents']/100) }} €</td>
+            <td>{{ e['from_name'] or '–' }}</td>
+            <td class="text-muted">{{ e['note'] or '' }}</td>
+            <td>{% if e['receipt_path'] %}<a class="btn small" href="{{ url_for('ledger_receipt', entry_id=e['id']) }}" target="_blank">Beleg</a>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted">Noch keine Einkäufe verbucht.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends '_layout.html' %}
+{% block title %}Getränke-Wünsche{% endblock %}
+{% block content %}
+<h1>Getränke-Wünsche</h1>
+<p class="subheader">Nutzer können pro Woche 1× für ein Wunsch-Getränk stimmen. Hier sammelst du die Ergebnisse.</p>
+
+<div class="card">
+    <h2>Aktuelle Wünsche</h2>
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Wunsch</th><th class="text-right">Stimmen</th><th></th></tr></thead>
+        <tbody>
+        {% for w in wishes %}
+        <tr>
+            <td>{{ w['name'] }}</td>
+            <td class="text-right nums">{{ w['votes'] }}</td>
+            <td>
+                <form method="post" action="{{ url_for('wish_delete', wish_id=w['id']) }}" onsubmit="return confirm('Wunsch entfernen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Entfernen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Wunsch hinzufügen</h2>
+    <form method="post" action="{{ url_for('wish_add') }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label>Name</label><input name="name" required></div>
+        <div style="align-self:end;"><button class="primary" type="submit">Anlegen</button></div>
+    </form>
+</div>
+{% endblock %}

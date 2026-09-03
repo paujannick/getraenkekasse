@@ -1,0 +1,98 @@
+{% extends '_layout.html' %}
+{% block title %}{{ user['name'] }}{% endblock %}
+{% block content %}
+<h1>{{ user['name'] }} {% if user['is_event'] %}<span class="badge">Veranstaltung</span>{% endif %}</h1>
+<p class="subheader"><a href="{{ url_for('users') }}">← Nutzerliste</a></p>
+
+<div class="grid cols-4 mb-4">
+    <div class="stat"><span class="label">Guthaben</span>
+        <span class="value nums {% if user['balance'] < 0 %}text-danger{% endif %}">{{ '%.2f'|format((user['balance'] or 0)/100) }} €</span></div>
+    <div class="stat"><span class="label">Umsatz gesamt</span>
+        <span class="value nums">{{ '%.2f'|format(total_spent/100) }} €</span></div>
+    <div class="stat"><span class="label">Aufgeladen (gesamt)</span>
+        <span class="value nums">{{ '%.2f'|format(total_topup/100) }} €</span></div>
+    <div class="stat"><span class="label">Status</span>
+        <span class="value">{% if user['active'] %}<span class="badge success">aktiv</span>{% else %}<span class="badge danger">gesperrt</span>{% endif %}</span></div>
+</div>
+
+<div class="grid cols-2">
+    <div class="card">
+        <h2>Monatlicher Ausgabenverlauf</h2>
+        <canvas id="chart-user-monthly" height="220"></canvas>
+    </div>
+    <div class="card">
+        <h2>Aktionen</h2>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <a class="btn primary" href="{{ url_for('user_edit', user_id=user['id']) }}">Bearbeiten</a>
+            <a class="btn" href="{{ url_for('user_statement_pdf', user_id=user['id']) }}" target="_blank">Kontoauszug PDF</a>
+            {% if user['rfid_uid'] %}
+            <a class="btn" href="{{ url_for('user_qr', user_id=user['id']) }}" target="_blank">QR-Code</a>
+            {% endif %}
+        </div>
+        <p class="text-muted mt-4">RFID-UID: {% if user['rfid_uid'] %}<code>{{ user['rfid_uid'] }}</code>{% else %}<em>keine</em>{% endif %}</p>
+        {% if user['is_event'] %}
+        <p class="text-muted">Gültig: {{ user['valid_from'] or 'immer' }} – {{ user['valid_until'] or 'unbegrenzt' }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid cols-2">
+    <div class="card">
+        <h2>Letzte Käufe</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Zeit</th><th>Getränk</th><th class="text-right">Anz.</th><th class="text-right">Preis</th><th class="text-right">Summe</th></tr></thead>
+            <tbody>
+            {% for p in purchases %}
+            <tr>
+                <td class="text-muted">{{ p['timestamp'][:16] }}</td>
+                <td>{{ p['drink'] }}</td>
+                <td class="text-right nums">{{ p['quantity'] }}</td>
+                <td class="text-right nums">{{ '%.2f'|format(p['price']/100) }} €</td>
+                <td class="text-right nums">{{ '%.2f'|format(p['quantity']*p['price']/100) }} €</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted">Noch keine Käufe.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class="card">
+        <h2>Aufladungen</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Zeit</th><th class="text-right">Betrag</th></tr></thead>
+            <tbody>
+            {% for t in topups %}
+            <tr>
+                <td class="text-muted">{{ t['timestamp'][:16] }}</td>
+                <td class="text-right nums text-success">+ {{ '%.2f'|format(t['amount']/100) }} €</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted">Keine Aufladungen.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const data = {{ monthly|tojson }};
+    const styleFg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
+    Chart.defaults.color = styleFg;
+    new Chart(document.getElementById('chart-user-monthly'), {
+        type: 'bar',
+        data: {
+            labels: data.map(d => d.ym),
+            datasets: [{ label: 'Ausgaben €', data: data.map(d => d.spent/100),
+                         backgroundColor: '#2563eb' }]
+        },
+        options: { responsive: true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+    });
+});
+</script>
+{% endblock %}
