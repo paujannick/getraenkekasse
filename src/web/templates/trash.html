@@ -1,0 +1,72 @@
+{% extends '_layout.html' %}
+{% block title %}Papierkorb{% endblock %}
+{% block content %}
+<h1>Papierkorb</h1>
+<p class="subheader">Gelöschte Getränke und Nutzer bleiben hier reaktivierbar. Endgültig löschen geht nur, wenn keine Transaktionen mehr darauf verweisen.</p>
+
+<div class="grid cols-2">
+    <div class="card">
+        <h2>Getränke</h2>
+        {% if drinks %}
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Name</th><th>Gelöscht am</th><th></th></tr></thead>
+            <tbody>
+            {% for d in drinks %}
+            <tr>
+                <td>{{ d['name'] }}</td>
+                <td class="text-muted">{{ d['deleted_at'] }}</td>
+                <td class="row-actions">
+                    <form method="post" action="{{ url_for('drink_restore', drink_id=d['id']) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="primary small" type="submit">Wiederherstellen</button>
+                    </form>
+                    <form method="post" action="{{ url_for('drink_purge', drink_id=d['id']) }}" onsubmit="return confirm('Endgültig löschen? Nicht rückgängig zu machen.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="danger small" type="submit">Endgültig</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted">Keine gelöschten Getränke.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Nutzer</h2>
+        {% if users %}
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Name</th><th>UID</th><th class="text-right">Restguthaben</th><th>Gelöscht am</th><th></th></tr></thead>
+            <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u['name'] }}</td>
+                <td>{{ u['rfid_uid'] or '–' }}</td>
+                <td class="text-right nums">{{ '%.2f'|format((u['balance'] or 0)/100) }} €</td>
+                <td class="text-muted">{{ u['deleted_at'] }}</td>
+                <td class="row-actions">
+                    <form method="post" action="{{ url_for('user_restore', user_id=u['id']) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="primary small" type="submit">Wiederherstellen</button>
+                    </form>
+                    <form method="post" action="{{ url_for('user_purge', user_id=u['id']) }}" onsubmit="return confirm('Endgültig löschen? Nicht rückgängig zu machen.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="danger small" type="submit">Endgültig</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted">Keine gelöschten Nutzer.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

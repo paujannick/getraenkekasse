@@ -1,0 +1,95 @@
+{% extends '_layout.html' %}
+{% block title %}Backups{% endblock %}
+{% block content %}
+<h1>Backups</h1>
+<p class="subheader">Verzeichnis: <code>{{ directory }}</code></p>
+
+<div class="grid cols-4 mb-4">
+    <div class="stat">
+        <span class="label">Auto-Backup täglich um</span>
+        <span class="value nums">{{ '%02d'|format(backup_hour) }}:00</span>
+    </div>
+    <div class="stat">
+        <span class="label">Letztes Auto-Backup</span>
+        <span class="value">{{ scheduler_status.last_backup_day or '–' }}</span>
+    </div>
+    <div class="stat">
+        <span class="label">USB-Kopie</span>
+        <span class="value">{% if usb_path %}<span class="badge success">an</span>{% else %}<span class="badge muted">aus</span>{% endif %}</span>
+    </div>
+    <div class="stat">
+        <span class="label">Log-Aufbewahrung</span>
+        <span class="value">{{ log_retention }} Tage</span>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center;">
+        <div>
+            <h2 style="margin:0;">Sicherungen ({{ backups|length }})</h2>
+            <p class="text-muted" style="margin:.25rem 0 0;">Rotation: Anzahl <code>GK_BACKUP_KEEP</code>, Alter 90 Tage. Format: gzip + SHA-256.</p>
+        </div>
+        <form method="post" action="{{ url_for('backup_create') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="primary" type="submit">Jetzt Backup anlegen</button>
+        </form>
+    </div>
+
+    <div class="table-wrap mt-4">
+    <table>
+        <thead><tr><th>Datei</th><th class="text-right">Größe</th><th>SHA-256</th><th></th></tr></thead>
+        <tbody>
+        {% for b in backups %}
+        <tr>
+            <td><code>{{ b.name }}</code></td>
+            <td class="text-right nums">{{ '%.1f' % (b.size/1024) }} KB</td>
+            <td><code style="font-size:.75rem;">{{ b.sha256[:16] }}…</code></td>
+            <td class="row-actions">
+                <a class="btn small" href="{{ url_for('backup_download', name=b.name) }}">Download</a>
+                <form method="post" action="{{ url_for('backup_restore') }}" onsubmit="return confirm('Diese Sicherung wirklich einspielen?\n\nDie aktuelle Datenbank wird zuvor automatisch gesichert. Der Kassenbetrieb pausiert kurz.')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="pick" value="{{ b.name }}">
+                    <button class="danger small" type="submit">Einspielen</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted">Noch keine Sicherungen.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Backup einspielen (Upload)</h2>
+    <p class="text-muted">Datei <code>.db</code> oder <code>.db.gz</code> hochladen. Vor dem Restore wird der aktuelle Stand automatisch gesichert.</p>
+    <form method="post" action="{{ url_for('backup_restore') }}" enctype="multipart/form-data" onsubmit="return confirm('Backup einspielen? Der aktuelle Stand wird vorher gesichert.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-row">
+            <input type="file" name="upload" accept=".db,.db.gz" required>
+            <button class="danger" type="submit">Einspielen</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>USB-Backup</h2>
+    <p class="text-muted">Wenn der Pfad existiert (z. B. gemounteter USB-Stick), wird das tägliche Auto-Backup zusätzlich dorthin kopiert.</p>
+    <form method="post" action="{{ url_for('backup_usb_save') }}" class="form-row">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="usb_path" value="{{ usb_path or '' }}" placeholder="/media/usb (leer = deaktiviert)" style="flex:1;">
+        <button class="primary" type="submit">Speichern</button>
+    </form>
+    <p class="hint mt-2">
+        Status: {% if usb_path %}
+            {% if usb_mounted %}<span class="badge success">USB gemountet</span>{% else %}<span class="badge danger">Pfad existiert nicht</span>{% endif %}
+        {% else %}<span class="badge muted">deaktiviert</span>{% endif %}
+    </p>
+</div>
+
+<div class="card">
+    <h2>Wiederherstellen (Shell)</h2>
+    <p class="text-muted">Alternativ auf dem Server: <code>./restore_backup.sh data/backups/&lt;datei&gt;.db.gz</code></p>
+</div>
+{% endblock %}

@@ -1,39 +1,152 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Getränke{% endblock %}
 {% block content %}
 <h1>Getränke</h1>
-{% if error %}<p class="error">{{ error }}</p>{% endif %}
-<table>
+<p class="subheader">Preise, Bestände und Kategorien direkt in der Tabelle ändern. Auswahl-Checkbox erlaubt Bulk-Aktionen.</p>
+{% if error %}<div class="sec-banner">{{ error }}</div>{% endif %}
 
-<tr><th>Name</th><th>Preis</th><th>Lager</th><th>Mindestens</th><th>Seite</th><th>Auffüllen</th><th colspan="2">Aktion</th></tr>
-{% for d in drinks %}
-<tr class="{% if d['stock'] < d['min_stock'] %}negstock{% endif %}">
-<td>{{ d['name'] }}</td>
-<td>{{ (d['price']/100)|round(2) }} €</td>
-<td>{{ d['stock'] }}</td>
-<td>{{ d['min_stock'] }}</td>
-<td>{{ d['page'] }}</td>
+<div class="card">
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+        <input type="search" id="filter" placeholder="Filtern nach Name…" style="max-width:280px;">
+        <span class="text-muted" id="visible-count"></span>
+        <span class="right"></span>
+        <form method="post" action="{{ url_for('drinks_bulk_restock') }}" style="display:flex;gap:.35rem;align-items:center;" id="bulk-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="ids" id="bulk-ids">
+            <input type="number" name="amount" placeholder="Menge" min="1" style="width:6rem;">
+            <button class="primary small" type="submit">Ausgewählte auffüllen</button>
+        </form>
+    </div>
 
-<td>
-  <form method="post" action="{{ url_for('drink_restock', drink_id=d['id']) }}" style="display:inline">
-    <input type="number" name="amount" min="1" size="4">
-    <button type="submit">+</button>
-  </form>
-</td>
-<td><a href="{{ url_for('drink_edit', drink_id=d['id']) }}">Bearbeiten</a></td>
-<td><a href="{{ url_for('drink_delete', drink_id=d['id']) }}">Löschen</a></td>
-</tr>
-{% endfor %}
-</table>
-<h2>Neu</h2>
-<form method="post" action="{{ url_for('drink_add') }}" enctype="multipart/form-data">
-    <input type="text" name="name" placeholder="Name">
+    <div class="table-wrap">
+    <table id="drinks-table">
+        <thead>
+        <tr>
+            <th style="width:2rem;"><input type="checkbox" id="select-all"></th>
+            <th data-sort="name" style="cursor:pointer;">Name ▲▼</th>
+            <th>Kategorie</th>
+            <th data-sort="price" style="cursor:pointer;text-align:right;">Preis (€)</th>
+            <th data-sort="stock" style="cursor:pointer;text-align:right;">Bestand</th>
+            <th data-sort="min" style="cursor:pointer;text-align:right;">Min</th>
+            <th>Seite</th>
+            <th>Aktion</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for d in drinks %}
+        <tr data-name="{{ d['name']|lower }}" data-price="{{ d['price'] }}" data-stock="{{ d['stock'] }}" data-min="{{ d['min_stock'] }}">
+            <td><input type="checkbox" class="bulk" value="{{ d['id'] }}"></td>
+            <td>
+                <a href="{{ url_for('drink_details', drink_id=d['id']) }}" style="text-decoration:underline;"><strong>{{ d['name'] }}</strong></a>
+                {% if d['stock'] <= 0 %}<span class="badge danger">leer</span>
+                {% elif d['stock'] < d['min_stock'] %}<span class="badge warn">niedrig</span>
+                {% endif %}
+            </td>
+            <td>{% if d['cat_name'] %}<span class="badge">{{ d['cat_name'] }}</span>{% else %}<span class="text-muted">–</span>{% endif %}</td>
 
-    <input type="number" step="0.01" name="price" placeholder="Preis in Euro">
-    <input type="number" name="stock" placeholder="Lagerbestand">
-    <input type="number" name="min_stock" placeholder="Mindestbestand">
-    <input type="number" name="page" placeholder="Seite" min="1" value="1">
-    <input type="file" name="image">
+            <td class="text-right">
+                <input class="inline nums" type="number" step="0.01" value="{{ '%.2f'|format(d['price']/100) }}"
+                       hx-post="{{ url_for('drink_inline') }}" hx-trigger="change" hx-swap="none"
+                       hx-vals='{"id": {{ d["id"] }}, "field": "price"}'
+                       name="value" style="max-width:6rem;text-align:right;">
+            </td>
+            <td class="text-right">
+                <input class="inline nums" type="number" value="{{ d['stock'] }}"
+                       hx-post="{{ url_for('drink_inline') }}" hx-trigger="change" hx-swap="none"
+                       hx-vals='{"id": {{ d["id"] }}, "field": "stock"}'
+                       name="value" style="max-width:5rem;text-align:right;">
+            </td>
+            <td class="text-right">
+                <input class="inline nums" type="number" value="{{ d['min_stock'] }}"
+                       hx-post="{{ url_for('drink_inline') }}" hx-trigger="change" hx-swap="none"
+                       hx-vals='{"id": {{ d["id"] }}, "field": "min_stock"}'
+                       name="value" style="max-width:4.5rem;text-align:right;">
+            </td>
+            <td>{{ d['page'] }}</td>
+            <td class="row-actions">
+                <a class="btn small" href="{{ url_for('drink_edit', drink_id=d['id']) }}">Bearbeiten</a>
+                {% if 'drink_history' in url_map_endpoints %}
+                <a class="btn small ghost" href="{{ url_for('drink_history', drink_id=d['id']) }}" title="Preishistorie">📈</a>
+                {% endif %}
+                <form method="post" action="{{ url_for('drink_delete', drink_id=d['id']) }}" onsubmit="return confirm('Getränk in den Papierkorb legen?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
 
-    <button type="submit">Hinzufügen</button>
-</form>
+<div class="card">
+    <h2>Neues Getränk anlegen</h2>
+    <form method="post" action="{{ url_for('drink_add') }}" enctype="multipart/form-data" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label>Name</label><input name="name" required></div>
+        <div><label>Preis (€)</label><input type="number" step="0.01" name="price" required></div>
+        <div><label>Bestand</label><input type="number" name="stock" value="0"></div>
+        <div><label>Mindestbestand</label><input type="number" name="min_stock" value="0"></div>
+        <div><label>Seite</label><input type="number" name="page" value="1" min="1" max="9"></div>
+        <div>
+            <label>Kategorie</label>
+            <select name="category_id">
+                <option value="">– keine –</option>
+                {% for c in categories %}<option value="{{ c['id'] }}">{{ c['name'] }}</option>{% endfor %}
+            </select>
+        </div>
+        <div><label>Bild (optional)</label><input type="file" name="image" accept="image/*"></div>
+        <div style="align-self:end;"><button class="primary" type="submit">Anlegen</button></div>
+    </form>
+</div>
+
+<script>
+// Filter
+const filter = document.getElementById('filter');
+const table = document.getElementById('drinks-table');
+function applyFilter() {
+    const q = filter.value.trim().toLowerCase();
+    let visible = 0;
+    table.querySelectorAll('tbody tr').forEach(row => {
+        const hit = !q || row.dataset.name.includes(q);
+        row.style.display = hit ? '' : 'none';
+        if (hit) visible++;
+    });
+    document.getElementById('visible-count').textContent = visible + ' sichtbar';
+}
+filter.addEventListener('input', applyFilter);
+applyFilter();
+
+// Sortierung
+let sortState = { field: null, dir: 1 };
+table.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const f = th.dataset.sort;
+        sortState.dir = (sortState.field === f) ? -sortState.dir : 1;
+        sortState.field = f;
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort((a, b) => {
+            const va = a.dataset[f] || '';
+            const vb = b.dataset[f] || '';
+            const na = parseFloat(va), nb = parseFloat(vb);
+            if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortState.dir;
+            return va.localeCompare(vb) * sortState.dir;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+    });
+});
+
+// Bulk-Auswahl
+const selectAll = document.getElementById('select-all');
+selectAll.addEventListener('change', () => {
+    document.querySelectorAll('input.bulk').forEach(cb => { cb.checked = selectAll.checked; });
+});
+document.getElementById('bulk-form').addEventListener('submit', (e) => {
+    const ids = Array.from(document.querySelectorAll('input.bulk:checked')).map(cb => cb.value);
+    if (ids.length === 0) { e.preventDefault(); gkToast('Nichts ausgewählt', {level: 'warn'}); return; }
+    document.getElementById('bulk-ids').value = ids.join(',');
+});
+</script>
 {% endblock %}

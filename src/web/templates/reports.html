@@ -1,39 +1,111 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Reports{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Reports / Lager & Forecast</h1>
-  <form method="get" class="actions">
-    <label for="period">Zeitraum</label>
-    <select name="period" id="period">
-      <option value="day" {% if period=='day' %}selected{% endif %}>Tag</option>
-      <option value="week" {% if period=='week' %}selected{% endif %}>Woche</option>
-      <option value="month" {% if period=='month' %}selected{% endif %}>Monat</option>
-    </select>
-    <button type="submit">Filtern</button>
-  </form>
-</div>
+<h1>Reports</h1>
+<p class="subheader">Vergleiche Zahlungsarten, Tagesumsatz und Top-Getränke. Die Charts sind interaktiv und drucken sich sauber aus.</p>
 
 <div class="card">
-  <h2>Top-Artikel</h2>
-  <table><tr><th>Artikel</th><th>Menge</th><th>Umsatz (€)</th></tr>
-  {% for r in top_articles %}
-    <tr><td>{{ r.drink_name }}</td><td>{{ r.quantity }}</td><td>{{ '%.2f'|format((r.revenue or 0)/100) }}</td></tr>
-  {% endfor %}
-  </table>
+    <form method="get" class="form-row" id="period-form">
+        <label style="margin-bottom:0;">Zeitraum</label>
+        <select name="period" onchange="this.form.submit()">
+            <option value="day"   {% if period=='day'   %}selected{% endif %}>Letzte 24h</option>
+            <option value="week"  {% if period=='week'  %}selected{% endif %}>Letzte 7 Tage</option>
+            <option value="month" {% if period=='month' %}selected{% endif %}>Letzte 30 Tage</option>
+        </select>
+        <a class="btn small ghost" href="{{ url_for('export_transactions_anonymized', period=period) }}">CSV export</a>
+    </form>
 </div>
 
-<div class="card">
-  <h2>Aufladevolumen</h2>
-  <p>Anzahl Aufladungen: <strong>{{ topups.count }}</strong></p>
-  <p>Volumen: <strong>{{ '%.2f'|format((topups.amount or 0)/100) }} €</strong></p>
+<div class="grid cols-2">
+    <div class="card">
+        <h2>Tagesumsatz</h2>
+        <canvas id="chart-daily" height="220"></canvas>
+    </div>
+    <div class="card">
+        <h2>Zahlungsarten (kumuliert)</h2>
+        <canvas id="chart-split" height="220"></canvas>
+    </div>
 </div>
 
-<div class="card">
-  <h2>Lagerstatus / Forecast</h2>
-  <table><tr><th>Artikel</th><th>Bestand</th><th>Min</th><th>Forecast</th></tr>
-  {% for f in forecast %}
-   <tr class="{% if f.status != 'ok' %}negstock{% endif %}"><td>{{ f.name }}</td><td>{{ f.stock }}</td><td>{{ f.min_stock }}</td><td>{{ f.status }}</td></tr>
-  {% endfor %}
-  </table>
+<div class="grid cols-2">
+    <div class="card">
+        <h2>Top-Artikel</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Getränk</th><th class="text-right">Anzahl</th><th class="text-right">Umsatz</th></tr></thead>
+            <tbody>
+            {% for a in top_articles %}
+            <tr>
+                <td>{{ a['drink_name'] }}</td>
+                <td class="text-right nums">{{ a['quantity'] }}</td>
+                <td class="text-right nums">{{ '%.2f'|format((a['revenue'] or 0)/100) }} €</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-muted">Keine Verkäufe in diesem Zeitraum.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class="card">
+        <h2>Bestand</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Getränk</th><th class="text-right">Bestand</th><th class="text-right">Min</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for f in forecast %}
+            <tr>
+                <td>{{ f.name }}</td>
+                <td class="text-right nums">{{ f.stock }}</td>
+                <td class="text-right nums">{{ f.min_stock }}</td>
+                <td>
+                    {% if f.status == 'kritisch' %}<span class="badge danger">leer</span>
+                    {% elif f.status == 'niedrig' %}<span class="badge warn">niedrig</span>
+                    {% else %}<span class="badge success">ok</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
 </div>
+
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const period = "{{ period }}";
+    const daysMap = {day: 7, week: 14, month: 60};
+    const days = daysMap[period] || 30;
+    const styleFg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
+    Chart.defaults.color = styleFg;
+
+    fetch('/api/stats/daily?days=' + days).then(r => r.json()).then(rows => {
+        const labels = rows.map(r => r.day.slice(5));
+        new Chart(document.getElementById('chart-daily'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Bar €',   data: rows.map(r => r.cash/100), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.15)', fill: true, tension: 0.25 },
+                    { label: 'Karte €', data: rows.map(r => r.card/100), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', fill: true, tension: 0.25 },
+                    { label: 'Aufladung €', data: rows.map(r => r.topup/100), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', fill: true, tension: 0.25 },
+                ]
+            },
+            options: { responsive: true, plugins:{legend:{position:'bottom'}}, scales:{y:{beginAtZero:true}} }
+        });
+
+        const sum = rows.reduce((a, r) => ({cash: a.cash+r.cash, card: a.card+r.card}), {cash:0, card:0});
+        new Chart(document.getElementById('chart-split'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Bar', 'Karte'],
+                datasets: [{ data: [sum.cash/100, sum.card/100],
+                             backgroundColor: ['#2563eb', '#10b981'] }]
+            },
+            options: { responsive: true, plugins:{legend:{position:'bottom'}} }
+        });
+    });
+});
+</script>
 {% endblock %}

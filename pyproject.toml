@@ -1,0 +1,107 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "getraenkekasse"
+version = "2.0.0"
+description = "Lokale Getränkekasse mit RFID, Web-Admin, REST-API und Self-Service"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Paul Jannick Albohn", email = "p.j.albohn@gmail.com" }]
+keywords = ["rfid", "kasse", "getraenkekasse", "raspberry-pi", "flask", "sqlite"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Flask",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Office/Business :: Financial :: Point-Of-Sale",
+]
+
+dependencies = [
+    "Flask>=3.0,<4",
+    "Flask-WTF>=1.2",
+    "Flask-Limiter>=3.5",
+    "Werkzeug>=3.0",
+    "itsdangerous>=2.2",
+    "argon2-cffi>=23.1",
+    "requests>=2.31",
+    "fpdf2>=2.7",
+    "waitress>=3.0",
+    "python-dotenv>=1.0",
+    "qrcode[pil]>=7.4",
+    "Pillow>=10.0",
+    "tzdata>=2024.1; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+pi = [
+    "PyQt5>=5.15",
+    "mfrc522",
+    "rpi_ws281x",
+    "adafruit-circuitpython-neopixel",
+    "pyserial>=3.5",
+    "nfcpy>=1.0",
+    "RPi.GPIO",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "types-requests",
+]
+
+[project.scripts]
+getraenkekasse-web = "src.web.admin_server:cli"
+getraenkekasse-gui = "src.app:main"
+
+[project.urls]
+Homepage = "https://github.com/paujannick/getraenkekasse"
+Issues = "https://github.com/paujannick/getraenkekasse/issues"
+
+[tool.setuptools]
+packages = ["src", "src.gui", "src.web", "src.api"]
+
+[tool.setuptools.package-data]
+"src.web" = ["templates/*.html", "static/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplifications
+    "S",   # bandit-security
+]
+ignore = [
+    "E501",   # long lines (formatter handles)
+    "S101",   # assert allowed in tests
+    "S311",   # non-crypto random ok
+    "B008",   # default arg calls (used by Flask)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "B"]
+"src/gui/*" = ["S", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+files = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
+filterwarnings = ["ignore::DeprecationWarning"]

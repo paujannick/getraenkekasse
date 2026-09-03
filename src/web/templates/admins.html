@@ -1,0 +1,59 @@
+{% extends '_layout.html' %}
+{% block title %}Admins{% endblock %}
+{% block content %}
+<h1>Admin-Konten</h1>
+<p class="subheader">Zusätzliche Konten mit eigenen Rollen. Der klassische Datei-Admin bleibt als Notfall-Zugang bestehen.</p>
+
+<div class="card">
+    <h2>Vorhandene Admins</h2>
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Name</th><th>Rolle</th><th>2FA</th><th>RFID</th><th>Aktiv</th><th>Letzter Login</th><th></th></tr></thead>
+        <tbody>
+        {% for a in admins %}
+        <tr>
+            <td>{{ a.username }}</td>
+            <td>
+                <form method="post" action="{{ url_for('admin_set_role', admin_id=a.id) }}" style="display:inline-flex;gap:.25rem;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <select name="role" onchange="this.form.submit()">
+                        {% for r in roles %}
+                        <option value="{{ r }}" {% if r==a.role %}selected{% endif %}>{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </td>
+            <td>{% if a.totp_enabled %}<span class="badge success">an</span>{% else %}<span class="badge muted">aus</span>{% endif %}</td>
+            <td>{{ a.rfid_uid or '–' }}</td>
+            <td>{% if a.active %}<span class="badge success">aktiv</span>{% else %}<span class="badge danger">gesperrt</span>{% endif %}</td>
+            <td class="text-muted">{{ a.last_login or '–' }}</td>
+            <td class="row-actions">
+                <a class="btn small" href="{{ url_for('admin_edit_view', admin_id=a.id) }}">Bearbeiten</a>
+                <form method="post" action="{{ url_for('admin_delete', admin_id=a.id) }}" onsubmit="return confirm('Admin wirklich löschen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Neues Konto</h2>
+    <form method="post" action="{{ url_for('admin_create') }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label>Benutzername</label><input name="username" required></div>
+        <div><label>Passwort (min. 8)</label><input name="password" type="password" minlength="8" required></div>
+        <div>
+            <label>Rolle</label>
+            <select name="role">
+                {% for r in roles %}<option value="{{ r }}" {% if r=='admin' %}selected{% endif %}>{{ r }}</option>{% endfor %}
+            </select>
+        </div>
+        <div style="align-self:end;"><button class="primary" type="submit">Anlegen</button></div>
+    </form>
+</div>
+{% endblock %}

@@ -1,150 +1,184 @@
-# Getränkeabrechnungssystem
+# Getränkekasse 2.0
 
-Dies ist eine Beispielimplementierung einer lokalen Getränkekasse für einen DRK-Getränkestand.
-Die Anwendung nutzt Python 3 und PyQt5 und speichert alle Daten lokal in einer SQLite-Datenbank.
+Lokale Getränke-Abrechnung für einen DRK-Getränkestand (oder jeden anderen
+Verein). Kombination aus **Touch-GUI (PyQt5)** auf dem Raspberry Pi und
+einem eigenständigen **Web-Admin (Flask 3, Waitress)** samt **REST-API**,
+**Self-Service-Portal** und **Telegram-Statusbot**. Persistenz mit SQLite.
 
-Die Anwendung setzt einen RFID-Leser voraus. Beim Kaufvorgang erscheint auf dem
-Touchdisplay ein Hinweis "Bitte Karte auflegen…" und die UID wird automatisch
-über den Leser erfasst. Die RFID-Funktion wurde überarbeitet und liest die UID
-zuverlässiger ohne AUTH-Fehler.
+Version **2.0** (2026) modernisiert das Projekt umfassend gegenüber der
+Ursprungsimplementierung:
 
-## Struktur
+## Was ist neu in 2.0
 
-- `src/` enthält die Python-Module
-- `src/gui/` umfasst die PyQt-GUI
+**Sicherheit**
+- Admin-Passwörter mit **Argon2id** (`argon2-cffi`); transparente Migration
+  bestehender SHA-256-Hashes beim ersten Login.
+- **CSRF-Schutz** aller Formulare via Flask-WTF.
+- **Rate-Limiting** auf `/login` (default 5/min pro IP) via Flask-Limiter.
+- Persistenter, zufälliger `SECRET_KEY` in `data/flask_secret.key` (0600) –
+  überschreibbar per `FLASK_SECRET_KEY`.
+- Sichere Session-Cookies (`HttpOnly`, `SameSite=Lax`, optional `Secure`).
+- Content-Security-Policy und weitere Security-Header out-of-the-box.
+- Sichere Datei-Uploads (`secure_filename`, MIME-Whitelist, zufälliger
+  Dateiname, konfigurierbares Größenlimit).
+- Erzwungener Warnhinweis, solange das Standardpasswort aktiv ist.
+- POST-only für alle destruktiven Aktionen (Lösch-Links entfernt).
 
-- `src/web/` bietet ein einfaches Web-Admin-Interface
+**Betrieb**
+- **Waitress** als Produktions-WSGI (nicht mehr Flask-Devserver).
+- **Dockerfile** + **docker-compose.yml** mit Health-Check.
+- **GitHub Actions**: Ruff-Lint, mypy, pytest, Docker-Build.
+- Strukturiertes **JSON-Logging** mit Rotation (`GK_LOG_JSON`, `GK_LOG_LEVEL`).
+- `/healthz`-Endpunkt für Docker/Kubernetes/systemd.
+- Zentrale Konfiguration per `.env` (`python-dotenv`).
 
-- `data/` enthält die SQLite-Datenbank und Ressourcen (z.B. Bilder)
+**Neue Funktionen**
+- **REST-API v1** (`/api/v1`) mit Bearer-Token-Auth. Endpunkte für Getränke,
+  Nutzerabfragen, Aufladen und Kauf. Tokens werden Argon2-gehasht gespeichert.
+- **User-Self-Service** (`/me/<token>`): mobiler Blick auf Guthaben, letzte
+  Käufe und Aufladungen via signiertem QR-Code (itsdangerous).
+- **Happy-Hour / Rabatte** (`/discounts`): zeit-, wochentag- und
+  getränkespezifische Rabatte.
+- **Backups 2.0** (`/backups`): konsistenter SQLite-Snapshot via
+  `VACUUM INTO`, gzip-Kompression, SHA-256, Rotation nach Anzahl und Alter.
+  Optionaler Upload auf WebDAV (Nextcloud).
+- **Audit-Log** (`/audit`) für alle Admin-Aktionen (auch API-Aufrufe).
+- Neuer Menüpunkt „System“ bündelt Einstellungen, Backups, API-Tokens und
+  Audit-Log.
+
+**Codequalität**
+- `pyproject.toml`, `requirements-{dev,pi}.txt` sauber getrennt.
+- Ruff- und mypy-Konfiguration.
+- Modularisierung: `src/security.py`, `src/logging_setup.py`, `src/audit.py`,
+  `src/discounts.py`, `src/backups.py`, `src/api/`.
+- Getestet auf Python 3.11–3.14 (Windows/Linux).
+
+## Projektstruktur
+
+```
+src/
+  admin_auth.py     Passwörter (Argon2 + Legacy)
+  audit.py          Audit-Log
+  backups.py        Backups (gzip + SHA-256 + optional WebDAV)
+  database.py       SQLite-Schema, Config, Refresh/Exit-Flags
+  discounts.py      Happy-Hour-Engine
+  logging_setup.py  JSON-Logging mit Rotation
+  models.py         Domänen-Logik (Bestand, Guthaben, Statistiken)
+  rfid.py           MFRC522 (nur Pi)
+  security.py       SECRET_KEY, Session-Härtung, Upload-Sanitisation
+  telegram_bot.py   Statusbot
+  app.py            GUI-Einstiegspunkt
+  gui/              PyQt-Fenster (main, admin)
+  web/              Flask-Admin (Templates + Server)
+  api/              REST-API v1, Tokens, Self-Service
+tests/              pytest-Suite (grün auf Windows + CI)
+```
+
+## Schnellstart – Docker (empfohlen)
+
+```bash
+cp .env.example .env
+# .env anpassen (mindestens FLASK_SECRET_KEY setzen)
+docker compose up -d
+```
+
+Der Web-Admin ist danach unter `http://<host>:8000` erreichbar
+(User `admin`, Passwort `admin` – **sofort ändern!**).
+
+## Schnellstart – Raspberry Pi (GUI + Kasse)
+
+```bash
+./install.sh          # legt venv + Datenbank + .env an
+./start.sh            # GUI + Web-Admin
+```
+
+Optionales USB-Backup (früherer Auto-Cron) wird nur mit Opt-in installiert:
+
+```bash
+GK_INSTALL_USB_BACKUP=1 ./install.sh
+```
 
 ## Erste Schritte
 
+1. Web-Admin öffnen → Passwort ändern (der rote Sicherheitsbanner
+   verschwindet dann).
+2. Unter „System → API-Tokens“ Tokens für externe Systeme anlegen.
+3. Unter „System → Backups“ ein initiales Backup erstellen und den Pfad in
+   `GK_BACKUP_DIR` konfigurieren (Default: `data/backups/`).
+4. Für Telegram-Statusreports: „Telegram“ öffnen, Token + Chat-ID
+   hinterlegen.
 
-1. Installation im virtuellen Umfeld:
-   ```bash
-   ./install.sh
-   ```
-   Das Script legt ein `venv`-Verzeichnis an (bestehendes wird überschrieben) und installiert alle Abhängigkeiten.
-2. Datenbank initialisieren (legt automatisch einige Beispiel-Daten an):
-   ```bash
-   ./venv/bin/python -c "import src.database as d; d.init_db()"
-   ```
-3. Anwendung starten (z.B. im Vollbild auf dem Raspberry Pi):
-   ```bash
-   ./venv/bin/python -m src.app --fullscreen
-   ```
-4. Web-Admin starten (optional):
-   ```bash
-   ./venv/bin/python -m src.web.admin_server
-   ```
-   Danach im Browser `http://<RaspberryPi>:8000` öffnen und mit `admin/admin` anmelden.
-   Das Passwort kann im Web-Admin unter "Passwort" geändert werden. Es wird
-   verschlüsselt in `data/admin_pw.txt` gespeichert.
-   Zusätzlich lässt sich unter "Einstellungen" ein Admin-PIN festlegen, der in
-   der GUI als Alternative zur Admin-RFID-Karte verwendet werden kann.
+## REST-API
 
-   Über die Startseite lässt sich die GUI mittels "GUI aktualisieren" neu laden, falls Getränke geändert wurden.
+Alle Endpunkte unter `/api/v1`. Auth via `Authorization: Bearer <token>`.
 
-Die GUI zeigt optional Hintergrundbilder. Über den Web-Admin unter "Einstellungen" lassen sich Bilder für Start- und Dankesseite hochladen. Die Dateien werden als `data/background.png` bzw. `data/background_thanks.png` gespeichert. Ist eine Datei nicht vorhanden, wird kein Bild angezeigt.
+| Method | Pfad                        | Scope   | Beschreibung                          |
+| ------ | --------------------------- | ------- | ------------------------------------- |
+| GET    | `/health`                   | public  | Liveness                              |
+| GET    | `/drinks`                   | read    | Alle Getränke inkl. effektivem Preis  |
+| GET    | `/users/by-uid/<uid>`       | read    | Nutzerdaten für RFID-UID              |
+| GET    | `/users/<uid>/balance`      | read    | Nur Guthaben                           |
+| POST   | `/topup`                    | write   | Guthaben aufladen                     |
+| POST   | `/purchase`                 | write   | Kauf buchen (inkl. Bestand)           |
 
-Die Startseite zeigt maximal neun Getränke je Seite an. Über Pfeiltasten am unteren Rand lässt sich zwischen zwei Seiten wechseln. In den Getränkeeinstellungen kann mit dem neuen Feld "Seite" festgelegt werden, auf welcher Seite ein Artikel erscheint. Unterschreitet ein Getränk seinen Mindestbestand, wird der zugehörige Button in der GUI gelb hinterlegt. Fällt der Lagerbestand unter 0, erscheint der Button deutlich rot und der Text wird ausgegraut.
-
-Zum Aufladen von Guthaben kann im Benutzerbereich eine UID gelesen und ein Betrag angegeben werden.
-Über die Einstellungen lässt sich zudem eine spezielle Aufladekarte definieren.
-Wird diese Karte an der GUI erkannt, erscheint ein Menü, über das ein Betrag
-in 5/10/20/50&nbsp;€ ausgewählt werden kann. Anschließend legt man die zu
-aufladende Karte auf und der Betrag wird gutgeschrieben.
-
-Im Web-Admin lassen sich jetzt sowohl Benutzer als auch Getränke bearbeiten. Für Getränke können optional Logos hochgeladen werden, die in der GUI angezeigt werden.
-
-Beim Kauf wird der Lagerbestand des jeweiligen Getränks automatisch reduziert. Über die Getränkeübersicht im Web-Admin lassen sich Bestände bequem auffüllen.
-
-Das Admin-Passwort lässt sich im Web-Admin über den Punkt "Passwort" ändern.
-
-
-Diese Implementierung dient als Ausgangspunkt und kann nach Bedarf erweitert werden (z.B. weitere Admin-Funktionen, Export, Hardware-Anbindung des RFID-Lesers).
-
-
-## Start per `start.sh`
-
-Für den täglichen Betrieb auf dem Raspberry Pi ist `start.sh` der empfohlene Einstiegspunkt.
-Das Skript:
-
-- erstellt automatisch ein Logfile unter `logs/log_YYYY-MM-DD_HH-MM-SS.txt`,
-- startet den Web-Admin (`src.web.admin_server`) im Hintergrund,
-- startet anschließend die GUI im Vollbild (`src.app --fullscreen`),
-- beendet den Webserver automatisch, wenn die GUI geschlossen wird.
-
-Starten:
+Beispiel:
 
 ```bash
-./start.sh
+curl -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"uid":"TESTCARD123","amount_cents":500}' \
+     https://kasse.example.com/api/v1/topup
 ```
 
-> Hinweis: Das Skript bricht bewusst ab, wenn keine grafische Oberfläche (`DISPLAY`) verfügbar ist.
+## Self-Service
 
-### Autostart (Raspberry Pi Desktop / LXDE)
+Für jeden Nutzer mit RFID-UID lässt sich in der Benutzerübersicht ein
+QR-Code generieren (`/users/qr/<user_id>`). Der QR verweist auf einen
+signierten Token unter `/me/<token>` (7 Tage gültig, invalidierbar durch
+Wechseln des `FLASK_SECRET_KEY`).
 
-Damit die Kasse nach dem Booten automatisch startet, kann `start.sh` in den LXDE-Autostart eingetragen werden:
+## Backups & Restore
 
-1. Datei öffnen oder anlegen:
-   ```bash
-   nano ~/.config/lxsession/LXDE-pi/autostart
-   ```
-2. Diese Zeile ergänzen:
-   ```text
-   @/bin/bash /home/pi/getraenkekasse/start.sh
-   ```
-3. Pfad bei Bedarf an deinen Installationsordner anpassen und Raspberry Pi neu starten.
+- Web-Admin: „System → Backups → Jetzt Backup anlegen“.
+- CLI:
+  ```bash
+  python3 -c "from src import backups; backups.create_backup()"
+  ./restore_backup.sh data/backups/gkasse_20260901_120000.db.gz
+  ```
+- Konfiguration:
+  - `GK_BACKUP_DIR` – Zielverzeichnis (Default `data/backups`)
+  - `GK_BACKUP_KEEP` – wieviele Backups behalten (Default 20)
+  - `GK_BACKUP_WEBDAV_URL/USER/PASS` – optionaler Upload nach jedem Backup
 
-Alternativ kann ein `systemd`-Service verwendet werden; wichtig ist in jedem Fall, dass `start.sh` in einer Desktop-Session mit gesetzter `DISPLAY`-Variable läuft.
+## Umgebungsvariablen
 
-## Integrierte Backup-Funktion & Cron
+Siehe `.env.example`. Wichtige Werte:
 
-Das Projekt enthält bereits eine integrierte Datenbank-Backup-Funktion:
+| Variable              | Default        | Beschreibung                            |
+| --------------------- | -------------- | --------------------------------------- |
+| `FLASK_SECRET_KEY`    | (auto)         | Session-Signatur; sonst wird eine Datei angelegt |
+| `GK_ADMIN_USER`       | `admin`        | Anmeldename                              |
+| `GK_HOST`/`GK_PORT`   | `0.0.0.0/8000` | Bind-Adresse                             |
+| `GK_SESSION_SECURE`   | `false`        | `true` hinter HTTPS setzen               |
+| `GK_RATE_LIMIT_LOGIN` | `5/minute`     | Rate-Limit für Login                     |
+| `GK_MAX_UPLOAD_MB`    | `5`            | Upload-Größenlimit                       |
+| `GK_LOG_JSON`         | `true`         | JSON- vs. Textlog                        |
+| `GK_DEV`              | `0`            | `1` = Flask-Devserver statt Waitress     |
 
-- `update.sh` erstellt vor einem Update automatisch ein Backup der Datei `data/getraenkekasse.db`.
-- Die Backups werden als `data/getraenkekasse.db.bak.<timestamp>` gespeichert.
-- Es werden automatisch nur die 10 neuesten Backups aufbewahrt (ältere werden gelöscht).
+## Migration von 1.x
 
-Manuelle Wiederherstellung eines Backups:
+`./update.sh` erledigt Pull + Backup + Requirements + Schema-Migration.
+Bestehende Nutzer, Getränke, Guthaben, Bilder und alten `admin_pw.txt`
+bleiben erhalten – das SHA-256-Passwort wird beim ersten Login transparent
+auf Argon2 umgestellt.
+
+## Tests
 
 ```bash
-./restore_backup.sh data/getraenkekasse.db.bak.<timestamp>
+pip install -r requirements-dev.txt
+pytest
 ```
 
+## Lizenz
 
-### USB-Backup-Skript (wird bei Installation automatisch angelegt)
-
-Ab sofort legt `install.sh` automatisch das Skript `/usr/local/bin/backup_to_usb.sh` an und macht es ausführbar.
-Zusätzlich wird automatisch folgender Cronjob gesetzt:
-
-```cron
-0 3 * * * /usr/local/bin/backup_to_usb.sh
-```
-
-Damit wird das USB-Backup jeden Tag um **03:00 Uhr** ausgeführt.
-Das Skript sichert standardmäßig von:
-
-- Quelle: `/home/paul/Desktop/getraenkekasse/data`
-- Ziel: `/media/paul/backup`
-- Log: `/home/paul/backup.log`
-
-Wenn der USB-Stick nicht gemountet ist, wird ein Fehler ins Log geschrieben und der Lauf beendet.
-
-## Update von älteren Versionen
-
-Um die neuen Funktionen (z.B. Auflade- und Bestandslog) ohne Datenverlust zu nutzen,
-reicht es aus, das Repository zu aktualisieren und die Datenbanktabellen anzulegen.
-Führe dazu einfach folgende Schritte aus:
-
-```bash
-# Im Projektordner
-./update.sh
-```
-
-Das Skript holt die neuesten Dateien, installiert benötigte Pakete und ruft
-`init_db()` auf. Bestehende Daten wie Benutzer, Guthaben, Bilder und Getränke
-bleiben erhalten. Beim Start des Webservers werden neue Tabellen sowie neue
-Spalten (z.B. das "page"-Feld für die Seitenauswahl) automatisch angelegt
-und verwendet.
+MIT – siehe `pyproject.toml`.

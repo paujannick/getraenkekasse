@@ -1,58 +1,64 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+# Installation für den Raspberry Pi. Für generische Server siehe README (Docker).
+set -euo pipefail
 
 cd "$(dirname "$0")"
 
-sudo apt install -y python3-pyqt5
+echo "==> Systempakete"
+if command -v apt >/dev/null 2>&1; then
+    sudo apt update
+    sudo apt install -y python3 python3-venv python3-pip python3-pyqt5 libatlas-base-dev
+fi
 
-# create venv and install requirements
+echo "==> Python-venv"
 if [ -d venv ]; then
     rm -rf venv
 fi
-
 python3 -m venv venv --system-site-packages
-
+# shellcheck disable=SC1091
 source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
 
+echo "==> Python-Abhängigkeiten (inkl. Pi-Extras)"
+pip install --upgrade pip setuptools wheel
+pip install -r requirements-pi.txt
+
+echo "==> Datenbank"
 ./venv/bin/python -c "import src.database as d; d.init_db()"
 
-# Install USB backup script
-BACKUP_SCRIPT="/usr/local/bin/backup_to_usb.sh"
-sudo tee "$BACKUP_SCRIPT" > /dev/null <<'SCRIPT'
-#!/bin/bash
+if [ ! -f .env ]; then
+    cp .env.example .env
+    echo "==> .env angelegt (bitte anpassen!)"
+fi
 
-# ==== EINSTELLUNGEN ====
-BACKUP_SOURCE="/home/paul/Desktop/getraenkekasse/data"
-BACKUP_DEST="/media/paul/backup"
-LOGFILE="/home/paul/backup.log"
-TIMESTAMP=$(date "+%Y-%m-%d_%H-%M")
-DEST="$BACKUP_DEST/backup_$TIMESTAMP"
+# --- Optional: USB-Backup-Skript nur mit Zustimmung installieren.
+if [ "${GK_INSTALL_USB_BACKUP:-0}" = "1" ]; then
+    BACKUP_SCRIPT="/usr/local/bin/gkasse_backup_to_usb.sh"
+    sudo tee "$BACKUP_SCRIPT" > /dev/null <<'SCRIPT'
+#!/usr/bin/env bash
+# USB-Backup der Getränkekasse. Kopiert data/-Ordner auf einen Stick.
+set -euo pipefail
 
-# ==== STICK GEMOUNTET? ====
+BACKUP_SOURCE="${BACKUP_SOURCE:-/home/paul/Desktop/getraenkekasse/data}"
+BACKUP_DEST="${BACKUP_DEST:-/media/paul/backup}"
+LOGFILE="${LOGFILE:-/home/paul/backup.log}"
+
+TS=$(date "+%Y-%m-%d_%H-%M")
+DEST="$BACKUP_DEST/backup_$TS"
+
 if [ ! -d "$BACKUP_DEST" ]; then
-    echo "$(date) - ❌ Fehler: USB-Stick $BACKUP_DEST nicht gefunden!" >> "$LOGFILE"
+    echo "$(date) - Fehler: USB-Stick $BACKUP_DEST nicht gefunden" >> "$LOGFILE"
     exit 1
 fi
 
-# ==== BACKUP START ====
 mkdir -p "$DEST"
-cp -r "$BACKUP_SOURCE"/* "$DEST"
-
-if [ $? -eq 0 ]; then
-    echo "$(date) - ✅ Backup erfolgreich nach $DEST" >> "$LOGFILE"
-else
-    echo "$(date) - ⚠️ Fehler beim Backup-Vorgang!" >> "$LOGFILE"
-    exit 1
-fi
+cp -a "$BACKUP_SOURCE"/. "$DEST"/
+echo "$(date) - Backup nach $DEST" >> "$LOGFILE"
 SCRIPT
-sudo chmod +x "$BACKUP_SCRIPT"
+    sudo chmod +x "$BACKUP_SCRIPT"
+    CRON_ENTRY="0 3 * * * $BACKUP_SCRIPT"
+    ( crontab -l 2>/dev/null | grep -Fv "$BACKUP_SCRIPT"; echo "$CRON_ENTRY" ) | crontab -
+    echo "==> USB-Backup installiert ($BACKUP_SCRIPT), Cron 03:00 Uhr"
+fi
 
-# Install cron job if missing
-CRON_ENTRY='0 3 * * * /usr/local/bin/backup_to_usb.sh'
-( crontab -l 2>/dev/null | grep -Fv "$CRON_ENTRY"; echo "$CRON_ENTRY" ) | crontab -
-
-echo "Installation abgeschlossen"
-echo "Backup-Skript installiert: $BACKUP_SCRIPT"
-echo "Cronjob gesetzt: $CRON_ENTRY"
+echo
+echo "Fertig. Start mit ./start.sh (GUI + Web-Admin) oder docker compose up -d."

@@ -1,0 +1,41 @@
+{% extends '_layout.html' %}
+{% block title %}Kategorien{% endblock %}
+{% block content %}
+<h1>Getränke-Kategorien</h1>
+<p class="subheader">Kategorien werden im Kassen-UI als Tabs angezeigt. Ohne Kategorie erscheint das Getränk in „Alle".</p>
+
+<div class="card">
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Name</th><th>Farbe</th><th>Reihenfolge</th><th>Getränke</th><th></th></tr></thead>
+        <tbody>
+        {% for c in categories %}
+        <tr>
+            <td>{{ c['name'] }}</td>
+            <td><span class="badge" style="background:{{ c['color'] or '#e0e9ff' }};color:#0f172a;">{{ c['color'] or '–' }}</span></td>
+            <td>{{ c['sort_order'] }}</td>
+            <td>{{ c['count'] }}</td>
+            <td>
+                <form method="post" action="{{ url_for('category_delete', cat_id=c['id']) }}" onsubmit="return confirm('Kategorie löschen? Getränke bleiben, verlieren aber die Zuordnung.')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Neue Kategorie</h2>
+    <form method="post" action="{{ url_for('category_add') }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label>Name</label><input name="name" required></div>
+        <div><label>Farbe (Hex)</label><input name="color" type="color" value="#2563eb"></div>
+        <div><label>Reihenfolge</label><input name="sort_order" type="number" value="10"></div>
+        <div style="align-self:end;"><button class="primary" type="submit">Anlegen</button></div>
+    </form>
+</div>
+{% endblock %}

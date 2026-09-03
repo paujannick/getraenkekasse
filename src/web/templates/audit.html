@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h1>Audit-Log</h1>
+    <p>Die letzten 500 Admin-Aktionen (jüngste zuerst). Ältere Einträge werden automatisch verworfen.</p>
+    <table>
+        <tr>
+            <th>Zeit</th>
+            <th>Akteur</th>
+            <th>IP</th>
+            <th>Aktion</th>
+            <th>Ziel</th>
+            <th>Details</th>
+        </tr>
+        {% for e in entries %}
+        <tr>
+            <td>{{ e['timestamp'] }}</td>
+            <td>{{ e['actor'] or '–' }}</td>
+            <td>{{ e['ip'] or '–' }}</td>
+            <td><code>{{ e['action'] }}</code></td>
+            <td>{{ e['target'] or '' }}</td>
+            <td>{{ e['details'] or '' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

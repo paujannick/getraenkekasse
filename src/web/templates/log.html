@@ -1,80 +1,79 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Verkaufs- &amp; Restock-Log{% endblock %}
 {% block content %}
-<h1>Transaktionen</h1>
-<div class="pagination">
-{% if tx_page > 1 %}
-<a href="{{ url_for('log', tx_page=tx_page-1, restock_page=restock_page) }}">&laquo; Zurück</a>
-{% endif %}
-<span>Seite {{ tx_page }} / {{ tx_pages }}</span>
-{% if tx_page < tx_pages %}
-<a href="{{ url_for('log', tx_page=tx_page+1, restock_page=restock_page) }}">Weiter &raquo;</a>
-{% endif %}
-</div>
-<table>
-<tr><th>Zeitpunkt</th><th>Benutzer</th><th>Getränk</th><th>Menge</th><th>Aktion</th></tr>
-{% for r in items %}
-<tr>
-<td>{{ r['timestamp'] }}</td>
-<td>{{ r['user_name'] }}</td>
-<td>{{ r['drink_name'] }}</td>
-<td>{{ r['quantity'] }}</td>
-<td>
-    <form method="post" action="{{ url_for('transaction_delete', tx_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
-        <button type="submit">Löschen</button>
-    </form>
-</td>
-</tr>
-{% endfor %}
-</table>
-<div class="pagination">
-{% if tx_page > 1 %}
-<a href="{{ url_for('log', tx_page=tx_page-1, restock_page=restock_page) }}">&laquo; Zurück</a>
-{% endif %}
-<span>Seite {{ tx_page }} / {{ tx_pages }}</span>
-{% if tx_page < tx_pages %}
-<a href="{{ url_for('log', tx_page=tx_page+1, restock_page=restock_page) }}">Weiter &raquo;</a>
-{% endif %}
-</div>
-<form method="post" action="{{ url_for('transactions_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
-    <button type="submit">Log löschen</button>
-</form>
+<h1>Verkäufe &amp; Auffüllungen</h1>
+<p class="subheader">Die Rohtransaktionen aus der Kasse. Kassenbuch-Konsequenzen siehst du unter <a href="{{ url_for('ledger_view') }}">Kassenbuch</a>.</p>
 
+<div class="grid cols-2">
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2>Verkäufe</h2>
+            <form method="post" action="{{ url_for('transactions_clear') }}" onsubmit="return confirm('Alle Verkaufsbuchungen löschen? Endgültig.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="danger small" type="submit">Alle löschen</button>
+            </form>
+        </div>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Zeit</th><th>Nutzer</th><th>Getränk</th><th class="text-right">Anz.</th><th></th></tr></thead>
+            <tbody>
+            {% for t in items %}
+            <tr>
+                <td class="text-muted">{{ t['timestamp'][:16] }}</td>
+                <td>{{ t['user_name'] }}</td>
+                <td>{{ t['drink_name'] }}</td>
+                <td class="text-right nums">{{ t['quantity'] }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('transaction_delete', tx_id=t['id']) }}" onsubmit="return confirm('Buchung löschen?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="danger small" type="submit">×</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <nav class="pagination">
+            {% for p in range(1, tx_pages+1) %}
+            {% if p == tx_page %}<span>{{ p }}</span>{% else %}<a href="?tx_page={{ p }}">{{ p }}</a>{% endif %}
+            {% endfor %}
+        </nav>
+    </div>
 
-<h2>Auffüllungen</h2>
-<div class="pagination">
-{% if restock_page > 1 %}
-<a href="{{ url_for('log', tx_page=tx_page, restock_page=restock_page-1) }}">&laquo; Zurück</a>
-{% endif %}
-<span>Seite {{ restock_page }} / {{ restock_pages }}</span>
-{% if restock_page < restock_pages %}
-<a href="{{ url_for('log', tx_page=tx_page, restock_page=restock_page+1) }}">Weiter &raquo;</a>
-{% endif %}
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2>Auffüllungen</h2>
+            <form method="post" action="{{ url_for('restocks_clear') }}" onsubmit="return confirm('Alle Restocks löschen? Endgültig.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="danger small" type="submit">Alle löschen</button>
+            </form>
+        </div>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Zeit</th><th>Getränk</th><th class="text-right">Menge</th><th></th></tr></thead>
+            <tbody>
+            {% for r in restocks %}
+            <tr>
+                <td class="text-muted">{{ r['timestamp'][:16] }}</td>
+                <td>{{ r['drink_name'] }}</td>
+                <td class="text-right nums {% if r['quantity']<0 %}text-danger{% endif %}">{{ r['quantity'] }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('restock_delete', restock_id=r['id']) }}" onsubmit="return confirm('Buchung löschen?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="danger small" type="submit">×</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <nav class="pagination">
+            {% for p in range(1, restock_pages+1) %}
+            {% if p == restock_page %}<span>{{ p }}</span>{% else %}<a href="?restock_page={{ p }}">{{ p }}</a>{% endif %}
+            {% endfor %}
+        </nav>
+    </div>
 </div>
-<table>
-<tr><th>Zeitpunkt</th><th>Getränk</th><th>Menge</th><th>Aktion</th></tr>
-{% for r in restocks %}
-<tr>
-<td>{{ r['timestamp'] }}</td>
-<td>{{ r['drink_name'] }}</td>
-<td>{{ r['quantity'] }}</td>
-<td>
-    <form method="post" action="{{ url_for('restock_delete', restock_id=r['id']) }}" onsubmit="return confirm('Eintrag wirklich löschen?');">
-        <button type="submit">Löschen</button>
-    </form>
-</td>
-</tr>
-{% endfor %}
-</table>
-<div class="pagination">
-{% if restock_page > 1 %}
-<a href="{{ url_for('log', tx_page=tx_page, restock_page=restock_page-1) }}">&laquo; Zurück</a>
-{% endif %}
-<span>Seite {{ restock_page }} / {{ restock_pages }}</span>
-{% if restock_page < restock_pages %}
-<a href="{{ url_for('log', tx_page=tx_page, restock_page=restock_page+1) }}">Weiter &raquo;</a>
-{% endif %}
-</div>
-<form method="post" action="{{ url_for('restocks_clear') }}" onsubmit="return confirm('Log wirklich löschen?');">
-    <button type="submit">Log löschen</button>
-</form>
 {% endblock %}

@@ -1,0 +1,71 @@
+{% extends '_layout.html' %}
+{% block title %}Kassenbuch{% endblock %}
+{% block content %}
+<h1>Kassenbuch</h1>
+<p class="subheader">Vier Konten: <strong>Kühlschrank-Kasse</strong> (Bargeld an der Getränkekasse) · <strong>Hauptkasse</strong> (gesammeltes Bargeld, Einkauf) · <strong>Sonstige Einnahmen</strong> · <strong>Sonstige Ausgaben</strong>. Barverkäufe und Aufladungen landen automatisch in der Kühlschrank-Kasse. Einkäufe werden aus der Hauptkasse gebucht.</p>
+
+<div class="grid cols-3 mb-4">
+    {% for row in accounts %}
+    <a class="stat" style="text-decoration:none;" href="{{ url_for('ledger_account', account_id=row.account.id) }}">
+        <span class="label">{{ row.account.kind }} · {{ row.account.name }}</span>
+        <span class="value nums {% if row.balance < 0 %}text-danger{% endif %}">{{ '%+.2f'|format(row.balance/100) }} €</span>
+        <span class="text-muted" style="font-size:.75rem;">Code: <code>{{ row.account.code }}</code></span>
+    </a>
+    {% endfor %}
+</div>
+
+<div class="grid cols-2 mb-4">
+    <a class="card" href="{{ url_for('ledger_drain') }}" style="text-decoration:none;">
+        <div class="stat" style="border:none;background:linear-gradient(120deg,var(--accent-soft),transparent);">
+            <span class="label">Kasse leeren</span>
+            <span class="value">💰 Terminal → Hauptkasse</span>
+        </div>
+    </a>
+    <a class="card" href="{{ url_for('ledger_post') }}" style="text-decoration:none;">
+        <div class="stat" style="border:none;background:linear-gradient(120deg,var(--warn-soft),transparent);">
+            <span class="label">Buchen</span>
+            <span class="value">📝 Einkauf / Sonstiges</span>
+        </div>
+    </a>
+</div>
+
+<div class="card">
+    <h2>Letzte Buchungen</h2>
+    <div class="card-actions">
+        <a class="btn small" href="{{ url_for('ledger_report') }}">PDF-Bericht</a>
+        <a class="btn small" href="{{ url_for('ledger_export_csv') }}">CSV (Excel)</a>
+        <a class="btn small" href="{{ url_for('ledger_balances_csv') }}">Salden CSV</a>
+        <a class="btn small" href="{{ url_for('ledger_accounts') }}">Konten verwalten</a>
+        {% if 'recurring_view' in url_map_endpoints %}
+        <a class="btn small" href="{{ url_for('recurring_view') }}">Wiederkehrende</a>
+        {% endif %}
+        <a class="btn small ghost" href="{{ url_for('ledger_post') }}">+ Buchung</a>
+    </div>
+    <div class="table-wrap mt-2">
+    <table>
+        <thead><tr><th>Zeit</th><th>Kind</th><th>Von</th><th>Nach</th><th class="text-right">Betrag</th><th>Notiz</th><th>Beleg</th><th></th></tr></thead>
+        <tbody>
+        {% for e in entries %}
+        <tr>
+            <td class="text-muted">{{ e['timestamp'][:16] }}</td>
+            <td><span class="badge muted">{{ kinds.get(e['kind'], e['kind']) }}</span></td>
+            <td>{{ e['from_name'] or '–' }}</td>
+            <td>{{ e['to_name'] or '–' }}</td>
+            <td class="text-right nums">{{ '%.2f'|format(e['amount_cents']/100) }} €</td>
+            <td class="text-muted">{{ e['note'] or e['ref'] or '' }}</td>
+            <td>{% if e['receipt_path'] %}<a class="btn small" href="{{ url_for('ledger_receipt', entry_id=e['id']) }}" target="_blank">Beleg</a>{% endif %}</td>
+            <td>
+                {% if e['kind'] != 'reversal' %}
+                <form method="post" action="{{ url_for('ledger_reverse', entry_id=e['id']) }}" onsubmit="return confirm('Diese Buchung stornieren? Es wird ein Gegenbuchungssatz angelegt.')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Storno</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

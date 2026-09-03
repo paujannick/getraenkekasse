@@ -1,0 +1,17 @@
+# User-Service (installieren mit: systemctl --user enable getraenkekasse-kiosk)
+# Erwartet eine laufende grafische Sitzung (LightDM/Wayland).
+[Unit]
+Description=Getränkekasse Chromium-Kiosk
+After=graphical-session.target getraenkekasse-web.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/getraenkekasse
+Environment=DISPLAY=:0
+ExecStart=/bin/bash %h/getraenkekasse/start_kiosk.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

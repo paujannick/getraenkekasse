@@ -1,0 +1,92 @@
+{% extends '_layout.html' %}
+{% block title %}{{ drink['name'] }}{% endblock %}
+{% block content %}
+<h1>{{ drink['name'] }}
+    {% if active_discount %}<span class="badge warn">−{{ active_discount.percent }} % aktiv</span>{% endif %}
+</h1>
+<p class="subheader"><a href="{{ url_for('drinks') }}">← Getränke</a></p>
+
+<div class="grid cols-4 mb-4">
+    <div class="stat"><span class="label">Preis</span>
+        <span class="value nums">{{ '%.2f'|format(drink['price']/100) }} €</span></div>
+    <div class="stat"><span class="label">Bestand</span>
+        <span class="value nums {% if drink['stock']<=0 %}text-danger{% elif drink['stock']<drink['min_stock'] %}text-warn{% endif %}">{{ drink['stock'] }}</span>
+        <span class="text-muted">Min: {{ drink['min_stock'] }}</span></div>
+    <div class="stat"><span class="label">Verkauft insgesamt</span>
+        <span class="value nums">{{ total_qty }}</span></div>
+    <div class="stat"><span class="label">Seite / Kategorie</span>
+        <span class="value">{{ drink['page'] }} · {{ drink['category_id'] or '–' }}</span></div>
+</div>
+
+<div class="grid cols-2">
+    <div class="card">
+        <h2>Verkäufe letzte 90 Tage</h2>
+        <canvas id="chart-drink" height="220"></canvas>
+    </div>
+    <div class="card">
+        <h2>Top-Käufer</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Nutzer</th><th class="text-right">Anzahl</th></tr></thead>
+            <tbody>
+            {% for t in top_buyers %}
+            <tr><td>{{ t['name'] }}</td><td class="text-right nums">{{ t['q'] }}</td></tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted">Noch keine Käufe.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<div class="grid cols-2">
+    <div class="card">
+        <h2>Auffüllungen</h2>
+        <div class="table-wrap">
+        <table>
+            <thead><tr><th>Zeit</th><th class="text-right">Menge</th></tr></thead>
+            <tbody>
+            {% for r in restocks %}
+            <tr>
+                <td class="text-muted">{{ r['timestamp'][:16] }}</td>
+                <td class="text-right nums {% if r['quantity']<0 %}text-danger{% else %}text-success{% endif %}">{{ '%+d'|format(r['quantity']) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted">Noch keine Auffüllungen.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class="card">
+        <h2>Aktionen</h2>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <a class="btn primary" href="{{ url_for('drink_edit', drink_id=drink['id']) }}">Bearbeiten</a>
+            <a class="btn" href="{{ url_for('drink_history', drink_id=drink['id']) }}">Preishistorie</a>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const data = {{ daily|tojson }};
+    Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
+    new Chart(document.getElementById('chart-drink'), {
+        type: 'line',
+        data: {
+            labels: data.map(d => d.day.slice(5)),
+            datasets: [
+                { label: 'Anzahl', data: data.map(d => d.q), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.15)', fill:true, tension:0.25, yAxisID:'y' },
+                { label: 'Umsatz €', data: data.map(d => (d.rev||0)/100), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.15)', fill:false, tension:0.25, yAxisID:'y1' },
+            ]
+        },
+        options: {
+            responsive: true, plugins:{legend:{position:'bottom'}},
+            scales: { y:{beginAtZero:true}, y1:{beginAtZero:true, position:'right', grid:{drawOnChartArea:false}} }
+        }
+    });
+});
+</script>
+{% endblock %}

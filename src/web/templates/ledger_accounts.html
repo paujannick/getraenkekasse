@@ -1,0 +1,54 @@
+{% extends '_layout.html' %}
+{% block title %}Konten verwalten{% endblock %}
+{% block content %}
+<h1>Konten</h1>
+<p class="subheader">System-Konten sind fest, eigene Konten frei erweiterbar.</p>
+
+<div class="card">
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Code</th><th>Name</th><th>Art</th><th class="text-right">Saldo</th><th>System</th><th></th></tr></thead>
+        <tbody>
+        {% for a in accounts %}
+        <tr>
+            <td><code>{{ a.code }}</code></td>
+            <td>{{ a.name }}</td>
+            <td>{{ a.kind }}</td>
+            <td class="text-right nums {% if balances[a.id] < 0 %}text-danger{% endif %}">{{ '%+.2f'|format(balances[a.id]/100) }} €</td>
+            <td>{% if a.system %}<span class="badge">System</span>{% else %}<span class="badge muted">custom</span>{% endif %}</td>
+            <td>
+                {% if not a.system %}
+                <form method="post" action="{{ url_for('ledger_account_delete', account_id=a.id) }}" onsubmit="return confirm('Konto entfernen? Nur möglich, wenn keine Buchungen existieren.')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Löschen</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Neues Konto</h2>
+    <form method="post" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label>Code (kurz, technisch)</label><input name="code" required pattern="[a-z0-9_]+"></div>
+        <div><label>Name</label><input name="name" required></div>
+        <div>
+            <label>Art</label>
+            <select name="kind">
+                <option value="cash">Bargeld</option>
+                <option value="bank">Bank</option>
+                <option value="income">Erlöskonto</option>
+                <option value="expense">Aufwandskonto</option>
+                <option value="virtual">Virtuell</option>
+            </select>
+        </div>
+        <div style="grid-column:1/-1;"><label>Notiz</label><input name="note"></div>
+        <div style="align-self:end;"><button class="primary" type="submit">Anlegen</button></div>
+    </form>
+</div>
+{% endblock %}

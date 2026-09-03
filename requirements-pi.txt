@@ -1,0 +1,11 @@
+# Zusätzliche Abhängigkeiten für den Raspberry Pi (Touch-GUI, RFID, LEDs).
+# Auf einem Standard-Server nicht installieren.
+-r requirements.txt
+
+PyQt5>=5.15
+mfrc522
+rpi_ws281x
+adafruit-circuitpython-neopixel
+pyserial>=3.5
+nfcpy>=1.0
+RPi.GPIO

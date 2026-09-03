@@ -1,37 +1,34 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Programmlogs{% endblock %}
 {% block content %}
 <h1>Programmlogs</h1>
-<div class="pagination">
-{% if page > 1 %}
-<a href="{{ url_for('file_logs', page=page-1) }}">&laquo; Zurück</a>
-{% endif %}
-<span>Seite {{ page }} / {{ pages }}</span>
-{% if page < pages %}
-<a href="{{ url_for('file_logs', page=page+1) }}">Weiter &raquo;</a>
-{% endif %}
+<p class="subheader">Rotationen von <code>app.log</code> und ältere GUI-Logs. Zum Ansehen aus dem Dateisystem exportieren.</p>
+
+<div class="card">
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Datei</th><th></th></tr></thead>
+        <tbody>
+        {% for name in files %}
+        <tr>
+            <td><code>{{ name }}</code></td>
+            <td>
+                <form method="post" action="{{ url_for('file_logs_delete', name=name) }}" onsubmit="return confirm('Log-Datei löschen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger small" type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2" class="text-muted">Keine Logdateien.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    <nav class="pagination">
+    {% for p in range(1, pages+1) %}
+    {% if p == page %}<span>{{ p }}</span>{% else %}<a href="?page={{ p }}">{{ p }}</a>{% endif %}
+    {% endfor %}
+    </nav>
 </div>
-{% if files %}
-<table>
-<tr><th>Datei</th><th>Aktion</th></tr>
-{% for f in files %}
-<tr><td>{{ f }}</td>
-<td>
-<form method="post" action="{{ url_for('file_logs_delete', name=f) }}" onsubmit="return confirm('Log wirklich löschen?');">
-<button type="submit">Löschen</button>
-</form>
-</td></tr>
-{% endfor %}
-</table>
-<div class="pagination">
-{% if page > 1 %}
-<a href="{{ url_for('file_logs', page=page-1) }}">&laquo; Zurück</a>
-{% endif %}
-<span>Seite {{ page }} / {{ pages }}</span>
-{% if page < pages %}
-<a href="{{ url_for('file_logs', page=page+1) }}">Weiter &raquo;</a>
-{% endif %}
-</div>
-{% else %}
-<p>Keine Logs vorhanden.</p>
-{% endif %}
 {% endblock %}

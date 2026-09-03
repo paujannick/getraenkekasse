@@ -1,0 +1,48 @@
+{% extends '_layout.html' %}
+{% block title %}System-Update{% endblock %}
+{% block content %}
+<h1>System-Update</h1>
+<p class="subheader">Sicheres Update: Auto-Backup, Migrations, Health-Check, automatischer Rollback im Fehlerfall.</p>
+
+<div class="grid cols-3 mb-4">
+    <div class="stat"><span class="label">DB-Schema-Version</span><span class="value">{{ migrations.current }}</span></div>
+    <div class="stat"><span class="label">Neueste verfügbare</span><span class="value">{{ migrations.latest }}</span></div>
+    <div class="stat"><span class="label">Ausstehende Migrations</span>
+        <span class="value {% if migrations.pending %}text-danger{% else %}text-success{% endif %}">{{ migrations.pending|length }}</span></div>
+</div>
+
+<div class="card">
+    <h2>Migrationsstatus</h2>
+    {% if migrations.pending %}
+    <p>Diese Migrations werden beim nächsten Update angewendet:</p>
+    <ul>{% for m in migrations.pending %}<li>#{{ m.version }} – {{ m.note }}</li>{% endfor %}</ul>
+    {% else %}
+    <p class="text-success">Alle Migrationen sind auf dem neuesten Stand.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Git-Status</h2>
+    <p>Branch: <code>{{ git.branch or 'unbekannt' }}</code>, HEAD: <code>{{ git.head or '–' }}</code></p>
+    {% if git.behind %}<p class="text-danger">Es sind {{ git.behind }} neue Commits verfügbar.</p>{% endif %}
+    <p><strong>Letzte lokale Commits:</strong></p>
+    <ul class="text-muted" style="font-family:var(--font-mono);font-size:0.85rem;">
+        {% for line in git.log %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+</div>
+
+<div class="card">
+    <h2>Update anstoßen</h2>
+    <p class="text-muted">Führt aus: automatisches Backup → <code>git pull</code> → <code>pip install -r requirements.txt</code> → Migrations → Health-Check.
+       Schlägt einer der Schritte fehl, wird die letzte Sicherung automatisch wiederhergestellt.</p>
+    <form method="post" action="{{ url_for('system_update_run') }}" onsubmit="return confirm('Update jetzt durchführen? Der Web-Admin startet danach ggf. neu.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="primary large" type="submit">Update installieren</button>
+        <a class="btn ghost" href="{{ url_for('backup_view') }}">Zu den Backups</a>
+    </form>
+    {% if last_run %}
+    <h3 class="mt-4">Letzter Update-Lauf</h3>
+    <pre style="max-height:320px;overflow:auto;background:var(--bg-sunken);padding:1rem;border-radius:12px;font-family:var(--font-mono);font-size:0.8rem;">{{ last_run }}</pre>
+    {% endif %}
+</div>
+{% endblock %}

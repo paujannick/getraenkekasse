@@ -1,0 +1,40 @@
+{% extends '_layout.html' %}
+{% block title %}Kasse leeren{% endblock %}
+{% block content %}
+<h1>Terminal-Kasse leeren</h1>
+<p class="subheader">Das Bargeld aus der Terminal-Schale wird auf die Hauptkasse (Kühlschrank) umgebucht.</p>
+
+<div class="grid cols-2 mb-4">
+    <div class="stat">
+        <span class="label">Aktuell in der Terminal-Kasse</span>
+        <span class="value nums">{{ '%.2f'|format(terminal_balance/100) }} €</span>
+    </div>
+    <div class="stat">
+        <span class="label">Aktuell in der Hauptkasse</span>
+        <span class="value nums">{{ '%.2f'|format(main_balance/100) }} €</span>
+    </div>
+</div>
+
+<div class="card">
+<form method="post" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+        <label>Zu übertragender Betrag (€)</label>
+        <input type="number" step="0.01" name="amount" value="{{ '%.2f'|format(terminal_balance/100) }}">
+        <p class="hint">Leer lassen = gesamten Bestand übertragen.</p>
+    </div>
+    <div style="grid-column:span 2;"><label>Notiz</label><input name="note" placeholder="z. B. Wochenbericht KW 34"></div>
+    <div style="grid-column:1 / -1;display:flex;gap:.5rem;">
+        <button class="primary" type="submit">Übertragen</button>
+        <a class="btn ghost" href="{{ url_for('ledger_view') }}">Abbrechen</a>
+    </div>
+</form>
+</div>
+
+<div class="card">
+    <h2>Hinweis</h2>
+    <p>Vor dem Übertragen empfiehlt sich ein <a href="{{ url_for('kassensturz_view') }}">Kassensturz</a>,
+       um Soll- und Ist-Bestand abzugleichen. Differenzen kannst du danach als
+       „Sonstige Ausgabe" oder „Kassensturz-Anpassung" verbuchen.</p>
+</div>
+{% endblock %}

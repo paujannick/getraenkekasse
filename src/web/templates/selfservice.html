@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mein Guthaben – {{ user.name }}</title>
+    <meta name="theme-color" content="#0f172a">
+    <style>
+        :root { color-scheme: light dark; --bg:#f8fafc; --card:#fff; --fg:#0f172a; --muted:#64748b; --accent:#2563eb; }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg:#0b1220; --card:#111827; --fg:#f8fafc; --muted:#94a3b8; --accent:#60a5fa; }
+        }
+        * { box-sizing: border-box; }
+        body { margin:0; padding:1rem; font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+        .container { max-width: 480px; margin: 0 auto; }
+        .card { background: var(--card); border-radius: 18px; padding:1.5rem; margin-bottom:1rem;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+        h1 { margin: 0 0 0.25rem; font-size:1.4rem; }
+        h2 { font-size:1rem; margin: 1.5rem 0 0.5rem; color: var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+        .balance { font-size:2.5rem; font-weight:800; color: var(--accent); }
+        .muted { color: var(--muted); font-size:0.9rem; }
+        ul { list-style:none; padding:0; margin:0; }
+        li { display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid rgba(148,163,184,0.2); }
+        li:last-child { border: none; }
+        .amount { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1>Hallo, {{ user.name }}</h1>
+        <p class="muted">Aktuelles Guthaben</p>
+        <div class="balance">{{ '%.2f' % (user.balance/100) }} €</div>
+        {% if user.is_event %}
+            <p class="muted">Veranstaltungskarte – kein Aufladen erforderlich.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Letzte Käufe</h2>
+        {% if transactions %}
+        <ul>
+        {% for t in transactions %}
+            <li>
+                <span>{{ t['timestamp'][:16] }} · {{ t['drink'] }} × {{ t['quantity'] }}</span>
+                <span class="amount">{{ '%.2f' % ((t['quantity']*t['price'])/100) }} €</span>
+            </li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">Noch keine Käufe.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Letzte Aufladungen</h2>
+        {% if topups %}
+        <ul>
+        {% for t in topups %}
+            <li>
+                <span>{{ t['timestamp'][:16] }}</span>
+                <span class="amount">+ {{ '%.2f' % (t['amount']/100) }} €</span>
+            </li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">Noch keine Aufladungen.</p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

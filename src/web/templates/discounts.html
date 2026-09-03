@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h1>Happy-Hour & Rabatte</h1>
+    <p>Rabatte gelten nur bei Kartenzahlung mit Guthaben. Barzahlungen und
+       Veranstaltungskarten sind aus Buchhaltungsgründen ausgenommen.</p>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Rabatt</th>
+            <th>Zeitraum</th>
+            <th>Wochentage</th>
+            <th>Getränke</th>
+            <th>Status</th>
+            <th>Aktion</th>
+        </tr>
+        {% for d in discounts %}
+        <tr>
+            <td>{{ d.name }}</td>
+            <td>{{ d.percent }} %</td>
+            <td>{{ d.start_time or '–' }} – {{ d.end_time or '–' }}</td>
+            <td>{{ d.weekdays or 'alle' }}</td>
+            <td>{{ d.drink_ids or 'alle' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('discount_toggle', discount_id=d.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="active" value="{{ 0 if d.active else 1 }}">
+                    <button type="submit" class="secondary">{{ 'Aktiv – deaktivieren' if d.active else 'Inaktiv – aktivieren' }}</button>
+                </form>
+            </td>
+            <td>
+                <form method="post" action="{{ url_for('discount_delete', discount_id=d.id) }}" style="display:inline" onsubmit="return confirm('Rabatt wirklich löschen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="danger">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h2>Neuer Rabatt</h2>
+    <form method="post" action="{{ url_for('discount_add') }}" class="form-section">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-grid">
+            <div><label>Name</label><input type="text" name="name" required></div>
+            <div><label>Rabatt in %</label><input type="number" name="percent" min="1" max="100" required></div>
+            <div><label>Von (HH:MM)</label><input type="time" name="start_time"></div>
+            <div><label>Bis (HH:MM)</label><input type="time" name="end_time"></div>
+            <div><label>Wochentage (1=Mo … 7=So, komma-getrennt)</label><input type="text" name="weekdays" placeholder="z. B. 1,2,3,4,5"></div>
+            <div><label>Getränke-IDs (komma-getrennt, leer = alle)</label><input type="text" name="drink_ids"></div>
+        </div>
+        <div class="actions">
+            <button type="submit">Rabatt anlegen</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

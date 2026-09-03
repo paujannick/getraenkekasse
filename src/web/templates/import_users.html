@@ -1,9 +1,17 @@
-{% extends 'base.html' %}
+{% extends '_layout.html' %}
+{% block title %}Nutzer importieren{% endblock %}
 {% block content %}
-<h1>Benutzer importieren</h1>
-<form method="post" enctype="multipart/form-data">
-    <input type="file" name="file">
-    <button type="submit">Importieren</button>
+<h1>Nutzer aus CSV importieren</h1>
+<p class="subheader">Erwartete Spalten: <code>name</code>, <code>uid</code>, optional <code>balance_euro</code>. Trennzeichen wird automatisch erkannt.</p>
+
+<div class="card" style="max-width:640px;">
+<form method="post" enctype="multipart/form-data" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="grid-column:1/-1;"><label>CSV-Datei</label><input type="file" name="file" accept=".csv" required></div>
+    <div style="align-self:end;display:flex;gap:.5rem;">
+        <button class="primary" type="submit">Import starten</button>
+        <a class="btn ghost" href="{{ url_for('users') }}">Abbrechen</a>
+    </div>
 </form>
-<p>CSV Spalten: name, uid, balance_euro</p>
+</div>
 {% endblock %}

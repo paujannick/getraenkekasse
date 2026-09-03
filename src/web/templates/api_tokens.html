@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h1>API-Tokens</h1>
+    <p>Tokens werden mit Argon2id gehasht gespeichert – ein Klartext ist nach dem
+       Anlegen <strong>nicht mehr</strong> abrufbar.</p>
+
+    {% if new_token %}
+    <div class="info" style="padding:1rem;border-radius:12px;background:#dcfce7;">
+        Neues Token (einmalig sichtbar):<br>
+        <code style="font-size:1rem;word-break:break-all;">{{ new_token }}</code>
+    </div>
+    {% endif %}
+
+    <table>
+        <tr><th>Name</th><th>Prefix</th><th>Scope</th><th>Angelegt</th><th>Zuletzt genutzt</th><th></th></tr>
+        {% for t in tokens %}
+        <tr>
+            <td>{{ t.name }}</td>
+            <td><code>{{ t.prefix }}…</code></td>
+            <td>{{ t.scopes }}</td>
+            <td>{{ t.created_at }}</td>
+            <td>{{ t.last_used or '–' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('api_token_delete', token_id=t.id) }}" style="display:inline" onsubmit="return confirm('Token wirklich widerrufen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="danger">Widerrufen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h2>Neues Token</h2>
+    <form method="post" action="{{ url_for('api_token_view') }}" class="form-section">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-grid">
+            <div><label>Name</label><input type="text" name="name" required></div>
+            <div>
+                <label>Scope</label>
+                <select name="scopes">
+                    <option value="read">read (Lesezugriff)</option>
+                    <option value="write">write (Aufladen/Kaufen)</option>
+                    <option value="admin">admin (reserviert)</option>
+                </select>
+            </div>
+        </div>
+        <div class="actions"><button type="submit">Token erzeugen</button></div>
+    </form>
+</div>
+{% endblock %}
