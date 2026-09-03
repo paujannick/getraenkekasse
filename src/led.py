@@ -2,7 +2,6 @@ from __future__ import annotations
 
 """Serial based control for an external Arduino NeoPixel controller."""
 
-from typing import Optional
 import os
 
 try:
@@ -15,7 +14,7 @@ except Exception as e:  # pragma: no cover - optional dependency
 _PORT_CANDIDATES = ["/dev/ttyUSB0", "/dev/ttyACM0"]
 _BAUDRATE = 9600
 
-_serial: Optional["serial.Serial"] = None
+_serial: serial.Serial | None = None
 
 
 def _init_serial() -> None:

@@ -20,7 +20,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from . import backups, database
 
@@ -343,7 +342,7 @@ def _ensure_version_table(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def current_version(conn: Optional[sqlite3.Connection] = None) -> int:
+def current_version(conn: sqlite3.Connection | None = None) -> int:
     own = False
     if conn is None:
         conn = database.get_connection()
@@ -358,7 +357,7 @@ def current_version(conn: Optional[sqlite3.Connection] = None) -> int:
     return version
 
 
-def _apply_one(m: Migration, backup_path: Optional[Path]) -> None:
+def _apply_one(m: Migration, backup_path: Path | None) -> None:
     _LOG.info("migration %d start – %s", m.version, m.note)
     conn = database.get_connection()
     try:
@@ -405,7 +404,7 @@ def upgrade(*, allow_backup: bool = True) -> list[int]:
     if not pending:
         return []
 
-    backup_path: Optional[Path] = None
+    backup_path: Path | None = None
     if allow_backup and database.DB_PATH.exists():
         try:
             info = backups.create_backup()

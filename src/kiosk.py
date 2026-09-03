@@ -8,8 +8,8 @@ import sqlite3
 from dataclasses import dataclass
 
 from . import activity, ledger, models, webhooks
-from .database import get_connection as _gc
 from .database import get_connection
+from .database import get_connection as _gc
 from .discounts import active_discount_for, effective_price
 
 _LOG = logging.getLogger(__name__)

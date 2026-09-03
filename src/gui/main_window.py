@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
 import platform
 import random
+from pathlib import Path
 from typing import Any
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from .. import database
-from .. import models
-from .. import rfid
-from .. import led
+from .. import database, led, models, rfid
 
 
 class QuantityDialog(QtWidgets.QDialog):
@@ -880,7 +878,7 @@ class NumberInputDialog(QtWidgets.QDialog):
 class PurchasedPage(QtWidgets.QWidget):
     """Page to book purchased bottles (restock) from touchscreen."""
 
-    def __init__(self, parent: "MainWindow"):
+    def __init__(self, parent: MainWindow):
         super().__init__(parent)
         self._main = parent
         layout = QtWidgets.QVBoxLayout(self)
@@ -1057,7 +1055,7 @@ class AdminMenu(QtWidgets.QWidget):
 class TopupPage(QtWidgets.QWidget):
     """Page to top up user accounts."""
 
-    def __init__(self, parent: "MainWindow"):
+    def __init__(self, parent: MainWindow):
         super().__init__(parent)
         self._main = parent
         layout = QtWidgets.QVBoxLayout(self)
@@ -1128,7 +1126,7 @@ class TopupPage(QtWidgets.QWidget):
 class EventCardPage(QtWidgets.QWidget):
     """Page to enable/disable event cards and their visibility."""
 
-    def __init__(self, parent: "MainWindow"):
+    def __init__(self, parent: MainWindow):
         super().__init__(parent)
         self._main = parent
         layout = QtWidgets.QVBoxLayout(self)

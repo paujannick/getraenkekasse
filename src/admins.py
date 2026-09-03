@@ -16,7 +16,6 @@ import sqlite3
 import struct
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHash, VerifyMismatchError
@@ -35,10 +34,10 @@ class Admin:
     username: str
     role: str
     totp_enabled: bool
-    rfid_uid: Optional[str]
+    rfid_uid: str | None
     active: int
     created_at: str
-    last_login: Optional[str]
+    last_login: str | None
 
 
 def _row_to_admin(row: sqlite3.Row) -> Admin:
@@ -65,7 +64,7 @@ def list_admins() -> list[Admin]:
     return [_row_to_admin(r) for r in rows]
 
 
-def get_by_username(username: str) -> Optional[Admin]:
+def get_by_username(username: str) -> Admin | None:
     with get_connection() as conn:
         try:
             row = conn.execute(
@@ -76,7 +75,7 @@ def get_by_username(username: str) -> Optional[Admin]:
     return _row_to_admin(row) if row else None
 
 
-def get_by_uid(uid: str) -> Optional[Admin]:
+def get_by_uid(uid: str) -> Admin | None:
     if not uid:
         return None
     with get_connection() as conn:
@@ -104,7 +103,7 @@ def create(username: str, password: str, role: str = "admin") -> Admin:
     return get_by_username(username)  # type: ignore[return-value]
 
 
-def verify(username: str, password: str) -> Optional[Admin]:
+def verify(username: str, password: str) -> Admin | None:
     with get_connection() as conn:
         try:
             row = conn.execute(
@@ -213,7 +212,7 @@ def disable_totp(admin_id: int) -> None:
         conn.commit()
 
 
-def get_totp_secret(admin_id: int) -> Optional[str]:
+def get_totp_secret(admin_id: int) -> str | None:
     with get_connection() as conn:
         row = conn.execute(
             "SELECT totp_secret FROM admins WHERE id=?", (int(admin_id),)

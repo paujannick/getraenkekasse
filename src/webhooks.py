@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from typing import Iterable
+from collections.abc import Iterable
 
 import requests
 

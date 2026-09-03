@@ -14,13 +14,11 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 import threading
 import time
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
-
-import shutil
 
 from . import backups, models, recurring
 

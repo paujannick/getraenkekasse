@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from .database import get_connection
 
