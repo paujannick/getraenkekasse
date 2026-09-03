@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
-
-import pytest
-
 from src import database, discounts, kiosk, migrations, models
 
 
